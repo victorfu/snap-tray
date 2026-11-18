@@ -93,6 +93,7 @@ PlatformCapabilities capabilitiesForPlatform(PlatformKind platform,
                 "PlatformCapabilities", "Live Update requires Windows 10 version 2004 or later.");
         }
         caps.supportsInAppUpdates = true;
+        caps.supportsForegroundCutout = platform == PlatformKind::MacOS;
         caps.isRuntimeSupported = true;
         return caps;
     case PlatformKind::Linux:

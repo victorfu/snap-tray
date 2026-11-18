@@ -41,6 +41,10 @@ struct PlatformCapabilities {
     // ScrollAreaLocator/ScrollInjector platform layer; the developer probe
     // (tools/scroll-probe) does not depend on it.
     bool supportsScrollCapture = false;
+    // Removing the background of a pinned image (#363). Only macOS has a
+    // validated on-device segmenter (Vision, macOS 14+, the deployment
+    // target); other platforms hide the action rather than fetch a model.
+    bool supportsForegroundCutout = false;
     bool isRuntimeSupported = false;
     DisplayServerKind displayServer = DisplayServerKind::Unknown;
     QString unsupportedRuntimeMessage;

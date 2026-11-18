@@ -2754,6 +2754,51 @@ Taille : %2</translation>
         <source>Still exporting the previous image</source>
         <translation>L’image précédente est encore en cours d’exportation</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>La suppression de l’arrière-plan n’est pas prise en charge sur ce système</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>L’image est trop grande pour en supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Aucun sujet à conserver n’a été trouvé</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Aucun arrière-plan à supprimer n’a été trouvé</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Impossible de supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Arrêtez la mise à jour en direct avant de supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>L’arrière-plan ne peut pas être supprimé pour le moment</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>L’image a changé, son arrière-plan n’a donc pas été supprimé</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

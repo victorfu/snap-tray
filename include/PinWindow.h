@@ -24,6 +24,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/PinLayoutGeometry.h"
+#include "pinwindow/ForegroundCutout.h"
 #include "tools/ToolId.h"
 #include "annotation/AnnotationHostAdapter.h"
 #include "region/ShapeAnnotationEditor.h"
@@ -54,6 +55,7 @@ class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
 class PinExportRunner;
+class ForegroundCutoutRunner;
 struct PinExportRequest;
 class QmlDialog;
 class ImageExportDialogController;
@@ -205,6 +207,7 @@ protected:
 private:
     friend class TestPinWindowCropUndo;
     friend class TestPinWindowStripCutOut;
+    friend class TestPinWindowRemoveBackground;
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
@@ -246,6 +249,17 @@ private:
     void saveToFile();
     void copyToClipboard();
     bool ensureAutoBlurReadyForExport();
+    // Remove Background (#363): segments the base image off the GUI thread
+    // and replaces it with the cut-out as one crop-undo step. Annotations
+    // stay editable on top; mosaics resample the new image.
+    void removeBackground();
+    // Esc while it runs: drops the job, the pin stays as it was.
+    bool cancelBackgroundRemoval();
+    void onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Result& result,
+                                     qint64 sourceCacheKey);
+    // Why the image cannot be replaced right now, or an empty string.
+    QString backgroundRemovalBlocker() const;
+    bool applyForegroundCutout(const QImage& image);
     // While an earlier save, Beautify save or Beautify copy of this pin is
     // still running, tells the user and returns true; otherwise false.
     bool rejectIfExportInProgress();
@@ -719,6 +733,10 @@ private:
         const QPixmap& source, const BeautifySettings& settings) const;
     // The pin's save, Beautify save and Beautify copy, one at a time (#353).
     std::unique_ptr<SnapTray::PinExportRunner> m_exportRunner;
+    // Remove Background (#363); created on first use.
+    std::unique_ptr<SnapTray::ForegroundCutoutRunner> m_cutoutRunner;
+    SnapTray::ForegroundCutout::MaskProvider m_foregroundMaskProvider;
+    bool m_backgroundRemovalInProgress = false;
     std::unique_ptr<SnapTray::QmlBeautifyPanel> m_beautifyPanel;
     // This pin's own Beautify settings once it has any; the panel opens with
     // them rather than with the global last-used ones.

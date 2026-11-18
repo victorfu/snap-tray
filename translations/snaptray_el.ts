@@ -2754,6 +2754,51 @@ Size: %2</source>
         <source>Still exporting the previous image</source>
         <translation>Η προηγούμενη εικόνα εξάγεται ακόμα</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Αφαίρεση φόντου</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Η αφαίρεση φόντου δεν υποστηρίζεται σε αυτό το σύστημα</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Η εικόνα είναι πολύ μεγάλη για αφαίρεση του φόντου</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Δεν βρέθηκε θέμα για διατήρηση</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Δεν βρέθηκε φόντο για αφαίρεση</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Δεν ήταν δυνατή η αφαίρεση του φόντου</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Σταματήστε τη ζωντανή ενημέρωση πριν αφαιρέσετε το φόντο</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Δεν είναι δυνατή η αφαίρεση του φόντου αυτή τη στιγμή</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Η εικόνα άλλαξε, επομένως το φόντο δεν αφαιρέθηκε</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

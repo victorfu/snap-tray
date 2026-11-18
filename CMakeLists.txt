@@ -346,6 +346,7 @@ add_library(snaptray_core STATIC
     src/tools/CropDraftModel.cpp
     src/tools/StripDraftModel.cpp
     src/pinwindow/ImageStripTransform.cpp
+    src/pinwindow/ForegroundCutout.cpp
     src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
@@ -602,6 +603,7 @@ add_library(snaptray_platform STATIC
     >
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
+        src/platform/ForegroundSegmentation_stub.cpp
     >
     # Headers with Q_OBJECT for MOC processing
     include/IVideoEncoder.h
@@ -637,6 +639,7 @@ add_library(snaptray_platform STATIC
         src/scrollcapture/ScrollCapturePlatform_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
+        src/platform/ForegroundSegmentation_mac.mm
         src/AutoLaunchManager_mac.mm
         src/capture/SCKCaptureEngine_mac.mm
         src/capture/CoreAudioCaptureEngine_mac.mm
@@ -723,6 +726,7 @@ endif()
 set_source_files_properties(
     src/platform/WindowLevel_mac.mm
     src/OCRManager.mm
+    src/platform/ForegroundSegmentation_mac.mm
     src/capture/SCKCaptureEngine_mac.mm
     src/capture/CoreAudioCaptureEngine_mac.mm
     src/AVFoundationEncoder.mm
@@ -961,6 +965,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinMergeHelper.cpp
     src/pinwindow/PinLayoutGeometry.cpp
     src/pinwindow/PinExportJob.cpp
+    src/pinwindow/ForegroundCutoutRunner.cpp
 
     # Screen canvas
     include/ScreenCanvas.h
@@ -1050,6 +1055,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinMergeHelper.h
     include/pinwindow/PinLayoutGeometry.h
     include/pinwindow/PinExportJob.h
+    include/pinwindow/ForegroundCutoutRunner.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h

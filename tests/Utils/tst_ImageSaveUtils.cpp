@@ -36,6 +36,7 @@ private slots:
     void testOverwriteExistingFile();
     void testJpegQualityReachesEncoder();
     void testQualityLeavesPngLossless();
+    void testJpegComposesTransparencyOntoWhite();
     void testUniqueSaveHonorsQuality();
     void testSaveEncodedWritesExactBytes();
     void testSaveEncodedFailureKeepsExistingFile();
@@ -376,6 +377,50 @@ void tst_ImageSaveUtils::testJpegQualityReachesEncoder()
     QVERIFY(ImageSaveUtils::saveImageAtomically(image, defaultPath));
     QVERIFY(ImageSaveUtils::saveImageAtomically(image, explicitDefaultPath, QByteArray(), nullptr, {-1}));
     QCOMPARE(QFileInfo(defaultPath).size(), QFileInfo(explicitDefaultPath).size());
+}
+
+void tst_ImageSaveUtils::testJpegComposesTransparencyOntoWhite()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    // A cut-out (#363): opaque subject on the left, nothing on the right.
+    // Premultiplied transparent pixels are black; unpremultiplied ones keep a
+    // hidden colour. Neither may reach a JPEG.
+    for (const QImage::Format format : {QImage::Format_ARGB32_Premultiplied, QImage::Format_ARGB32}) {
+        QImage image(32, 16, format);
+        image.fill(Qt::transparent);
+        for (int y = 0; y < 16; ++y) {
+            for (int x = 0; x < 32; ++x) {
+                image.setPixel(x, y, x < 16 ? qRgba(200, 30, 30, 255) : qRgba(0, 0, 255, 0));
+            }
+        }
+        const QString exactPath = tempDir.filePath(QStringLiteral("exact-%1.jpg").arg(int(format)));
+        QVERIFY(ImageSaveUtils::saveImageAtomically(image, exactPath));
+
+        ImageSaveUtils::UniqueSaveSpec spec;
+        spec.outputDir = tempDir.path();
+        spec.filenameTemplate = QStringLiteral("unique-%1.{ext}").arg(int(format));
+        spec.context.ext = QStringLiteral("jpg");
+        const auto unique = ImageSaveUtils::saveImageUnique(image, spec);
+        QVERIFY2(unique.success, qPrintable(unique.error.message));
+
+        for (const QString& path : {exactPath, unique.filePath}) {
+            const QImage written(path);
+            QVERIFY(!written.isNull());
+            const QColor background = written.pixelColor(28, 8);
+            QVERIFY2(background.red() > 240 && background.green() > 240 && background.blue() > 240,
+                     qPrintable(background.name()));
+            const QColor subject = written.pixelColor(4, 8);
+            QVERIFY2(subject.red() > 170 && subject.green() < 70, qPrintable(subject.name()));
+        }
+    }
+
+    // PNG keeps the transparency.
+    QImage transparent(8, 8, QImage::Format_ARGB32);
+    transparent.fill(Qt::transparent);
+    const QString pngPath = tempDir.filePath("transparent.png");
+    QVERIFY(ImageSaveUtils::saveImageAtomically(transparent, pngPath));
+    QCOMPARE(qAlpha(QImage(pngPath).pixel(4, 4)), 0);
 }
 
 void tst_ImageSaveUtils::testQualityLeavesPngLossless()

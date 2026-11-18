@@ -2753,6 +2753,51 @@ Boyut: %2</translation>
         <source>Still exporting the previous image</source>
         <translation>Önceki görüntü hâlâ dışa aktarılıyor</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Arka Planı Kaldır</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Arka planı kaldırma bu sistemde desteklenmiyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Görüntü, arka planı kaldırmak için çok büyük</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Korunacak bir nesne bulunamadı</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Kaldırılacak bir arka plan bulunamadı</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Arka plan kaldırılamadı</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Arka planı kaldırmadan önce Canlı Güncellemeyi durdurun</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Arka plan şu anda kaldırılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Görüntü değişti, bu nedenle arka plan kaldırılmadı</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

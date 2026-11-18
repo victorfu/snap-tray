@@ -18,6 +18,7 @@ private slots:
     void windowsCaptureExclusionVersionGate_data();
     void windowsCaptureExclusionVersionGate();
     void scrollCaptureStaysOffUntilValidated();
+    void foregroundCutoutOnlyOnMac();
 };
 
 void tst_PlatformCapabilities::linuxX11BetaCapabilities()
@@ -231,6 +232,23 @@ void tst_PlatformCapabilities::scrollCaptureStaysOffUntilValidated()
     for (const Target& target : targets) {
         QVERIFY(!SnapTray::capabilitiesForPlatform(target.platform, target.displayServer).supportsScrollCapture);
     }
+}
+
+void tst_PlatformCapabilities::foregroundCutoutOnlyOnMac()
+{
+    using SnapTray::DisplayServerKind;
+    using SnapTray::PlatformKind;
+    QVERIFY(SnapTray::capabilitiesForPlatform(PlatformKind::MacOS, DisplayServerKind::Unknown)
+                .supportsForegroundCutout);
+    // No validated backend elsewhere (#363): the action stays hidden.
+    QVERIFY(!SnapTray::capabilitiesForPlatform(PlatformKind::Windows, DisplayServerKind::Unknown)
+                 .supportsForegroundCutout);
+    QVERIFY(!SnapTray::capabilitiesForPlatform(PlatformKind::Linux, DisplayServerKind::X11)
+                 .supportsForegroundCutout);
+    QVERIFY(!SnapTray::capabilitiesForPlatform(PlatformKind::Linux, DisplayServerKind::Wayland)
+                 .supportsForegroundCutout);
+    QVERIFY(!SnapTray::capabilitiesForPlatform(PlatformKind::Other, DisplayServerKind::Unknown)
+                 .supportsForegroundCutout);
 }
 
 QTEST_MAIN(tst_PlatformCapabilities)
