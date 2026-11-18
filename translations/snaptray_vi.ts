@@ -325,6 +325,11 @@
         <source>Border</source>
         <translation>Viền</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" />
+        <source>Export...</source>
+        <translation>Xuất...</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -532,6 +537,52 @@
         <location filename="../src/annotation/ColorPickOverlay.cpp" />
         <source>Color set to %1</source>
         <translation>Đã đặt màu thành %1</translation>
+    </message>
+</context>
+<context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Hủy cắt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Áp dụng</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Áp dụng cắt</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Hủy cắt dải</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Áp dụng</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Áp dụng cắt dải</translation>
     </message>
 </context>
 <context>
@@ -983,6 +1034,11 @@ File size: %3</source>
 Độ phân giải: %2
 Kích thước tệp: %3</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" />
+        <source>Export...</source>
+        <translation>Xuất...</translation>
+    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1037,6 +1093,94 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
         <source>Keyboard shortcuts for every task, grouped by what they do.</source>
         <translation>Phím tắt cho mọi tác vụ, nhóm theo chức năng.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageExportDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export Image</source>
+        <translation>Xuất ảnh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Save a smaller copy. The original stays as it is.</source>
+        <translation>Lưu một bản sao nhỏ hơn. Bản gốc được giữ nguyên.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Size</source>
+        <translation>Kích thước</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original size</source>
+        <translation>Kích thước gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale by percent</source>
+        <translation>Co giãn theo phần trăm</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Limit long edge</source>
+        <translation>Giới hạn cạnh dài</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale</source>
+        <translation>Tỷ lệ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Long edge</source>
+        <translation>Cạnh dài</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Format</source>
+        <translation>Định dạng</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>PNG (lossless)</source>
+        <translation>PNG (không mất dữ liệu)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG (lossy)</source>
+        <translation>JPEG (mất dữ liệu)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG quality</source>
+        <translation>Chất lượng JPEG</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original: %1</source>
+        <translation>Gốc: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Output: %1</source>
+        <translation>Đầu ra: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>File size: %1</source>
+        <translation>Kích thước tệp: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export...</source>
+        <translation>Xuất...</translation>
     </message>
 </context>
 <context>
@@ -1902,6 +2046,86 @@ Kích thước: %2</translation>
         <source>White</source>
         <translation>Trắng</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Cắt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Tự do</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Tỷ lệ tự do</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Tỷ lệ gốc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>Tỷ lệ %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cắt dải</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Xóa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Xóa dải và nối phần còn lại</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Chèn</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Chèn một dải trong suốt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Ngang</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Dải ngang</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Dọc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Dải dọc</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Đặt lại thu phóng về 100% để cắt một dải</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2456,6 +2680,46 @@ Kích thước: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Lưu ảnh chụp đã làm đẹp</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Hãy dừng Cập nhật trực tiếp trước khi cắt dải</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Không thể áp dụng dải này</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Có chú thích nằm ngang qua dải này. Hãy di chuyển hoặc xóa chúng trước.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>Hình ảnh sẽ trở nên quá lớn</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Đặt lại thu phóng về 100% để cắt một dải</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Không thể cắt vùng chọn này</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Tạm dừng cập nhật trực tiếp để cắt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Export As...</source>
+        <translation>Xuất thành...</translation>
     </message>
     <message>
         <source>Still saving the previous export</source>
@@ -7290,6 +7554,77 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     </message>
 </context>
 <context>
+    <name>SnapTray::ImageExportDialogController</name>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>JPEG Image (*.jpg *.jpeg)</source>
+        <translation>Ảnh JPEG (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>PNG Image (*.png)</source>
+        <translation>Ảnh PNG (*.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Export Image</source>
+        <translation>Xuất ảnh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>%1 already exists. Choose a name ending in .%2.</source>
+        <translation>%1 đã tồn tại. Hãy chọn tên kết thúc bằng .%2.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Failed to export image: %1</source>
+        <translation>Xuất ảnh không thành công: %1</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ImageExportViewModel</name>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>%1 (%2 bytes)</source>
+        <translation>%1 (%2 byte)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Could not encode: %1</source>
+        <translation>Không thể mã hóa: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Calculating...</source>
+        <translation>Đang tính toán...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>PNG is lossless: every pixel of the output size is kept exactly.</source>
+        <translation>PNG không mất dữ liệu: mọi điểm ảnh ở kích thước đầu ra được giữ nguyên chính xác.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image.</source>
+        <translation>JPEG làm mất dữ liệu: chữ và nét mảnh bị mất chi tiết, và tệp nhỏ hơn không còn là cùng một ảnh.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>This image has transparent areas, which JPEG cannot keep.</source>
+        <translation>Ảnh này có vùng trong suốt mà JPEG không thể giữ lại.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Unknown error</source>
+        <translation>Lỗi không xác định</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Transparent areas are filled with white.</source>
+        <translation>Các vùng trong suốt được tô màu trắng.</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::LibraryModel</name>
     <message>
         <location filename="../src/qml/LibraryModel.cpp" line="115" />
@@ -7881,6 +8216,11 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Hoàn tất chụp nhiều vùng</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cắt dải</translation>
     </message>
 </context>
 <context>

@@ -60,7 +60,7 @@ The right-click menu (also **⋯** on the hover bar) is grouped by task:
 
 - Arrange (only while an annotation is selected): Bring Forward, Send Backward, Bring to Front, Send to Back
 - View: Show Toolbar, Show Border, Zoom (in/out, presets, Reset to 100%, smoothing), Opacity (up/down, Reset to 100%), Image processing (rotate, flip, crop)
-- Output: Copy, Save, Watermark, Info, Open History Folder
+- Output: Copy, Save, Export As, Watermark, Info, Open History Folder
 - Modes: Click-through, Live Update (start/stop, pause/resume, frame rate), Adjust Region Layout
 - Pins: Move to Screen, Merge Pins, Close All Pins
 - Close
@@ -85,13 +85,52 @@ Choose **Manual** to restore the free layout you had before trying automatic arr
 
 Layouts support up to 20 images, 10,000 logical units per canvas dimension, and 64 megapixels of output. Invalid or oversized layouts are rejected before composition. Saved images and history continue using the existing output pipeline.
 
+### Export a smaller copy
+
+**Export As...** in the context menu, **Export...** in Beautify and **Export...** in the Library open the same dialog. It writes a derived file and leaves the pin, its annotations and the Library item at full resolution.
+
+- **Size**: Original size, Scale by percent, or Limit long edge. The aspect ratio is kept and the image is never enlarged. Sizes are pixels of the image, so a 1280-point-wide capture from a 2x display counts as 2560 px.
+- **Format**: PNG (lossless) or JPEG (lossy). **JPEG quality** appears only for JPEG; PNG has no quality setting to mislead you.
+- **File size** is the real size of the file that will be written, encoded in the background with the current settings. **Export...** is available once it is known, and the file saved is exactly the one measured.
+
+JPEG is lossy: a smaller JPEG is not an equivalent of the PNG, and it cannot keep transparent areas, which are filled with white. The dialog exports the image as it was when opened; changing the pin closes it. If saving fails the dialog stays open so you can try again. The last settings used for a successful export are remembered. Annotations and Beautify styling are composed at full resolution first and then scaled.
+
 ## Annotation in pin window
 
 Press `Space`, or click **Annotate** on the hover bar, to open a lightweight annotation toolbar dedicated to the current pinned image. Beautify is on that toolbar too.
 
 - Drawing tools: Pencil, Marker, Arrow, Shape, Text, Mosaic, Step Badge, Emoji, Eraser
-- Utility tools: Crop, Measure
+- Utility tools: Crop, Cut Out, Measure
 - Action tools: OCR (macOS/Windows only; hidden in Linux beta), QR Code Scan, Save, Copy
+
+### Crop
+
+Choose **Crop** on the annotation toolbar, or **Image processing > Crop** in the context menu, then drag over the part to keep. Releasing the mouse leaves a draft selection: nothing is cropped until you apply it.
+
+- Drag inside the draft to move it, or drag one of its eight handles to resize it. Dragging outside starts a new selection.
+- Pick an aspect ratio in the options strip: Free, Original, 1:1, 16:9, 9:16, 4:3 or 3:2. The draft is re-fitted at once and stays inside the image. On a rotated pin the ratio applies to the image as you see it.
+- Arrow keys move the draft by one pixel of the image, `Shift` + arrow by ten.
+- `Enter`, **Apply**, or a double-click inside the draft crops. `Esc` or **Cancel** discards the draft; a second `Esc` hides the toolbar as before. While Crop is active a double-click outside the draft does nothing; it does not close the pin as it otherwise would. Choosing Crop again keeps a draft that is waiting.
+
+The size shown next to the draft and in the options strip is in pixels of the image itself, not of the zoomed pin, so a pin from a 2x display reports twice its on-screen size. Positions move pixel by pixel; sizes are whole logical pixels, or the full width or height. At 1x that is any size and at 2x even sizes, which the pin shows without resampling; at a fractional scale such as 1.5x it is the closest fit. When the pin has annotations the draft moves in steps that shift them exactly (two pixels at 2x, for example), so a redaction stays on what it covers.
+
+Applying adds one undo step, like before. Adjusting the draft adds none. Switching to another tool, hiding the toolbar or undoing to another image discards the draft. Crop needs a still image: pause Live Update first.
+
+### Cut out a strip or insert space
+
+**Cut Out** on the annotation toolbar works on a band that runs across the whole image. Unlike Crop, which keeps one rectangle, it joins what lies on both sides: use it to drop an irrelevant middle part of a long screenshot, or to open a transparent gap for a note.
+
+- Pick **Remove** or **Insert**, and **Horizontal** or **Vertical**, in the options strip, then drag across the image to mark the band. The direction is the one you see, also on a rotated pin.
+- Drag inside the band to move it, drag an edge to resize it, or use the arrow keys (one image pixel, `Shift` for ten). The strip shows what changes and the resulting size in image pixels, for example `−120 px → 800 × 480 px`.
+- `Enter`, **Apply**, or a double-click inside the band applies. `Esc` or **Cancel** discards the band; a second `Esc` leaves the toolbar as before.
+
+The band's length moves in steps that keep every pixel and annotation exactly aligned: 1 px on a 1x image at 100% zoom, 2 px at 2x, 5 px at 1.25x, 3 px at 1.5x, and larger steps at other zoom levels. At a zoom level where no exact step exists the tool asks you to reset the zoom to 100%.
+
+An inserted band is transparent. The whole image cannot be removed, and an insertion is limited to 32,767 px per side and 64 megapixels in total. If the strip cannot be applied nothing changes.
+
+Annotations entirely on one side keep their place or move with the pixels, and a mosaic keeps hiding the same pixels. An annotation that touches the band (or spans the insertion line, even one you have undone and could redo) blocks the operation with a message: move or delete it first. This is deliberate, because shifting a redaction as a whole could uncover what it hides.
+
+Applying is one undo step that restores the image, its size, the annotations and the region layout together. Cut Out is not available during Live Update or while auto-blur is still running.
 
 ## Next step
 

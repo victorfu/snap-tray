@@ -325,6 +325,11 @@
         <source>Border</source>
         <translation>테두리</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" />
+        <source>Export...</source>
+        <translation>내보내기...</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -532,6 +537,52 @@
         <location filename="../src/annotation/ColorPickOverlay.cpp" />
         <source>Color set to %1</source>
         <translation>색상이 %1(으)로 설정됨</translation>
+    </message>
+</context>
+<context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>자르기 취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>적용</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>자르기 적용</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>띠 잘라내기 취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>적용</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>띠 잘라내기 적용</translation>
     </message>
 </context>
 <context>
@@ -983,6 +1034,11 @@ File size: %3</source>
 해상도: %2
 파일 크기: %3</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" />
+        <source>Export...</source>
+        <translation>내보내기...</translation>
+    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1037,6 +1093,94 @@ File size: %3</source>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
         <source>Keyboard shortcuts for every task, grouped by what they do.</source>
         <translation>모든 작업의 키보드 단축키를 기능별로 묶었습니다.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageExportDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export Image</source>
+        <translation>이미지 내보내기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Save a smaller copy. The original stays as it is.</source>
+        <translation>더 작은 사본을 저장합니다. 원본은 그대로 유지됩니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Size</source>
+        <translation>크기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original size</source>
+        <translation>원본 크기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale by percent</source>
+        <translation>비율로 크기 조정</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Limit long edge</source>
+        <translation>긴 변 제한</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale</source>
+        <translation>배율</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Long edge</source>
+        <translation>긴 변</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Format</source>
+        <translation>형식</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>PNG (lossless)</source>
+        <translation>PNG (무손실)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG (lossy)</source>
+        <translation>JPEG (손실)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG quality</source>
+        <translation>JPEG 품질</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original: %1</source>
+        <translation>원본: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Output: %1</source>
+        <translation>출력: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>File size: %1</source>
+        <translation>파일 크기: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export...</source>
+        <translation>내보내기...</translation>
     </message>
 </context>
 <context>
@@ -1902,6 +2046,86 @@ Size: %2</source>
         <source>White</source>
         <translation>흰색</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>자르기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>자유</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>자유 비율</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>원본</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>원본 비율</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>비율 %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>띠 잘라내기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>제거</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>띠를 제거하고 나머지를 이어 붙임</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>삽입</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>투명한 띠 삽입</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>가로</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>가로 띠</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>세로</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>세로 띠</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>띠를 잘라내려면 확대/축소를 100%로 되돌리세요</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2456,6 +2680,46 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>꾸민 스크린샷 저장</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>띠를 잘라내기 전에 실시간 업데이트를 중지하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>이 띠는 적용할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>이 띠를 가로지르는 주석이 있습니다. 먼저 이동하거나 삭제하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>이미지가 너무 커집니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>띠를 잘라내려면 확대/축소를 100%로 되돌리세요</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>이 선택 영역을 자를 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>자르려면 실시간 업데이트를 일시 중지하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Export As...</source>
+        <translation>다른 이름으로 내보내기...</translation>
     </message>
     <message>
         <source>Still saving the previous export</source>
@@ -7290,6 +7554,77 @@ It may be in use by another application.</source>
     </message>
 </context>
 <context>
+    <name>SnapTray::ImageExportDialogController</name>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>JPEG Image (*.jpg *.jpeg)</source>
+        <translation>JPEG 이미지 (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>PNG Image (*.png)</source>
+        <translation>PNG 이미지 (*.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Export Image</source>
+        <translation>이미지 내보내기</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>%1 already exists. Choose a name ending in .%2.</source>
+        <translation>%1이(가) 이미 있습니다. .%2(으)로 끝나는 이름을 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Failed to export image: %1</source>
+        <translation>이미지를 내보내지 못했습니다: %1</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ImageExportViewModel</name>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>%1 (%2 bytes)</source>
+        <translation>%1 (%2바이트)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Could not encode: %1</source>
+        <translation>인코딩할 수 없습니다: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Calculating...</source>
+        <translation>계산 중...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>PNG is lossless: every pixel of the output size is kept exactly.</source>
+        <translation>PNG는 무손실 형식입니다. 출력 크기의 모든 픽셀이 그대로 유지됩니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image.</source>
+        <translation>JPEG는 손실 형식입니다. 텍스트와 가는 선의 세부 정보가 손실되며, 더 작은 파일은 같은 이미지가 아닙니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>This image has transparent areas, which JPEG cannot keep.</source>
+        <translation>이 이미지에는 JPEG에서 유지할 수 없는 투명 영역이 있습니다.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Unknown error</source>
+        <translation>알 수 없는 오류</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Transparent areas are filled with white.</source>
+        <translation>투명한 영역은 흰색으로 채워집니다.</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::LibraryModel</name>
     <message>
         <location filename="../src/qml/LibraryModel.cpp" line="115" />
@@ -7881,6 +8216,11 @@ It may be in use by another application.</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>다중 영역 완료</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>띠 잘라내기</translation>
     </message>
 </context>
 <context>

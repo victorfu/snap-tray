@@ -325,6 +325,11 @@
         <source>Border</source>
         <translation>إطار</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" />
+        <source>Export...</source>
+        <translation>تصدير...</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -532,6 +537,52 @@
         <location filename="../src/annotation/ColorPickOverlay.cpp" />
         <source>Color set to %1</source>
         <translation>تم تعيين اللون إلى %1</translation>
+    </message>
+</context>
+<context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>إلغاء الاقتصاص</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>تطبيق</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>تطبيق الاقتصاص</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>إلغاء قص الشريط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>تطبيق</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>تطبيق قص الشريط</translation>
     </message>
 </context>
 <context>
@@ -983,6 +1034,11 @@ File size: %3</source>
 الدقة: %2
 حجم الملف: %3</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" />
+        <source>Export...</source>
+        <translation>تصدير...</translation>
+    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1037,6 +1093,94 @@ File size: %3</source>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
         <source>Keyboard shortcuts for every task, grouped by what they do.</source>
         <translation>اختصارات لوحة المفاتيح لكل مهمة، مجمّعة حسب وظيفتها.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageExportDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export Image</source>
+        <translation>تصدير الصورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Save a smaller copy. The original stays as it is.</source>
+        <translation>احفظ نسخة أصغر. تبقى الصورة الأصلية كما هي.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Size</source>
+        <translation>الحجم</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original size</source>
+        <translation>الحجم الأصلي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale by percent</source>
+        <translation>تغيير الحجم بالنسبة المئوية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Limit long edge</source>
+        <translation>تحديد الضلع الأطول</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale</source>
+        <translation>المقياس</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Long edge</source>
+        <translation>الضلع الأطول</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Format</source>
+        <translation>الصيغة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>PNG (lossless)</source>
+        <translation>PNG (بلا فقدان)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG (lossy)</source>
+        <translation>JPEG (بفقدان)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG quality</source>
+        <translation>جودة JPEG</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original: %1</source>
+        <translation>الأصلي: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Output: %1</source>
+        <translation>الإخراج: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>File size: %1</source>
+        <translation>حجم الملف: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export...</source>
+        <translation>تصدير...</translation>
     </message>
 </context>
 <context>
@@ -1907,6 +2051,86 @@ Size: %2</source>
         <source>White</source>
         <translation>أبيض</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>اقتصاص</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>حر</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>نسبة أبعاد حرة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>الأصلي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>نسبة الأبعاد الأصلية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>نسبة الأبعاد %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>قص شريط</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>إزالة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>إزالة الشريط وربط الأجزاء المتبقية</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>إدراج</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>إدراج شريط شفاف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>أفقي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>شريط أفقي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>عمودي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>شريط عمودي</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>أعد التكبير إلى 100% لقص شريط</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2461,6 +2685,46 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>حفظ لقطة الشاشة المُجمَّلة</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>أوقف التحديث المباشر قبل قص شريط</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>لا يمكن تطبيق هذا الشريط</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>توجد تعليقات توضيحية تعبر هذا الشريط. انقلها أو احذفها أولًا.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>ستصبح الصورة كبيرة جدًا</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>أعد التكبير إلى 100% لقص شريط</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>تعذّر اقتصاص هذا التحديد</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>أوقف التحديث المباشر مؤقتًا للاقتصاص</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Export As...</source>
+        <translation>تصدير باسم...</translation>
     </message>
     <message>
         <source>Still saving the previous export</source>
@@ -7310,6 +7574,77 @@ It may be in use by another application.</source>
     </message>
 </context>
 <context>
+    <name>SnapTray::ImageExportDialogController</name>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>JPEG Image (*.jpg *.jpeg)</source>
+        <translation>صورة JPEG (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>PNG Image (*.png)</source>
+        <translation>صورة PNG (*.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Export Image</source>
+        <translation>تصدير الصورة</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>%1 already exists. Choose a name ending in .%2.</source>
+        <translation>%1 موجود بالفعل. اختر اسمًا ينتهي بـ .%2.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Failed to export image: %1</source>
+        <translation>فشل تصدير الصورة: %1</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ImageExportViewModel</name>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>%1 (%2 bytes)</source>
+        <translation>%1 (%2 بايت)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Could not encode: %1</source>
+        <translation>تعذر الترميز: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Calculating...</source>
+        <translation>جارٍ الحساب...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>PNG is lossless: every pixel of the output size is kept exactly.</source>
+        <translation>صيغة PNG بلا فقدان: يتم الاحتفاظ بكل بكسل بحجم الإخراج تمامًا.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image.</source>
+        <translation>صيغة JPEG بفقدان: يفقد النص والخطوط الرفيعة بعض التفاصيل، والملف الأصغر ليس الصورة نفسها.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>This image has transparent areas, which JPEG cannot keep.</source>
+        <translation>تحتوي هذه الصورة على مناطق شفافة لا يمكن لصيغة JPEG الاحتفاظ بها.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Unknown error</source>
+        <translation>خطأ غير معروف</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Transparent areas are filled with white.</source>
+        <translation>تُملأ المناطق الشفافة باللون الأبيض.</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::LibraryModel</name>
     <message>
         <location filename="../src/qml/LibraryModel.cpp" line="115" />
@@ -7901,6 +8236,11 @@ It may be in use by another application.</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>إكمال المناطق المتعددة</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>قص شريط</translation>
     </message>
 </context>
 <context>

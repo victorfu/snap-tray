@@ -31,6 +31,7 @@ constexpr std::array<Entry, static_cast<int>(ToolId::Count)> makeTable()
     set(ToolId::MultiRegion, ToolbarGroup::Assist, 30);
     set(ToolId::Measure, ToolbarGroup::Assist, 35);
     set(ToolId::Crop, ToolbarGroup::Assist, 36);
+    set(ToolId::CutOut, ToolbarGroup::Assist, 34);
     set(ToolId::Beautify, ToolbarGroup::Assist, 37);
     set(ToolId::CanvasBlackboard, ToolbarGroup::Assist, 38);
     set(ToolId::CanvasWhiteboard, ToolbarGroup::Assist, 39);

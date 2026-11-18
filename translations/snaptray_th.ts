@@ -273,6 +273,11 @@
         <source>Border</source>
         <translation>เส้นขอบ</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" />
+        <source>Export...</source>
+        <translation>ส่งออก...</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -480,6 +485,52 @@
         <location filename="../src/annotation/ColorPickOverlay.cpp" />
         <source>Color set to %1</source>
         <translation>ตั้งสีเป็น %1 แล้ว</translation>
+    </message>
+</context>
+<context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>ยกเลิกการครอบตัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>นำไปใช้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>นำการครอบตัดไปใช้</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>ยกเลิกการตัดแถบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>นำไปใช้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>นำการตัดแถบไปใช้</translation>
     </message>
 </context>
 <context>
@@ -931,6 +982,11 @@ File size: %3</source>
 ความละเอียด: %2
 ขนาดไฟล์: %3</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" />
+        <source>Export...</source>
+        <translation>ส่งออก...</translation>
+    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -985,6 +1041,94 @@ File size: %3</source>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
         <source>Keyboard shortcuts for every task, grouped by what they do.</source>
         <translation>คีย์ลัดสำหรับทุกงาน จัดกลุ่มตามการทำงาน</translation>
+    </message>
+</context>
+<context>
+    <name>ImageExportDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export Image</source>
+        <translation>ส่งออกรูปภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Save a smaller copy. The original stays as it is.</source>
+        <translation>บันทึกสำเนาที่เล็กลง ต้นฉบับจะไม่เปลี่ยนแปลง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Size</source>
+        <translation>ขนาด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original size</source>
+        <translation>ขนาดต้นฉบับ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale by percent</source>
+        <translation>ปรับขนาดตามเปอร์เซ็นต์</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Limit long edge</source>
+        <translation>จำกัดด้านที่ยาวที่สุด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale</source>
+        <translation>มาตราส่วน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Long edge</source>
+        <translation>ด้านที่ยาว</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Format</source>
+        <translation>รูปแบบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>PNG (lossless)</source>
+        <translation>PNG (ไม่สูญเสียข้อมูล)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG (lossy)</source>
+        <translation>JPEG (สูญเสียข้อมูล)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG quality</source>
+        <translation>คุณภาพ JPEG</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original: %1</source>
+        <translation>ต้นฉบับ: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Output: %1</source>
+        <translation>เอาต์พุต: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>File size: %1</source>
+        <translation>ขนาดไฟล์: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export...</source>
+        <translation>ส่งออก...</translation>
     </message>
 </context>
 <context>
@@ -1753,6 +1897,86 @@ English is always included and cannot be removed.</source>
         <source>White</source>
         <translation>สีขาว</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>ครอบตัด</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>อิสระ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>อัตราส่วนอิสระ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>ต้นฉบับ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>อัตราส่วนต้นฉบับ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>อัตราส่วน %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>ตัดแถบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>ลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>ลบแถบและเชื่อมส่วนที่เหลือเข้าด้วยกัน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>แทรก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>แทรกแถบโปร่งใส</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>แนวนอน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>แถบแนวนอน</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>แนวตั้ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>แถบแนวตั้ง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>รีเซ็ตการซูมเป็น 100% เพื่อตัดแถบออก</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2307,6 +2531,46 @@ English is always included and cannot be removed.</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>บันทึกภาพหน้าจอที่ปรับแต่งแล้ว</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>หยุดการอัปเดตสดก่อนตัดแถบ</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>ไม่สามารถใช้แถบนี้ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>มีคำอธิบายประกอบพาดผ่านแถบนี้ ให้ย้ายหรือลบก่อน</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>รูปภาพจะมีขนาดใหญ่เกินไป</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>รีเซ็ตการซูมเป็น 100% เพื่อตัดแถบออก</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>ไม่สามารถครอบตัดส่วนที่เลือกนี้ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>หยุดการอัปเดตสดชั่วคราวเพื่อครอบตัด</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Export As...</source>
+        <translation>ส่งออกเป็น...</translation>
     </message>
     <message>
         <source>Still saving the previous export</source>
@@ -6963,6 +7227,77 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     </message>
 </context>
 <context>
+    <name>SnapTray::ImageExportDialogController</name>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>JPEG Image (*.jpg *.jpeg)</source>
+        <translation>รูปภาพ JPEG (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>PNG Image (*.png)</source>
+        <translation>รูปภาพ PNG (*.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Export Image</source>
+        <translation>ส่งออกรูปภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>%1 already exists. Choose a name ending in .%2.</source>
+        <translation>มี %1 อยู่แล้ว โปรดเลือกชื่อที่ลงท้ายด้วย .%2</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Failed to export image: %1</source>
+        <translation>ส่งออกรูปภาพไม่สำเร็จ: %1</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ImageExportViewModel</name>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>%1 (%2 bytes)</source>
+        <translation>%1 (%2 ไบต์)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Could not encode: %1</source>
+        <translation>เข้ารหัสไม่ได้: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Calculating...</source>
+        <translation>กำลังคำนวณ...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>PNG is lossless: every pixel of the output size is kept exactly.</source>
+        <translation>PNG เป็นแบบไม่สูญเสียข้อมูล: ทุกพิกเซลของขนาดเอาต์พุตจะถูกเก็บไว้อย่างเท่าเดิม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image.</source>
+        <translation>JPEG เป็นแบบสูญเสียข้อมูล: ข้อความและเส้นบางจะสูญเสียรายละเอียด และไฟล์ที่เล็กลงไม่ใช่ภาพเดิม</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>This image has transparent areas, which JPEG cannot keep.</source>
+        <translation>ภาพนี้มีส่วนโปร่งใสซึ่ง JPEG ไม่สามารถเก็บไว้ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Unknown error</source>
+        <translation>ข้อผิดพลาดที่ไม่ทราบสาเหตุ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Transparent areas are filled with white.</source>
+        <translation>พื้นที่โปร่งใสจะถูกเติมด้วยสีขาว</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::LibraryModel</name>
     <message>
         <location filename="../src/qml/LibraryModel.cpp" line="115" />
@@ -7550,6 +7885,11 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>เสร็จสิ้นการจับหลายพื้นที่</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>ตัดแถบ</translation>
     </message>
 </context>
 <context>

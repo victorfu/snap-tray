@@ -325,6 +325,11 @@
         <source>Border</source>
         <translation>Contorno</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/BeautifyPanel.qml" />
+        <source>Export...</source>
+        <translation>Exportar...</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>
@@ -532,6 +537,52 @@
         <location filename="../src/annotation/ColorPickOverlay.cpp" />
         <source>Color set to %1</source>
         <translation>Cor definida como %1</translation>
+    </message>
+</context>
+<context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Cancelar recorte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Aplicar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Aplicar recorte</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Cancelar corte de faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Aplicar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Aplicar corte de faixa</translation>
     </message>
 </context>
 <context>
@@ -983,6 +1034,11 @@ File size: %3</source>
 Resolução: %2
 Tamanho do ficheiro: %3</translation>
     </message>
+    <message>
+        <location filename="../src/qml/panels/HistoryWindow.qml" />
+        <source>Export...</source>
+        <translation>Exportar...</translation>
+    </message>
 </context>
 <context>
     <name>HotkeySettings</name>
@@ -1037,6 +1093,94 @@ Tamanho do ficheiro: %3</translation>
         <location filename="../src/qml/settings/HotkeySettings.qml" line="49" />
         <source>Keyboard shortcuts for every task, grouped by what they do.</source>
         <translation>Teclas de atalho para cada tarefa, agrupadas por função.</translation>
+    </message>
+</context>
+<context>
+    <name>ImageExportDialog</name>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export Image</source>
+        <translation>Exportar imagem</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Save a smaller copy. The original stays as it is.</source>
+        <translation>Guarde uma cópia mais pequena. O original permanece inalterado.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Size</source>
+        <translation>Tamanho</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original size</source>
+        <translation>Tamanho original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale by percent</source>
+        <translation>Dimensionar por percentagem</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Limit long edge</source>
+        <translation>Limitar o lado maior</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Scale</source>
+        <translation>Escala</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Long edge</source>
+        <translation>Lado maior</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Format</source>
+        <translation>Formato</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>PNG (lossless)</source>
+        <translation>PNG (sem perdas)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG (lossy)</source>
+        <translation>JPEG (com perdas)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>JPEG quality</source>
+        <translation>Qualidade JPEG</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Original: %1</source>
+        <translation>Original: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Output: %1</source>
+        <translation>Saída: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>File size: %1</source>
+        <translation>Tamanho do ficheiro: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/dialogs/ImageExportDialog.qml" />
+        <source>Export...</source>
+        <translation>Exportar...</translation>
     </message>
 </context>
 <context>
@@ -1903,6 +2047,86 @@ Tamanho: %2</translation>
         <source>White</source>
         <translation>Branco</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Recortar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Livre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Proporção livre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Proporção original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>Proporção %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cortar faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Remover</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Remover a faixa e unir o resto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Inserir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Inserir uma faixa transparente</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Na horizontal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Faixa horizontal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Na vertical</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Faixa vertical</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Reponha o zoom a 100% para recortar uma faixa</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2457,6 +2681,46 @@ Tamanho: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Guardar captura embelezada</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Pare a atualização em direto antes de cortar uma faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Não é possível aplicar esta faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Existem anotações que atravessam esta faixa. Mova-as ou elimine-as primeiro.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>A imagem ficaria demasiado grande</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Reponha o zoom a 100% para recortar uma faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Não é possível recortar esta seleção</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pause a atualização em direto para recortar</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Export As...</source>
+        <translation>Exportar como...</translation>
     </message>
     <message>
         <source>Still saving the previous export</source>
@@ -7294,6 +7558,77 @@ Pode estar a ser utilizado por outra aplicação.</translation>
     </message>
 </context>
 <context>
+    <name>SnapTray::ImageExportDialogController</name>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>JPEG Image (*.jpg *.jpeg)</source>
+        <translation>Imagem JPEG (*.jpg *.jpeg)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>PNG Image (*.png)</source>
+        <translation>Imagem PNG (*.png)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Export Image</source>
+        <translation>Exportar imagem</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>%1 already exists. Choose a name ending in .%2.</source>
+        <translation>%1 já existe. Escolha um nome que termine em .%2.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportDialogController.cpp" line="0" />
+        <source>Failed to export image: %1</source>
+        <translation>Falha ao exportar a imagem: %1</translation>
+    </message>
+</context>
+<context>
+    <name>SnapTray::ImageExportViewModel</name>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>%1 (%2 bytes)</source>
+        <translation>%1 (%2 bytes)</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Could not encode: %1</source>
+        <translation>Não foi possível codificar: %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Calculating...</source>
+        <translation>A calcular...</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>PNG is lossless: every pixel of the output size is kept exactly.</source>
+        <translation>O PNG não tem perdas: todos os píxeis do tamanho de saída são mantidos exatamente.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image.</source>
+        <translation>O JPEG tem perdas: o texto e as linhas finas perdem detalhe, e um ficheiro mais pequeno não é a mesma imagem.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>This image has transparent areas, which JPEG cannot keep.</source>
+        <translation>Esta imagem tem áreas transparentes que o JPEG não consegue manter.</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Unknown error</source>
+        <translation>Erro desconhecido</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/ImageExportViewModel.cpp" line="0" />
+        <source>Transparent areas are filled with white.</source>
+        <translation>As áreas transparentes são preenchidas a branco.</translation>
+    </message>
+</context>
+<context>
     <name>SnapTray::LibraryModel</name>
     <message>
         <location filename="../src/qml/LibraryModel.cpp" line="115" />
@@ -7885,6 +8220,11 @@ Pode estar a ser utilizado por outra aplicação.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Concluir múltiplas regiões</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cortar faixa</translation>
     </message>
 </context>
 <context>

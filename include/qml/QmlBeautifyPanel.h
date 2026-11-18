@@ -39,6 +39,7 @@ public:
 signals:
     void copyRequested(const BeautifySettings& settings);
     void saveRequested(const BeautifySettings& settings);
+    void exportRequested(const BeautifySettings& settings);
     void closeRequested();
 
 private slots:

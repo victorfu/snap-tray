@@ -72,6 +72,7 @@ Item {
         { id: "pin", text: qsTr("Pin"), icon: "qrc:/icons/icons/pin.svg" },
         { id: "copy", text: qsTr("Copy"), icon: "qrc:/icons/icons/copy.svg" },
         { id: "save", text: qsTr("Save As..."), icon: "qrc:/icons/icons/save.svg" },
+        { id: "export", text: qsTr("Export..."), icon: "" },
         { id: "delete", text: qsTr("Delete..."), icon: "qrc:/icons/icons/trash-2.svg", danger: true }
     ]
     readonly property var recordingActions: [
@@ -191,6 +192,8 @@ Item {
                 backend.copy(row)
             else if (actionId === "save")
                 backend.saveAs(row)
+            else if (actionId === "export")
+                backend.exportAs(row)
             else if (actionId === "delete")
                 askDelete()
         } else if (selectedKind === kindRecording && recordings) {

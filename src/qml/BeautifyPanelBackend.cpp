@@ -450,6 +450,12 @@ void BeautifyPanelBackend::requestSave()
     emit saveRequested(m_settings);
 }
 
+void BeautifyPanelBackend::requestExport()
+{
+    BeautifySettingsManager::instance().saveSettings(m_settings);
+    emit exportRequested(m_settings);
+}
+
 void BeautifyPanelBackend::requestClose()
 {
     emit closeRequested();

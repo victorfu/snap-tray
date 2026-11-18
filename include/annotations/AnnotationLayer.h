@@ -85,6 +85,8 @@ public:
         const std::function<QPointF(LayoutItemKey, const AnnotationItem&)>& deltaForItem);
     void forEachItem(const std::function<void(AnnotationItem*)>& visitor,
                      bool includeRedoStack = false);
+    // Items a Redo can bring back without anything else being undone first.
+    void forEachRedoItem(const std::function<void(const AnnotationItem*)>& visitor) const;
     void forEachItem(const std::function<void(const AnnotationItem*)>& visitor,
                      bool includeRedoStack = false) const;
 

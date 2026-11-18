@@ -205,6 +205,12 @@ target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resource
 add_test(NAME Qml_DialogModality COMMAND Qml_DialogModality)
 set_tests_properties(Qml_DialogModality PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_ImageExportDialog Qml/tst_ImageExportDialog.cpp)
+target_link_libraries(Qml_ImageExportDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ImageExportDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ImageExportDialog COMMAND Qml_ImageExportDialog)
+set_tests_properties(Qml_ImageExportDialog PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_PinLayoutDialog Qml/tst_PinLayoutDialog.cpp)
 target_link_libraries(Qml_PinLayoutDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_PinLayoutDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -900,6 +906,16 @@ target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinMergeHelper COMMAND PinWindow_PinMergeHelper)
 set_tests_properties(PinWindow_PinMergeHelper PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(PinWindow_ImageStripTransform PinWindow/tst_ImageStripTransform.cpp)
+target_link_libraries(PinWindow_ImageStripTransform PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ImageStripTransform COMMAND PinWindow_ImageStripTransform)
+set_tests_properties(PinWindow_ImageStripTransform PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_StripCutOut PinWindow/tst_StripCutOut.cpp)
+target_link_libraries(PinWindow_StripCutOut PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_StripCutOut COMMAND PinWindow_StripCutOut)
+set_tests_properties(PinWindow_StripCutOut PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
 target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
@@ -1338,6 +1354,11 @@ target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
 set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Utils_ImageExportOptions Utils/tst_ImageExportOptions.cpp)
+target_link_libraries(Utils_ImageExportOptions PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_ImageExportOptions COMMAND Utils_ImageExportOptions)
+set_tests_properties(Utils_ImageExportOptions PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Utils_UniqueImageSaveProcess Utils/UniqueImageSaveProcess.cpp)
 target_link_libraries(Utils_UniqueImageSaveProcess PRIVATE snaptray_core)
 add_dependencies(Utils_ImageSaveUtils Utils_UniqueImageSaveProcess)
@@ -1752,6 +1773,11 @@ add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
 target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)
 set_tests_properties(Tools_TextToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_CropDraftModel Tools/tst_CropDraftModel.cpp)
+target_link_libraries(Tools_CropDraftModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_CropDraftModel COMMAND Tools_CropDraftModel)
+set_tests_properties(Tools_CropDraftModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Tools_CropToolHandler Tools/handlers/tst_CropToolHandler.cpp)
 target_link_libraries(Tools_CropToolHandler PRIVATE snaptray_ui Qt6::Test)

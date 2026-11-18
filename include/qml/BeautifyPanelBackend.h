@@ -103,6 +103,8 @@ public:
     Q_INVOKABLE void pickSecondaryColor();
     Q_INVOKABLE void requestCopy();
     Q_INVOKABLE void requestSave();
+    // Opens the Export dialog (size, format, quality) for the beautified image.
+    Q_INVOKABLE void requestExport();
     Q_INVOKABLE void requestClose();
 
 signals:
@@ -113,6 +115,7 @@ signals:
     void previewRevisionChanged();
     void copyRequested(const BeautifySettings& settings);
     void saveRequested(const BeautifySettings& settings);
+    void exportRequested(const BeautifySettings& settings);
     void closeRequested();
 
 private:

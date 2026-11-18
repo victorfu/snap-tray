@@ -30,6 +30,8 @@ private slots:
     void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testStyleStripNamesTranslatedForAllLocales();
+    void testCropDraftControlsTranslatedForAllLocales();
+    void testImageExportTranslatedForAllLocales();
     void testSharedFrameStylesTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
     void testRecordingPreviewCropTranslatedForAllLocales();
@@ -372,6 +374,117 @@ void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
             QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
                      qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
                                     .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+    }
+}
+
+// #358: the crop strip (aspect presets, Apply, Cancel) is translated.
+void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
+{
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"PinToolOptionsViewModel", "Crop"},
+        {"PinToolOptionsViewModel", "Free"},
+        {"PinToolOptionsViewModel", "Free aspect ratio"},
+        {"PinToolOptionsViewModel", "Original aspect ratio"},
+        {"PinToolOptionsViewModel", "Aspect ratio %1"},
+        {"CropSection", "Cancel"},
+        {"CropSection", "Cancel crop"},
+        {"CropSection", "Apply"},
+        {"CropSection", "Apply crop"},
+        // #371: the cut-out tool.
+        {"ToolRegistry", "Cut Out"},
+        {"PinToolOptionsViewModel", "Cut Out"},
+        {"PinToolOptionsViewModel", "Remove"},
+        {"PinToolOptionsViewModel", "Remove the strip and join the rest"},
+        {"PinToolOptionsViewModel", "Insert"},
+        {"PinToolOptionsViewModel", "Insert a transparent strip"},
+        {"PinToolOptionsViewModel", "Horizontal strip"},
+        {"PinToolOptionsViewModel", "Vertical strip"},
+        {"CutOutSection", "Cancel cut out"},
+        {"CutOutSection", "Apply cut out"},
+        {"PinWindow", "Stop Live Update before cutting out a strip"},
+        {"PinWindow", "This strip cannot be applied"},
+        {"PinWindow", "Annotations cross this strip. Move or delete them first."},
+        {"PinWindow", "The image would become too large"},
+        {"PinWindow", "Reset zoom to 100% to cut out a strip"},
+        {"PinToolOptionsViewModel", "Reset zoom to 100% to cut out a strip"},
+        {"PinWindow", "Unable to crop this selection"},
+        {"PinWindow", "Pause Live Update to crop"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+        // "Original" is spelled the same in several languages; it only has to exist.
+        QVERIFY2(!translator.translate("PinToolOptionsViewModel", "Original").isEmpty(),
+                 qPrintable(qmFile));
+    }
+}
+
+// #357: the still-image Export dialog and its three entry points.
+void tst_QmlTranslations::testImageExportTranslatedForAllLocales()
+{
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"ImageExportDialog", "Export Image"},
+        {"ImageExportDialog", "Save a smaller copy. The original stays as it is."},
+        {"ImageExportDialog", "Size"},
+        {"ImageExportDialog", "Original size"},
+        {"ImageExportDialog", "Scale by percent"},
+        {"ImageExportDialog", "Limit long edge"},
+        {"ImageExportDialog", "PNG (lossless)"},
+        {"ImageExportDialog", "JPEG (lossy)"},
+        {"ImageExportDialog", "JPEG quality"},
+        {"ImageExportDialog", "File size: %1"},
+        {"ImageExportDialog", "Export..."},
+        {"SnapTray::ImageExportViewModel", "Calculating..."},
+        {"SnapTray::ImageExportViewModel",
+         "JPEG is lossy: text and thin lines lose detail, and a smaller file is not the same image."},
+        {"SnapTray::ImageExportViewModel", "This image has transparent areas, which JPEG cannot keep."},
+        {"SnapTray::ImageExportViewModel", "Transparent areas are filled with white."},
+        {"SnapTray::ImageExportViewModel", "Could not encode: %1"},
+        {"SnapTray::ImageExportDialogController", "Export Image"},
+        {"SnapTray::ImageExportDialogController", "Failed to export image: %1"},
+        {"SnapTray::ImageExportDialogController", "%1 already exists. Choose a name ending in .%2."},
+        {"BeautifyPanel", "Export..."},
+        {"HistoryWindow", "Export..."},
+        {"PinWindow", "Export As..."},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+            // A dropped placeholder would lose the size or the error detail.
+            for (const char* placeholder : {"%1", "%2"}) {
+                if (source.contains(placeholder)) {
+                    QVERIFY2(translated.contains(QLatin1String(placeholder)),
+                             qPrintable(QStringLiteral("%1: %2").arg(qmFile, translated)));
+                }
+            }
         }
     }
 }

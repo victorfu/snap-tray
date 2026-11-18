@@ -56,6 +56,7 @@ class QmlBeautifyPanel;
 class PinExportRunner;
 struct PinExportRequest;
 class QmlDialog;
+class ImageExportDialogController;
 struct CaptureSessionWriteRequest;
 class ToolbarTooltipController;
 }
@@ -67,6 +68,9 @@ struct ColorPickSource;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
+class CropToolHandler;
+class CutOutToolHandler;
+namespace ImageStrip { struct Request; }
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
@@ -80,6 +84,7 @@ class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
 class TestPinWindowCropUndo;
+class TestPinWindowStripCutOut;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -195,6 +200,7 @@ protected:
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinWindowStripCutOut;
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
@@ -351,7 +357,50 @@ private:
     void rebuildManagedCursorAt(const QPoint& localPos);
     void restoreAnnotationCursorAt(const QPoint& localPos);
     void syncFloatingUiCursor();
+    // Crops to a rect in tool (view) coordinates, widened to whole logical
+    // pixels. The crop tool commits through applyCropSourcePixels() instead;
+    // both end in commitCropGeometry().
     void applyCrop(const QRect& cropRect);
+    // Crops to a rect in source pixels (the crop draft's units, #358).
+    // Returns false, leaving the image and annotations as they are, when the
+    // rect cannot be applied (an annotation drag in progress is cancelled
+    // either way). A rect covering the whole image returns true: it leaves
+    // the crop tool without changing the image or adding an undo entry.
+    bool applyCropSourcePixels(const QRect& sourcePixelRect);
+    // Enter, Apply and double-click: applies the crop draft, or tells the
+    // user that it could not be applied.
+    bool commitCropDraft();
+    // Abandons a crop drag whose release may never come.
+    void cancelImageEditGesture();
+    // Any annotation, shown or kept in undo/redo history.
+    bool hasOwnedAnnotations() const;
+    // Grid for the crop draft's corner; see CropDraftModel::setPositionStep().
+    QSize cropPositionStep() const;
+    bool commitCropGeometry(const QRectF& exactPhysicalCropRect,
+                            const QSize& croppedLogicalSize,
+                            const QPointF& annotationOffsetDisplay);
+    void leaveCropTool();
+    QSize cropSourcePixelSize() const;
+    CropToolHandler* cropToolHandler() const;
+    bool isCropToolActive() const;
+    void syncCropDraftUi();
+    bool handleCropDraftKey(QKeyEvent* event);
+    void refreshCropCursor();
+    // Cut-out tool (#371): removes a band across the image or inserts a blank
+    // one, as one undoable image change. Returns false, changing nothing,
+    // when the strip cannot be applied.
+    bool applyStrip(const ImageStrip::Request& request);
+    CutOutToolHandler* cutOutToolHandler() const;
+    bool isCutOutToolActive() const;
+    // Crop or cut-out: tools that edit the image and own every pointer press.
+    bool isImageEditToolActive() const;
+    void syncCutOutDraftUi();
+    // Enter, Apply and double-click for the cut-out band.
+    bool commitCutOutDraft();
+    bool handleCutOutDraftKey(QKeyEvent* event);
+    // An arrow key as a step in unrotated source pixels (1, or 10 with Shift).
+    // False for any other key or modifier.
+    bool arrowKeySourceStep(const QKeyEvent* event, QPoint* sourceStep) const;
     void undoCrop();
     void redoCrop();
     bool canUndoCrop();
@@ -586,9 +635,11 @@ private:
         bool croppedFlipV = false;
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
-        QPoint annotationOffsetDisplay;
+        QPointF annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
         bool isLayout = false;
+        // A strip cut-out: per-item shifts are kept in layoutAnnotationOffsets.
+        bool isStrip = false;
         qreal layoutViewScale = 1.0;
         std::uint64_t layoutHistoryCeiling = 0;
         QHash<QPair<quint64, quint64>, QPointF> layoutAnnotationOffsets;
@@ -596,6 +647,9 @@ private:
     QVector<CropUndoEntry> m_cropUndoStack;
     QVector<CropUndoEntry> m_cropRedoStack;
     static constexpr int kMaxCropUndoSize = 10;
+    // Arrow keys move the crop draft by this many source pixels (#358).
+    static constexpr int kCropNudgeStep = 1;
+    static constexpr int kCropNudgeLargeStep = 10;   // with Shift
     ToolId m_currentToolId = ToolId::Selection;
     QColor m_annotationColor;
     int m_annotationWidth = 3;
@@ -617,6 +671,7 @@ private:
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;
     QPointer<SnapTray::QmlDialog> m_regionLayoutDialog;
+    SnapTray::ImageExportDialogController* m_imageExport = nullptr;   // child of this
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
     QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
@@ -638,6 +693,14 @@ private:
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(const BeautifySettings& settings);
+    void onBeautifyExport(const BeautifySettings& settings);
+    // Export dialog (#357): a smaller copy of the composed image. The pin,
+    // its annotations and its history entry are left as they are.
+    void exportImage();
+    void openImageExport(const QPixmap& composed);
+    SnapTray::ImageExportDialogController* imageExportController();
+    // Image or annotations changed: what an open Export dialog would write is out of date.
+    void closeStaleImageExport();
     // What the Beautify panel opens with: this pin's settings, else the
     // global last-used ones.
     BeautifySettings beautifyPanelSettings() const;
