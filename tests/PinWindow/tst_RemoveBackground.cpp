@@ -2,6 +2,7 @@
 
 #include <QImage>
 #include <QMenu>
+#include <QPainter>
 #include <QSemaphore>
 
 #include <atomic>
@@ -102,7 +103,7 @@ private slots:
     void staleResultIsDropped();
     void strokeBeingDrawnHoldsTheResult();
     void autoBlurStartedMeanwhileHoldsTheResult();
-    void mergedPinKeepsRegionsAndExportSize();
+    void mergedPinFlattensAndKeepsExportSize();
     void escapeCancelsWithoutClosing();
     void closingWhileRunningIsSafe();
     void refusedDuringLiveUpdateAndAutoBlur();
@@ -155,9 +156,9 @@ void TestPinWindowRemoveBackground::appliesAsOneUndoStep()
             }
         }
     }
-    // Layout data is cut the same way, never left with the old background.
-    QVERIFY(window.m_hasMultiRegionData);
-    QCOMPARE(window.m_storedRegions.size(), 1);
+    // Layout data holds the old background, so it is dropped.
+    QVERIFY(!window.m_hasMultiRegionData);
+    QVERIFY(window.m_storedRegions.isEmpty());
     QCOMPARE(window.m_cropUndoStack.size(), 1);
     QVERIFY(window.m_toolbarVisible);
 
@@ -318,45 +319,63 @@ void TestPinWindowRemoveBackground::autoBlurStartedMeanwhileHoldsTheResult()
     window.m_autoBlurInProgress = false;
 }
 
-void TestPinWindowRemoveBackground::mergedPinKeepsRegionsAndExportSize()
+void TestPinWindowRemoveBackground::mergedPinFlattensAndKeepsExportSize()
 {
-    const QPixmap source = patternPixmap(240, 120);
+    // Two overlapping regions: blue covers the right part of red. Cutting
+    // each region and recomposing them would let red show through blue
+    // where the coverage is partial, so the pin is flattened instead.
+    QImage red(160, 120, QImage::Format_ARGB32_Premultiplied);
+    red.fill(Qt::red);
+    QImage blue(160, 120, QImage::Format_ARGB32_Premultiplied);
+    blue.fill(Qt::blue);
     QVector<LayoutRegion> regions(2);
-    for (int i = 0; i < 2; ++i) {
-        regions[i].rect = QRect(i * 120, 0, 120, 120);
-        regions[i].originalRect = regions[i].rect;
-        regions[i].image = source.toImage().copy(regions[i].rect);
-        regions[i].index = i + 1;
+    regions[0].rect = QRect(0, 0, 160, 120);
+    regions[0].image = red;
+    regions[0].index = 1;
+    regions[1].rect = QRect(80, 0, 160, 120);
+    regions[1].image = blue;
+    regions[1].index = 2;
+    for (LayoutRegion& region : regions) {
+        region.originalRect = region.rect;
     }
+    QPixmap source(240, 120);
+    source.fill(Qt::blue);
+    {
+        QPainter painter(&source);
+        painter.fillRect(QRect(0, 0, 80, 120), Qt::red);
+    }
+
     PinWindow window(source, QPoint(0, 0), nullptr, false);
     window.setMultiRegionData(regions);
     window.setZoomLevel(0.5);
     window.m_foregroundMaskProvider = halfMask;
     const QSize exportBefore = window.getExportPixmapWithAnnotations().size();
+    QCOMPARE(exportBefore, QSize(240, 120));
 
     window.removeBackground();
     QTRY_VERIFY(!window.m_backgroundRemovalInProgress);
     QCOMPARE(window.m_cropUndoStack.size(), 1);
-    // A merged pin still exports at native resolution...
-    QVERIFY(window.m_hasMultiRegionData);
-    QCOMPARE(window.getExportPixmapWithAnnotations().size(), exportBefore);
-    // ...and its regions carry the cut: the subject half is kept, the
-    // background half has no pixels left for Arrange to bring back.
-    QCOMPARE(window.m_storedRegions.size(), 2);
-    const QImage left = argb(window.m_storedRegions[0].image);
-    const QImage right = argb(window.m_storedRegions[1].image);
-    QCOMPARE(left, argb(regions[0].image));
-    for (int y = 0; y < right.height(); y += 9) {
-        for (int x = 0; x < right.width(); x += 7) {
-            QCOMPARE(qAlpha(right.pixel(x, y)), 0);
-        }
-    }
+    // No region copy of the old pixels is kept, and none is cut on the GUI
+    // thread; Arrange is unavailable until the step is undone...
+    QVERIFY(!window.m_hasMultiRegionData);
+    QVERIFY(window.m_storedRegions.isEmpty());
+    window.enterRegionLayoutMode();
+    QVERIFY(!window.isRegionLayoutMode());
+    // ...but Save and Copy still use the native resolution, and they show
+    // exactly the cut composed image.
+    const QImage cut = argb(window.getExportPixmapWithAnnotations().toImage());
+    QCOMPARE(cut.size(), exportBefore);
+    QCOMPARE(cut.pixel(40, 60), qRgba(255, 0, 0, 255));
+    QCOMPARE(cut.pixel(100, 60), qRgba(0, 0, 255, 255));
+    QCOMPARE(qAlpha(cut.pixel(200, 60)), 0);
 
     window.handleToolbarUndo();
-    QCOMPARE(argb(window.m_storedRegions[1].image), argb(regions[1].image));
+    QVERIFY(window.m_hasMultiRegionData);
+    QCOMPARE(window.m_storedRegions.size(), 2);
     QCOMPARE(window.getExportPixmapWithAnnotations().size(), exportBefore);
     window.handleToolbarRedo();
-    QCOMPARE(argb(window.m_storedRegions[1].image), right);
+    QVERIFY(!window.m_hasMultiRegionData);
+    QCOMPARE(argb(window.getExportPixmapWithAnnotations().toImage()), cut);
 }
 
 void TestPinWindowRemoveBackground::escapeCancelsWithoutClosing()

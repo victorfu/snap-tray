@@ -70,7 +70,6 @@ private slots:
     void applyMask_NoSubjectAndNothingRemovedAreNotResults();
     void applyMask_RejectsMismatchedMask();
     void applyMask_RoundedBackIsNothingRemoved();
-    void applyCoverage_AlwaysGivesImageWithMetadata();
     void validateSize_Limit();
     void run_PassesProviderStatusThrough();
     void runner_DeliversOnGuiThreadOneAtATime();
@@ -174,24 +173,6 @@ void TestForegroundCutout::applyMask_RoundedBackIsNothingRemoved()
     const Result result = Cutout::applyMask(source, maskImage(source.size(), 254));
     QCOMPARE(result.status, Status::NothingRemoved);
     QVERIFY(result.image.isNull());
-}
-
-void TestForegroundCutout::applyCoverage_AlwaysGivesImageWithMetadata()
-{
-    QImage source = opaqueImage(10, 10);
-    source.setDevicePixelRatio(2.0);
-    source.setText(QStringLiteral("SnapTraySourceLogicalSize"), QStringLiteral("5x5"));
-    const QImage none = Cutout::applyCoverage(source, maskImage(source.size(), 0));
-    QVERIFY(!none.isNull());
-    QCOMPARE(none.size(), source.size());
-    QCOMPARE(none.devicePixelRatio(), 2.0);
-    QCOMPARE(none.text(QStringLiteral("SnapTraySourceLogicalSize")), QStringLiteral("5x5"));
-    QCOMPARE(qAlpha(none.pixel(3, 3)), 0);
-    QVERIFY(!Cutout::applyCoverage(source, maskImage(source.size(), 255)).isNull());
-    QVERIFY(Cutout::applyCoverage(source, maskImage(QSize(9, 10), 255)).isNull());
-    // A successful applyMask hands its mask back for the regions.
-    const Result result = Cutout::applyMask(source, halfMask(source.size()));
-    QCOMPARE(result.mask.size(), source.size());
 }
 
 void TestForegroundCutout::validateSize_Limit()

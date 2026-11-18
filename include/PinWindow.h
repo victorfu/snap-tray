@@ -262,7 +262,7 @@ private:
                                      qint64 sourceCacheKey);
     // Why the image cannot be replaced right now, or an empty string.
     QString backgroundRemovalBlocker() const;
-    bool applyForegroundCutout(const QImage& image, const QImage& mask);
+    bool applyForegroundCutout(const QImage& image);
     // While an earlier save, Beautify save or Beautify copy of this pin is
     // still running, tells the user and returns true; otherwise false.
     bool rejectIfExportInProgress();
@@ -650,6 +650,7 @@ private:
         bool flipV;
         QVector<LayoutRegion> storedRegions;
         bool hasMultiRegionData = false;
+        bool nativeResolutionExport = false;
         QPixmap croppedPixmap;
         QSize croppedContentLogicalSize;
         QRectF croppedSourceSampleRect;
@@ -658,6 +659,7 @@ private:
         bool croppedFlipV = false;
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
+        bool croppedNativeResolutionExport = false;
         QPointF annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
         bool isLayout = false;
@@ -697,6 +699,10 @@ private:
     SnapTray::ImageExportDialogController* m_imageExport = nullptr;   // child of this
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
+    // Save and Copy use the image's own resolution instead of the zoomed
+    // window size. Set for a merged pin and kept when Remove Background
+    // drops its regions; a crop or strip clears it with the regions.
+    bool m_nativeResolutionExport = false;
     QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
     QPoint m_regionLayoutOriginalWindowPos;
     bool m_hasRegionLayoutOriginalWindowPos = false;

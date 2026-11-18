@@ -1199,7 +1199,7 @@ void PinWindow::updateSize(bool liveFrame)
 QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects, bool nativeResolution) const
 {
     const QPixmap scaledPixmapSource =
-        buildDisplayPixmap(nativeResolution || m_hasMultiRegionData
+        buildDisplayPixmap(nativeResolution || m_nativeResolutionExport
             ? transformedContentLogicalSize() : size(), Qt::SmoothTransformation);
     QPixmap scaledPixmap = scaledPixmapSource;
 
@@ -1244,7 +1244,7 @@ void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logical
             pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
         painter.setTransform(transform, true);
     }
-    if (nativeResolution || m_hasMultiRegionData) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
+    if (nativeResolution || m_nativeResolutionExport) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
     m_annotationLayer->draw(painter);
     painter.restore();
 }
@@ -2146,14 +2146,14 @@ void PinWindow::onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Re
         m_toast->showToast(SnapTray::QmlToast::Level::Error, blocker);
         return;
     }
-    if (!applyForegroundCutout(result.image, result.mask)) {
+    if (!applyForegroundCutout(result.image)) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Unable to remove the background"));
     }
 }
 
-bool PinWindow::applyForegroundCutout(const QImage& image, const QImage& mask)
+bool PinWindow::applyForegroundCutout(const QImage& image)
 {
-    if (image.isNull() || image.size() != m_originalPixmap.size() || mask.size() != image.size()) {
+    if (image.isNull() || image.size() != m_originalPixmap.size()) {
         qWarning() << "PinWindow::applyForegroundCutout: result does not match the image."
                    << "result:" << image.size() << "source:" << m_originalPixmap.size();
         return false;
@@ -2162,31 +2162,7 @@ bool PinWindow::applyForegroundCutout(const QImage& image, const QImage& mask)
     if (newPixmap.isNull()) {
         return false;
     }
-    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
-        ? m_originalPixmap.devicePixelRatio() : 1.0;
-    newPixmap.setDevicePixelRatio(dpr);
-
-    // A merged pin keeps copies of its regions' pixels for Arrange and for
-    // native-resolution export. Cut them the same way instead of dropping
-    // them, so neither the old background nor the export size comes back.
-    QVector<LayoutRegion> cutRegions = m_storedRegions;
-    for (LayoutRegion& region : cutRegions) {
-        const QRect deviceRect = QRectF(region.rect.x() * dpr, region.rect.y() * dpr,
-                                        region.rect.width() * dpr, region.rect.height() * dpr)
-                                     .toAlignedRect()
-                                     .intersected(mask.rect());
-        if (region.image.isNull() || deviceRect.isEmpty()) {
-            qWarning() << "PinWindow::applyForegroundCutout: region outside the image" << region.rect;
-            return false;
-        }
-        const QImage regionMask = mask.copy(deviceRect)
-            .scaled(region.image.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
-            .convertToFormat(QImage::Format_Grayscale8);
-        region.image = SnapTray::ForegroundCutout::applyCoverage(region.image, regionMask);
-        if (region.image.isNull()) {
-            return false;
-        }
-    }
+    newPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
 
     // The undo toolbar is where this step is taken back.
     if (!m_toolbar) {
@@ -2203,9 +2179,15 @@ bool PinWindow::applyForegroundCutout(const QImage& image, const QImage& mask)
     entry.flipV = m_flipVertical;
     entry.storedRegions = m_storedRegions;
     entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
 
     m_originalPixmap = newPixmap;
-    m_storedRegions = std::move(cutRegions);
+    // A merged pin's regions hold copies of the old pixels, background
+    // included, and recomposing overlapping regions cannot reproduce a cut
+    // of the composed image. Drop them, as crop does, so Arrange is gone
+    // until this step is undone; the export keeps its native resolution.
+    m_storedRegions.clear();
+    m_hasMultiRegionData = false;
 
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = entry.contentLogicalSize;
@@ -2215,6 +2197,7 @@ bool PinWindow::applyForegroundCutout(const QImage& image, const QImage& mask)
     entry.croppedFlipV = m_flipVertical;
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
 
     if (m_annotationLayer) {
         m_annotationLayer->endModifyCoalescing();
@@ -5092,6 +5075,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     entry.flipV = m_flipVertical;
     entry.storedRegions = m_storedRegions;
     entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
 
     const int signedLength =
         request.operation == ImageStrip::Operation::Remove ? -request.length : request.length;
@@ -5115,6 +5099,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     // Region layout metadata describes the old pixel grid.
     m_storedRegions.clear();
     m_hasMultiRegionData = false;
+    m_nativeResolutionExport = false;
 
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = baseContentLogicalSize();
@@ -5124,6 +5109,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     entry.croppedFlipV = m_flipVertical;
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
 
     if (m_annotationLayer) {
         m_annotationLayer->endModifyCoalescing();
@@ -5352,6 +5338,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     entry.flipV = m_flipVertical;
     entry.storedRegions = m_storedRegions;
     entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
     entry.annotationOffsetDisplay = annotationOffsetDisplay;
 
     // Apply the cropped pixmap
@@ -5364,6 +5351,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     // metadata no longer matches the image.
     m_storedRegions.clear();
     m_hasMultiRegionData = false;
+    m_nativeResolutionExport = false;
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = baseContentLogicalSize();
     entry.croppedSourceSampleRect = sourceSampleRect();
@@ -5372,6 +5360,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     entry.croppedFlipV = m_flipVertical;
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
 
     // Invalidate transform cache
     m_cachedRotation = -1;
@@ -5566,6 +5555,7 @@ void PinWindow::undoCrop()
     m_flipVertical = entry.flipV;
     m_storedRegions = entry.storedRegions;
     m_hasMultiRegionData = entry.hasMultiRegionData;
+    m_nativeResolutionExport = entry.nativeResolutionExport;
 
     if (m_annotationLayer) {
         if (entry.isLayout || entry.isStrip) {
@@ -5606,6 +5596,7 @@ void PinWindow::redoCrop()
     m_flipVertical = entry.croppedFlipV;
     m_storedRegions = entry.croppedStoredRegions;
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
+    m_nativeResolutionExport = entry.croppedNativeResolutionExport;
 
     if (m_annotationLayer) {
         if (entry.isStrip) {
@@ -7506,6 +7497,7 @@ void PinWindow::setMultiRegionData(const QVector<LayoutRegion>& regions)
 {
     m_storedRegions = regions;
     m_hasMultiRegionData = !regions.isEmpty() && regions.size() <= LayoutModeConstants::kMaxRegionCount;
+    m_nativeResolutionExport = m_hasMultiRegionData;
     if (m_hasMultiRegionData) {
         setContentLogicalSize(regionBoundsSize(regions));
         resetSourceSampleRect();
@@ -7635,6 +7627,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         entry.flipV = m_flipVertical;
         entry.storedRegions = m_storedRegions;
         entry.hasMultiRegionData = m_hasMultiRegionData;
+        entry.nativeResolutionExport = m_nativeResolutionExport;
         entry.layoutViewScale = m_zoomLevel;
 
         m_storedRegions = std::move(committedRegions);
@@ -7650,6 +7643,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         entry.croppedFlipV = m_flipVertical;
         entry.croppedStoredRegions = m_storedRegions;
         entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+        entry.croppedNativeResolutionExport = m_nativeResolutionExport;
         if (m_annotationLayer) {
             m_annotationLayer->endModifyCoalescing();
             entry.annotationHistoryState = m_annotationLayer->historyStateToken();

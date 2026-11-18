@@ -138,7 +138,7 @@ Applying is one undo step that restores the image, its size, the annotations and
 
 - A spinner shows while it runs; `Esc` cancels it and leaves the pin as it was. If the image changes in the meantime (a crop, an undo, Live Update), the result is discarded.
 - The canvas keeps its size, so nothing moves. Annotations stay editable on top of the image. A mosaic over the removed background has no original pixels left to sample, so nothing it hid comes back.
-- The result replaces the image as one undo step on the annotation toolbar, which opens so that you can undo it. On a merged pin each region is cut the same way, so Arrange and full-resolution export keep working and never bring the old background back.
+- The result replaces the image as one undo step on the annotation toolbar, which opens so that you can undo it. On a merged pin, Save and Copy keep the full resolution, but Adjust Region Layout is unavailable until you undo the removal, because the regions still hold the old background.
 - When no subject is found, or the whole image is the subject, a message says so and nothing changes.
 - Save, copy and PNG export keep the transparency; JPEG export fills it with the export background as usual.
 

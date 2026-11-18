@@ -85,15 +85,9 @@ Result applyMask(const QImage& source, const QImage& mask)
         result.status = Status::NothingRemoved;
     } else {
         result.image = std::move(coverage.image);
-        result.mask = mask;
         result.status = Status::Success;
     }
     return result;
-}
-
-QImage applyCoverage(const QImage& source, const QImage& mask)
-{
-    return multiplyAlpha(source, mask).image;
 }
 
 Result run(const QImage& source, const MaskProvider& provider)
