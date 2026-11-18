@@ -54,6 +54,7 @@ class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
 class QmlDialog;
+class ImageExportDialogController;
 struct CaptureSessionWriteRequest;
 class ToolbarTooltipController;
 }
@@ -606,6 +607,7 @@ private:
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;
     QPointer<SnapTray::QmlDialog> m_regionLayoutDialog;
+    SnapTray::ImageExportDialogController* m_imageExport = nullptr;   // child of this
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
     QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
@@ -627,6 +629,14 @@ private:
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(const BeautifySettings& settings);
+    void onBeautifyExport(const BeautifySettings& settings);
+    // Export dialog (#357): a smaller copy of the composed image. The pin,
+    // its annotations and its history entry are left as they are.
+    void exportImage();
+    void openImageExport(const QPixmap& composed);
+    SnapTray::ImageExportDialogController* imageExportController();
+    // Image or annotations changed: what an open Export dialog would write is out of date.
+    void closeStaleImageExport();
     // What the Beautify panel opens with: this pin's settings, else the
     // global last-used ones.
     BeautifySettings beautifyPanelSettings() const;

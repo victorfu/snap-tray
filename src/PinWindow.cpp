@@ -47,6 +47,7 @@
 #include "tools/ToolRepaintHelper.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/handlers/CropToolHandler.h"
+#include "qml/ImageExportDialogController.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -1162,6 +1163,8 @@ int PinWindow::effectiveCornerRadius(const QSize& contentSize) const
 
 void PinWindow::updateSize(bool liveFrame)
 {
+    // The Export dialog holds a snapshot of the image as it was composed.
+    closeStaleImageExport();
     invalidateAutoBlurRequest();
     const QSize transformedLogicalSize = transformedContentLogicalSize();
     QSize newLogicalSize = (transformedLogicalSize * m_zoomLevel).expandedTo(QSize(1, 1));
@@ -1374,6 +1377,10 @@ void PinWindow::createContextMenu()
     saveAction->setObjectName(QStringLiteral("pinMenuSave"));
     saveAction->setShortcut(QKeySequence::Save);
     connect(saveAction, &QAction::triggered, this, &PinWindow::saveToFile);
+
+    QAction* exportAction = m_contextMenu->addAction(tr("Export As..."));
+    exportAction->setObjectName(QStringLiteral("pinMenuExport"));
+    connect(exportAction, &QAction::triggered, this, &PinWindow::exportImage);
 
     // Watermark submenu
     QMenu* watermarkMenu = m_contextMenu->addMenu(tr("Watermark"));
@@ -1841,6 +1848,61 @@ void PinWindow::saveToFile()
             emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
         }
     }
+}
+
+void PinWindow::exportImage()
+{
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+    openImageExport(getExportPixmapWithAnnotations());
+}
+
+void PinWindow::openImageExport(const QPixmap& composed)
+{
+    if (composed.isNull()) {
+        emit saveFailed(QString(), tr("No image available to save"));
+        return;
+    }
+
+    QScreen* exportScreen = m_sourceScreen.data();
+    if (!exportScreen) {
+        exportScreen = screen();
+    }
+    const int monitorIndex = exportScreen ? QGuiApplication::screens().indexOf(exportScreen) : -1;
+
+    SnapTray::ImageExportDialogController::Request request;
+    // The same composed, color-tagged pixels Save writes; the dialog only
+    // derives a copy from them.
+    request.image = tagImageWithScreenColorSpace(composed.toImage(), exportScreen);
+    request.nameContext.type = QStringLiteral("Screenshot");
+    request.nameContext.prefix = FileSettingsManager::instance().loadFilenamePrefix();
+    request.nameContext.monitor =
+        monitorIndex >= 0 ? QString::number(monitorIndex) : QStringLiteral("unknown");
+    request.nameContext.regionIndex = m_storedRegions.isEmpty() ? -1 : m_storedRegions.first().index;
+    request.parentWidget = this;
+    request.screen = screen();
+
+    imageExportController()->open(request);
+}
+
+void PinWindow::closeStaleImageExport()
+{
+    if (m_imageExport && m_imageExport->isOpen()) {
+        m_imageExport->close();
+    }
+}
+
+SnapTray::ImageExportDialogController* PinWindow::imageExportController()
+{
+    if (!m_imageExport) {
+        m_imageExport = new SnapTray::ImageExportDialogController(this);
+        // Announced like a save. No pixmap goes along: the exported file is a
+        // derived copy, not the image this pin holds.
+        connect(m_imageExport, &SnapTray::ImageExportDialogController::exported, this,
+                [this](const QString& filePath) { emit saveCompleted(QPixmap(), filePath); });
+    }
+    return m_imageExport;
 }
 
 void PinWindow::copyToClipboard()
@@ -3717,6 +3779,7 @@ void PinWindow::initializeAnnotationComponents()
             if (m_hasVisibleMosaicAnnotations && (m_mosaicSourceDirty || !hadMosaics)) {
                 refreshMosaicSources();
             }
+            closeStaleImageExport();
             resetAnnotationInteractionTracking();
             // Undo/Redo turn off while a drag is in progress and back on at
             // its end (#237). Only on that change: refreshing on every edit
@@ -6625,6 +6688,8 @@ void PinWindow::showBeautifyPanel()
                 this, &PinWindow::onBeautifyCopy);
         connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::saveRequested,
                 this, &PinWindow::onBeautifySave);
+        connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::exportRequested,
+                this, &PinWindow::onBeautifyExport);
         connect(m_beautifyPanel.get(), &SnapTray::QmlBeautifyPanel::closeRequested,
                 this, [this]() {
                     if (m_toolbar) {
@@ -6761,6 +6826,27 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
                 success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
                 success ? tr("Beautified image copied") : tr("Copy failed"));
         });
+}
+
+void PinWindow::onBeautifyExport(const BeautifySettings& settings)
+{
+    if (!ensureAutoBlurReadyForExport()) {
+        return;
+    }
+
+    m_beautifySettings = settings;
+    BeautifySettingsManager::instance().saveSettings(settings);
+    const QPixmap source = getExportPixmapWithAnnotations();
+    if (source.isNull()) {
+        emit saveFailed(QString(), tr("No image available to save"));
+        return;
+    }
+    const QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
+    if (result.isNull()) {
+        emit saveFailed(QString(), tr("Beautify rendering failed"));
+        return;
+    }
+    openImageExport(result);
 }
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)

@@ -281,7 +281,7 @@ void tst_LibraryWindow::screenshotActions()
     QCOMPARE(library()->kindAt(root()->property("selectedIndex").toInt()), int(LibraryModel::Screenshot));
     QCOMPARE(item("librarySelectionLabel")->property("text").toString(), QStringLiteral("Screenshot selected"));
     for (const char* name : {"libraryAction_edit", "libraryAction_pin", "libraryAction_copy", "libraryAction_save",
-                             "libraryAction_delete"})
+                             "libraryAction_export", "libraryAction_delete"})
         QVERIFY2(item(name)->isVisible(), name);
     for (const char* name : {"libraryAction_open", "libraryAction_showSaved", "libraryAction_showFolder",
                              "libraryAction_deleteProject"})

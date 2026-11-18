@@ -7,6 +7,8 @@
 #include "PlatformFeatures.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "qml/HistoryModel.h"
+#include "qml/ImageExportDialogController.h"
+#include "qml/QmlToast.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
@@ -192,10 +194,59 @@ void HistoryBackend::saveAs(int index)
     emit closeRequested();
 }
 
+void HistoryBackend::exportAs(int index)
+{
+    if (!m_model) {
+        return;
+    }
+
+    const HistoryEntry entry = m_model->entryAt(index);
+    QPixmap pixmap;
+    if (!loadPixmap(entry, &pixmap)) {
+        showError(historyText("Save Failed"),
+                  historyText("Failed to load history image."));
+        return;
+    }
+
+    ImageExportDialogController::Request request;
+    request.image = tagImageWithScreenColorSpace(pixmap.toImage(), QGuiApplication::primaryScreen());
+    request.nameContext.timestamp =
+        entry.createdAt.isValid() ? entry.createdAt : QDateTime::currentDateTime();
+    request.nameContext.type = QStringLiteral("History");
+    request.nameContext.prefix = FileSettingsManager::instance().loadFilenamePrefix();
+    request.nameContext.monitor = QStringLiteral("history");
+    request.parentWindow = m_hostWindow.data();
+    request.screen = m_hostWindow ? m_hostWindow->screen() : nullptr;
+
+    if (!m_imageExport) {
+        m_imageExport = new ImageExportDialogController(this);
+        connect(m_imageExport, &ImageExportDialogController::exported, this,
+                [](const QString& filePath) {
+                    QmlToast::screenToast().showToast(
+                        QmlToast::Level::Success,
+                        QCoreApplication::translate("MainApplication", "Screenshot Saved"),
+                        QCoreApplication::translate("MainApplication", "Saved to: %1").arg(filePath));
+                });
+        // The dialog belongs to the Library: it goes when the Library does.
+        if (m_hostWindow) {
+            connect(m_hostWindow.data(), &QWindow::visibleChanged, m_imageExport,
+                    [this](bool visible) {
+                        if (!visible && m_imageExport) m_imageExport->close();
+                    });
+        }
+    }
+    m_imageExport->open(request);
+}
+
 void HistoryBackend::deleteEntry(int index)
 {
     if (!m_model) {
         return;
+    }
+
+    // An Export dialog may be showing this very item.
+    if (m_imageExport) {
+        m_imageExport->close();
     }
 
     const HistoryEntry entry = m_model->entryAt(index);

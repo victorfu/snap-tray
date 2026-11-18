@@ -205,6 +205,12 @@ target_sources(Qml_DialogModality PRIVATE ${CMAKE_SOURCE_DIR}/resources/resource
 add_test(NAME Qml_DialogModality COMMAND Qml_DialogModality)
 set_tests_properties(Qml_DialogModality PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_ImageExportDialog Qml/tst_ImageExportDialog.cpp)
+target_link_libraries(Qml_ImageExportDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_ImageExportDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_ImageExportDialog COMMAND Qml_ImageExportDialog)
+set_tests_properties(Qml_ImageExportDialog PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_PinLayoutDialog Qml/tst_PinLayoutDialog.cpp)
 target_link_libraries(Qml_PinLayoutDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_PinLayoutDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -1332,6 +1338,11 @@ add_executable(Utils_ImageSaveUtils Utils/tst_ImageSaveUtils.cpp)
 target_link_libraries(Utils_ImageSaveUtils PRIVATE snaptray_core Qt6::Test)
 add_test(NAME Utils_ImageSaveUtils COMMAND Utils_ImageSaveUtils)
 set_tests_properties(Utils_ImageSaveUtils PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Utils_ImageExportOptions Utils/tst_ImageExportOptions.cpp)
+target_link_libraries(Utils_ImageExportOptions PRIVATE snaptray_core Qt6::Test)
+add_test(NAME Utils_ImageExportOptions COMMAND Utils_ImageExportOptions)
+set_tests_properties(Utils_ImageExportOptions PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Utils_UniqueImageSaveProcess Utils/UniqueImageSaveProcess.cpp)
 target_link_libraries(Utils_UniqueImageSaveProcess PRIVATE snaptray_core)

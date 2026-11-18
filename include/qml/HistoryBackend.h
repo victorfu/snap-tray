@@ -30,6 +30,9 @@ public:
     Q_INVOKABLE void pin(int index);
     Q_INVOKABLE void copy(int index);
     Q_INVOKABLE void saveAs(int index);
+    // Opens the Export dialog (size, format, quality) for a history image.
+    // The stored item is not changed.
+    Q_INVOKABLE void exportAs(int index);
     Q_INVOKABLE void deleteEntry(int index);
     Q_INVOKABLE void openHistoryFolder();
 
@@ -45,6 +48,7 @@ private:
     PinWindowManager* m_pinWindowManager = nullptr;
     std::function<bool(const QString&)> m_startReplay;
     QPointer<QWindow> m_hostWindow;
+    class ImageExportDialogController* m_imageExport = nullptr;   // child of this
 };
 
 } // namespace SnapTray
