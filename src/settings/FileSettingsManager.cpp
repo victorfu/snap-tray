@@ -172,3 +172,30 @@ void FileSettingsManager::rememberManualScreenshotSaveDirectory(const QString& s
     auto settings = SnapTray::getSettings();
     settings.setValue(kSettingsKeyLastScreenshotSaveDirectory, absoluteParentPath);
 }
+
+ImageExportOptions FileSettingsManager::loadImageExportOptions() const
+{
+    auto settings = SnapTray::getSettings();
+    const ImageExportOptions defaults;
+    ImageExportOptions options;
+    options.resize = static_cast<ImageExportOptions::Resize>(
+        settings.value(kSettingsKeyImageExportResize, static_cast<int>(defaults.resize)).toInt());
+    options.percent = settings.value(kSettingsKeyImageExportPercent, defaults.percent).toInt();
+    options.longEdge = settings.value(kSettingsKeyImageExportLongEdge, defaults.longEdge).toInt();
+    options.format = static_cast<ImageExportOptions::Format>(
+        settings.value(kSettingsKeyImageExportFormat, static_cast<int>(defaults.format)).toInt());
+    options.jpegQuality =
+        settings.value(kSettingsKeyImageExportJpegQuality, defaults.jpegQuality).toInt();
+    return options.normalized();
+}
+
+void FileSettingsManager::saveImageExportOptions(const ImageExportOptions& options)
+{
+    const ImageExportOptions normalized = options.normalized();
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyImageExportResize, static_cast<int>(normalized.resize));
+    settings.setValue(kSettingsKeyImageExportPercent, normalized.percent);
+    settings.setValue(kSettingsKeyImageExportLongEdge, normalized.longEdge);
+    settings.setValue(kSettingsKeyImageExportFormat, static_cast<int>(normalized.format));
+    settings.setValue(kSettingsKeyImageExportJpegQuality, normalized.jpegQuality);
+}

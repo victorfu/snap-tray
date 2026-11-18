@@ -354,6 +354,7 @@ add_library(snaptray_core STATIC
     src/utils/DialogThemeUtils.cpp
     src/utils/FilenameTemplateEngine.cpp
     src/utils/ImageSaveUtils.cpp
+    src/utils/ImageExportOptions.cpp
     src/utils/NativeFileDialogUtils.cpp
     src/utils/ScreenCaptureRegionUtils.cpp
     src/utils/VideoCropGeometry.cpp
@@ -1181,6 +1182,7 @@ set_source_files_properties(src/qml/dialogs/AppImageUpdateDialog.qml PROPERTIES 
 set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/UpdateDialog.qml)
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/PinLayoutDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinLayoutDialog.qml)
+set_source_files_properties(src/qml/dialogs/ImageExportDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ImageExportDialog.qml)
 set_source_files_properties(src/qml/recording/RecordingPrompterView.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPrompterView.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
 set_source_files_properties(src/qml/dialogs/RecordingRecoveryDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RecordingRecoveryDialog.qml)
@@ -1292,6 +1294,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPrompterView.qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/PinLayoutDialog.qml
+        src/qml/dialogs/ImageExportDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
         src/qml/toolbar/ToolbarOverflowMenu.qml
@@ -1386,6 +1389,10 @@ qt_add_qml_module(snaptray_qml
         include/qml/RecordingLibraryViewModel.h
         src/qml/OCRResultViewModel.cpp
         include/qml/OCRResultViewModel.h
+        src/qml/ImageExportViewModel.cpp
+        include/qml/ImageExportViewModel.h
+        src/qml/ImageExportDialogController.cpp
+        include/qml/ImageExportDialogController.h
         src/qml/UpdateDialogViewModel.cpp
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp

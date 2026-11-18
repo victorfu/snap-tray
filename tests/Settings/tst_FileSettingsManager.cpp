@@ -30,6 +30,8 @@ private slots:
     void testRememberManualScreenshotSaveDirectory_StoresAbsoluteParent();
     void testRememberManualScreenshotSaveDirectory_IgnoresEmptyAndInvalidParent();
     void testDisablingLastScreenshotSaveLocation_PreservesRememberedDirectory();
+    void testImageExportOptions_DefaultsAndRoundtrip();
+    void testImageExportOptions_NormalizesStoredValues();
 
 private:
     struct SavedSetting
@@ -66,6 +68,11 @@ void tst_FileSettingsManager::snapshotFileSettings()
         QStringLiteral("files/screenshotPath"),
         QStringLiteral("files/useLastScreenshotSaveLocation"),
         QStringLiteral("files/lastScreenshotSaveDirectory"),
+        QStringLiteral("files/imageExport/resize"),
+        QStringLiteral("files/imageExport/percent"),
+        QStringLiteral("files/imageExport/longEdge"),
+        QStringLiteral("files/imageExport/format"),
+        QStringLiteral("files/imageExport/jpegQuality"),
     };
 
     auto settings = SnapTray::getSettings();
@@ -99,6 +106,7 @@ void tst_FileSettingsManager::clearFileSettings()
     settings.remove("files/screenshotPath");
     settings.remove("files/useLastScreenshotSaveLocation");
     settings.remove("files/lastScreenshotSaveDirectory");
+    settings.remove("files/imageExport");
     settings.sync();
 }
 
@@ -298,6 +306,42 @@ void tst_FileSettingsManager::testDisablingLastScreenshotSaveLocation_PreservesR
     QCOMPARE(manager.resolveManualScreenshotSaveDirectory(
                  manager.loadUseLastScreenshotSaveLocation()),
              QDir::cleanPath(QFileInfo(rememberedDirectory.path()).absoluteFilePath()));
+}
+
+void tst_FileSettingsManager::testImageExportOptions_DefaultsAndRoundtrip()
+{
+    auto& manager = FileSettingsManager::instance();
+    // Nothing stored: full size, lossless.
+    QCOMPARE(manager.loadImageExportOptions(), ImageExportOptions());
+    QCOMPARE(manager.loadImageExportOptions().resize, ImageExportOptions::Resize::Original);
+    QCOMPARE(manager.loadImageExportOptions().format, ImageExportOptions::Format::Png);
+
+    ImageExportOptions options;
+    options.resize = ImageExportOptions::Resize::LongEdge;
+    options.longEdge = 1600;
+    options.percent = 35;
+    options.format = ImageExportOptions::Format::Jpeg;
+    options.jpegQuality = 72;
+    manager.saveImageExportOptions(options);
+    QCOMPARE(manager.loadImageExportOptions(), options);
+}
+
+void tst_FileSettingsManager::testImageExportOptions_NormalizesStoredValues()
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue("files/imageExport/resize", 99);
+    settings.setValue("files/imageExport/format", "nonsense");
+    settings.setValue("files/imageExport/percent", 100000);
+    settings.setValue("files/imageExport/longEdge", -4);
+    settings.setValue("files/imageExport/jpegQuality", 1000);
+    settings.sync();
+
+    const ImageExportOptions options = FileSettingsManager::instance().loadImageExportOptions();
+    QCOMPARE(options.resize, ImageExportOptions::Resize::Original);
+    QCOMPARE(options.format, ImageExportOptions::Format::Png);
+    QCOMPARE(options.percent, ImageExportOptions::kMaxPercent);
+    QCOMPARE(options.longEdge, ImageExportOptions::kMinLongEdge);
+    QCOMPARE(options.jpegQuality, ImageExportOptions::kMaxJpegQuality);
 }
 
 QTEST_MAIN(tst_FileSettingsManager)

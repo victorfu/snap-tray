@@ -187,6 +187,8 @@ void QmlBeautifyPanel::ensureView()
             this, &QmlBeautifyPanel::copyRequested);
     connect(m_backend, &BeautifyPanelBackend::saveRequested,
             this, &QmlBeautifyPanel::saveRequested);
+    connect(m_backend, &BeautifyPanelBackend::exportRequested,
+            this, &QmlBeautifyPanel::exportRequested);
     connect(m_backend, &BeautifyPanelBackend::closeRequested,
             this, [this]() {
                 hide();

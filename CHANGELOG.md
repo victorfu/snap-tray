@@ -8,6 +8,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
+- Export a smaller copy of a still image from a pin, Beautify or the Library: keep the size, scale by percent or limit the long edge, choose PNG or JPEG with an adjustable quality, and see the real size of the file before saving. The original image and its edits stay at full resolution.
 - Cut Out tool for pinned images: remove a band across the image and join the rest, or insert a transparent band, horizontally or vertically, as one undoable step. Redactions keep covering the same pixels; an annotation crossing the band blocks the operation instead of being distorted.
 - Recording shapes and numbered steps, with editable timing, fades, and a choice of following the content or staying fixed on screen.
 - Imported music and narration clips with volume, looping, source offsets and fades, preserved in editable projects and recovery.

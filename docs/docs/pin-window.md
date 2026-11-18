@@ -60,7 +60,7 @@ The right-click menu (also **⋯** on the hover bar) is grouped by task:
 
 - Arrange (only while an annotation is selected): Bring Forward, Send Backward, Bring to Front, Send to Back
 - View: Show Toolbar, Show Border, Zoom (in/out, presets, Reset to 100%, smoothing), Opacity (up/down, Reset to 100%), Image processing (rotate, flip, crop)
-- Output: Copy, Save, Watermark, Info, Open History Folder
+- Output: Copy, Save, Export As, Watermark, Info, Open History Folder
 - Modes: Click-through, Live Update (start/stop, pause/resume, frame rate), Adjust Region Layout
 - Pins: Move to Screen, Merge Pins, Close All Pins
 - Close
@@ -84,6 +84,16 @@ With click-through on, clicks pass through the pin to the window below, and a **
 Choose **Manual** to restore the free layout you had before trying automatic arrangements in this editing session, then drag or resize on the canvas. **Cancel** restores the layout from before entering the editor. **Apply** commits one image undo step; open the annotation toolbar to Undo or Redo it. Source annotations and redactions are included in merged pixels, and merging waits for auto-blur. Annotations added to the merged pin retain the existing layout behavior: their centers follow their source region while their visual size stays fixed.
 
 Layouts support up to 20 images, 10,000 logical units per canvas dimension, and 64 megapixels of output. Invalid or oversized layouts are rejected before composition. Saved images and history continue using the existing output pipeline.
+
+### Export a smaller copy
+
+**Export As...** in the context menu, **Export...** in Beautify and **Export...** in the Library open the same dialog. It writes a derived file and leaves the pin, its annotations and the Library item at full resolution.
+
+- **Size**: Original size, Scale by percent, or Limit long edge. The aspect ratio is kept and the image is never enlarged. Sizes are pixels of the image, so a 1280-point-wide capture from a 2x display counts as 2560 px.
+- **Format**: PNG (lossless) or JPEG (lossy). **JPEG quality** appears only for JPEG; PNG has no quality setting to mislead you.
+- **File size** is the real size of the file that will be written, encoded in the background with the current settings. **Export...** is available once it is known, and the file saved is exactly the one measured.
+
+JPEG is lossy: a smaller JPEG is not an equivalent of the PNG, and it cannot keep transparent areas, which are filled with white. The dialog exports the image as it was when opened; changing the pin closes it. If saving fails the dialog stays open so you can try again. The last settings used for a successful export are remembered. Annotations and Beautify styling are composed at full resolution first and then scaled.
 
 ## Annotation in pin window
 

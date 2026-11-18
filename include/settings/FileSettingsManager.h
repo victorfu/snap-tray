@@ -3,6 +3,8 @@
 
 #include <QString>
 
+#include "utils/ImageExportOptions.h"
+
 /**
  * @brief Singleton class for managing file save settings.
  *
@@ -46,6 +48,11 @@ public:
     QString resolveManualScreenshotSaveDirectory(bool useLastSaveLocation) const;
     void rememberManualScreenshotSaveDirectory(const QString& savedFilePath);
 
+    // Still-image export options (#357): resize, format and JPEG quality as
+    // last used in the Export dialog. Stored values are normalized on load.
+    ImageExportOptions loadImageExportOptions() const;
+    void saveImageExportOptions(const ImageExportOptions& options);
+
     // Default values
     static QString defaultScreenshotPath();
     static QString defaultRecordingPath();
@@ -72,6 +79,11 @@ private:
         "files/useLastScreenshotSaveLocation";
     static constexpr const char* kSettingsKeyLastScreenshotSaveDirectory =
         "files/lastScreenshotSaveDirectory";
+    static constexpr const char* kSettingsKeyImageExportResize = "files/imageExport/resize";
+    static constexpr const char* kSettingsKeyImageExportPercent = "files/imageExport/percent";
+    static constexpr const char* kSettingsKeyImageExportLongEdge = "files/imageExport/longEdge";
+    static constexpr const char* kSettingsKeyImageExportFormat = "files/imageExport/format";
+    static constexpr const char* kSettingsKeyImageExportJpegQuality = "files/imageExport/jpegQuality";
 };
 
 #endif // FILESETTINGSMANAGER_H

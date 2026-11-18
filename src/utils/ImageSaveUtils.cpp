@@ -61,14 +61,28 @@ QString formatListForError()
 } // namespace
 
 ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUnique(
-    const QImage& image, const UniqueSaveSpec& spec, const QByteArray& explicitFormat)
+    const QImage& image, const UniqueSaveSpec& spec, const QByteArray& explicitFormat,
+    const EncodeOptions& encodeOptions)
 {
-    return saveImageUniqueWithHooks(image, spec, explicitFormat, {});
+    return saveImageUniqueWithHooks(image, spec, explicitFormat, {}, encodeOptions);
+}
+
+void ImageSaveUtils::applyEncodeOptions(QImageWriter& writer,
+                                        const QByteArray& format,
+                                        const EncodeOptions& options)
+{
+    // For PNG, Qt maps "quality" to the compression level, which changes
+    // speed and size but never pixels; leave it alone so the option only
+    // means what it says for lossy formats.
+    if (options.quality < 0 || format == "png") {
+        return;
+    }
+    writer.setQuality(qBound(0, options.quality, 100));
 }
 
 ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
     const QImage& image, const UniqueSaveSpec& spec, const QByteArray& explicitFormat,
-    const UniqueSaveHooks& hooks)
+    const UniqueSaveHooks& hooks, const EncodeOptions& encodeOptions)
 {
     UniqueSaveResult result;
     if (image.isNull()) {
@@ -110,6 +124,7 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
         }
         temporary.path = file.fileName();
         QImageWriter writer(&file, format);
+        applyEncodeOptions(writer, format, encodeOptions);
         if (!writer.write(image)) {
             setError(&result.error, QStringLiteral("write"), writer.errorString());
             return result;
@@ -154,7 +169,8 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
 bool ImageSaveUtils::saveImageAtomically(const QImage& image,
                                          const QString& filePath,
                                          const QByteArray& explicitFormat,
-                                         Error* error)
+                                         Error* error,
+                                         const EncodeOptions& encodeOptions)
 {
     if (image.isNull()) {
         setError(error, QStringLiteral("write"), QStringLiteral("Image is null"));
@@ -179,6 +195,7 @@ bool ImageSaveUtils::saveImageAtomically(const QImage& image,
     }
 
     QImageWriter writer(&saveFile, format);
+    applyEncodeOptions(writer, format, encodeOptions);
     if (!writer.write(image)) {
         saveFile.cancelWriting();
         const QString writeError = writer.errorString().trimmed();
@@ -196,6 +213,41 @@ bool ImageSaveUtils::saveImageAtomically(const QImage& image,
         return false;
     }
 
+    return true;
+}
+
+bool ImageSaveUtils::saveEncodedAtomically(const QByteArray& data,
+                                           const QString& filePath,
+                                           Error* error)
+{
+    if (data.isEmpty()) {
+        setError(error, QStringLiteral("write"), QStringLiteral("Image data is empty"));
+        return false;
+    }
+
+    QSaveFile saveFile(filePath);
+    // Same fallback as saveImageAtomically(): a writable file in a directory
+    // that refuses a temporary sibling is still overwritten.
+    saveFile.setDirectWriteFallback(true);
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        const QString saveError = saveFile.errorString().trimmed();
+        setError(error, QStringLiteral("open"),
+                 saveError.isEmpty() ? QStringLiteral("Failed to open output file") : saveError);
+        return false;
+    }
+    if (saveFile.write(data) != data.size()) {
+        const QString writeError = saveFile.errorString().trimmed();
+        saveFile.cancelWriting();
+        setError(error, QStringLiteral("write"),
+                 writeError.isEmpty() ? QStringLiteral("Failed to write image data") : writeError);
+        return false;
+    }
+    if (!saveFile.commit()) {
+        const QString commitError = saveFile.errorString().trimmed();
+        setError(error, QStringLiteral("commit"),
+                 commitError.isEmpty() ? QStringLiteral("Failed to commit output file") : commitError);
+        return false;
+    }
     return true;
 }
 

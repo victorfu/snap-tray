@@ -799,20 +799,28 @@ Item {
             spacing: 8
 
             SettingsButton {
-                width: Math.floor((parent.width - 16) / 3)
+                width: Math.floor((parent.width - 24) / 4)
                 text: qsTr("Copy")
                 onClicked: if (root.backend) root.backend.requestCopy()
             }
 
             SettingsButton {
-                width: Math.floor((parent.width - 16) / 3)
+                width: Math.floor((parent.width - 24) / 4)
                 text: qsTr("Save")
                 primary: true
                 onClicked: if (root.backend) root.backend.requestSave()
             }
 
+            // Size, format and JPEG quality for a smaller copy (#357).
             SettingsButton {
-                width: Math.floor((parent.width - 16) / 3)
+                objectName: "beautifyExportButton"
+                width: Math.floor((parent.width - 24) / 4)
+                text: qsTr("Export...")
+                onClicked: if (root.backend) root.backend.requestExport()
+            }
+
+            SettingsButton {
+                width: Math.floor((parent.width - 24) / 4)
                 text: qsTr("Close")
                 onClicked: if (root.backend) root.backend.requestClose()
             }

@@ -34,6 +34,11 @@ private slots:
     void testUnsupportedExtensionFails();
     void testOpenFailureReportsError();
     void testOverwriteExistingFile();
+    void testJpegQualityReachesEncoder();
+    void testQualityLeavesPngLossless();
+    void testUniqueSaveHonorsQuality();
+    void testSaveEncodedWritesExactBytes();
+    void testSaveEncodedFailureKeepsExistingFile();
     void testOverwriteWithReadOnlyDirectoryUsesFallback();
     void testSaveImageWithColorSpacePreservesProfile();
     void testUniqueConcurrentThreads();
@@ -329,6 +334,129 @@ void tst_ImageSaveUtils::testOverwriteExistingFile()
     QImage loaded(filePath);
     QVERIFY(!loaded.isNull());
     QCOMPARE(loaded.pixelColor(0, 0), QColor(0, 255, 0, 255));
+}
+
+namespace {
+
+QImage detailedImage()
+{
+    QImage image(320, 240, QImage::Format_RGB32);
+    for (int y = 0; y < image.height(); ++y) {
+        for (int x = 0; x < image.width(); ++x) {
+            image.setPixelColor(x, y, QColor((x * 7) % 256, (y * 5) % 256, ((x ^ y) * 3) % 256));
+        }
+    }
+    return image;
+}
+
+} // namespace
+
+// #357: the quality a caller asks for is the quality the JPEG is written with.
+void tst_ImageSaveUtils::testJpegQualityReachesEncoder()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QImage image = detailedImage();
+
+    qint64 previous = 0;
+    for (const int quality : {10, 60, 100}) {
+        const QString filePath = tempDir.filePath(QStringLiteral("q%1.jpg").arg(quality));
+        ImageSaveUtils::Error error;
+        QVERIFY2(ImageSaveUtils::saveImageAtomically(image, filePath, QByteArray(), &error, {quality}),
+                 qPrintable(error.message));
+        QCOMPARE(QImageReader(filePath).format(), QByteArray("jpeg"));
+        const qint64 size = QFileInfo(filePath).size();
+        QVERIFY2(size > previous, qPrintable(QStringLiteral("quality %1: %2 bytes").arg(quality).arg(size)));
+        previous = size;
+    }
+
+    // Without options the encoder default is used, as before.
+    const QString defaultPath = tempDir.filePath("default.jpg");
+    const QString explicitDefaultPath = tempDir.filePath("explicit-default.jpg");
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, defaultPath));
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, explicitDefaultPath, QByteArray(), nullptr, {-1}));
+    QCOMPARE(QFileInfo(defaultPath).size(), QFileInfo(explicitDefaultPath).size());
+}
+
+void tst_ImageSaveUtils::testQualityLeavesPngLossless()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QImage image = detailedImage();
+    const QString lowPath = tempDir.filePath("low.png");
+    const QString plainPath = tempDir.filePath("plain.png");
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, lowPath, QByteArray(), nullptr, {5}));
+    QVERIFY(ImageSaveUtils::saveImageAtomically(image, plainPath));
+
+    QCOMPARE(QImage(lowPath).convertToFormat(QImage::Format_RGB32), image);
+    QFile low(lowPath);
+    QFile plain(plainPath);
+    QVERIFY(low.open(QIODevice::ReadOnly) && plain.open(QIODevice::ReadOnly));
+    QCOMPARE(low.readAll(), plain.readAll());
+}
+
+void tst_ImageSaveUtils::testUniqueSaveHonorsQuality()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QImage image = detailedImage();
+    ImageSaveUtils::UniqueSaveSpec spec;
+    spec.outputDir = tempDir.path();
+    spec.filenameTemplate = QStringLiteral("shot.{ext}");
+    spec.context.ext = QStringLiteral("jpg");
+
+    const auto low = ImageSaveUtils::saveImageUnique(image, spec, {}, {10});
+    const auto high = ImageSaveUtils::saveImageUnique(image, spec, {}, {95});
+    QVERIFY2(low.success, qPrintable(low.error.message));
+    QVERIFY2(high.success, qPrintable(high.error.message));
+    QVERIFY(low.filePath != high.filePath);   // still never replaces
+    QVERIFY(QFileInfo(low.filePath).size() < QFileInfo(high.filePath).size());
+}
+
+void tst_ImageSaveUtils::testSaveEncodedWritesExactBytes()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString filePath = tempDir.filePath("encoded.png");
+    const QByteArray first("first file contents");
+    const QByteArray second("replacement");
+
+    ImageSaveUtils::Error error;
+    QVERIFY2(ImageSaveUtils::saveEncodedAtomically(first, filePath, &error), qPrintable(error.message));
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), first);
+    file.close();
+
+    QVERIFY(ImageSaveUtils::saveEncodedAtomically(second, filePath, &error));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), second);
+    file.close();
+
+    // No temporary file is left next to the result.
+    QCOMPARE(QDir(tempDir.path()).entryList(QDir::Files | QDir::Hidden), QStringList{QStringLiteral("encoded.png")});
+}
+
+void tst_ImageSaveUtils::testSaveEncodedFailureKeepsExistingFile()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    const QString filePath = tempDir.filePath("keep.png");
+    QVERIFY(ImageSaveUtils::saveEncodedAtomically(QByteArray("keep me"), filePath));
+
+    ImageSaveUtils::Error emptyError;
+    QVERIFY(!ImageSaveUtils::saveEncodedAtomically(QByteArray(), filePath, &emptyError));
+    QCOMPARE(emptyError.stage, QStringLiteral("write"));
+
+    ImageSaveUtils::Error openError;
+    QVERIFY(!ImageSaveUtils::saveEncodedAtomically(
+        QByteArray("x"), tempDir.filePath("missing-dir/out.png"), &openError));
+    QCOMPARE(openError.stage, QStringLiteral("open"));
+    QVERIFY(!openError.message.isEmpty());
+
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    QCOMPARE(file.readAll(), QByteArray("keep me"));
 }
 
 void tst_ImageSaveUtils::testOverwriteWithReadOnlyDirectoryUsesFallback()

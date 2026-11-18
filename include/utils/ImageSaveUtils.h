@@ -11,6 +11,14 @@
 
 class QScreen;
 
+// Encoder settings for ImageSaveUtils. The defaults leave every format at its
+// own default.
+struct ImageSaveEncodeOptions {
+    // 0-100 for formats with a quality setting (JPEG, WebP); -1 keeps the
+    // encoder default. Lossless PNG ignores it.
+    int quality = -1;
+};
+
 class ImageSaveUtils
 {
 public:
@@ -31,14 +39,25 @@ public:
         Error error;
     };
 
+    using EncodeOptions = ImageSaveEncodeOptions;
+
     static UniqueSaveResult saveImageUnique(const QImage& image,
                                             const UniqueSaveSpec& spec,
-                                            const QByteArray& explicitFormat = {});
+                                            const QByteArray& explicitFormat = {},
+                                            const EncodeOptions& encodeOptions = {});
 
     static bool saveImageAtomically(const QImage& image,
                                     const QString& filePath,
                                     const QByteArray& explicitFormat = QByteArray(),
-                                    Error* error = nullptr);
+                                    Error* error = nullptr,
+                                    const EncodeOptions& encodeOptions = {});
+
+    // Writes an already encoded image file as it is, with the same
+    // all-or-nothing replacement as saveImageAtomically(). The caller answers
+    // for `data` matching the file name's format.
+    static bool saveEncodedAtomically(const QByteArray& data,
+                                      const QString& filePath,
+                                      Error* error = nullptr);
 
     static bool savePixmapAtomically(const QPixmap& pixmap,
                                      const QString& filePath,
@@ -56,7 +75,12 @@ private:
     static UniqueSaveResult saveImageUniqueWithHooks(const QImage& image,
                                                      const UniqueSaveSpec& spec,
                                                      const QByteArray& explicitFormat,
-                                                     const UniqueSaveHooks& hooks);
+                                                     const UniqueSaveHooks& hooks,
+                                                     const EncodeOptions& encodeOptions = {});
+    // Applies `options` to a writer of `format`; PNG keeps its lossless default.
+    static void applyEncodeOptions(class QImageWriter& writer,
+                                   const QByteArray& format,
+                                   const EncodeOptions& options);
     static QByteArray resolveFormat(const QString& filePath,
                                     const QByteArray& explicitFormat,
                                     Error* error);
