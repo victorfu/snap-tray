@@ -263,25 +263,8 @@ Item {
         target: backend
         function onSelectedZoomChanged() { if (backend.selectedZoom >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onSelectedMaskChanged() { if (backend.selectedMask >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
-        function onSelectedShapeChanged() {
-            if (backend.selectedShape >= 0) {
-                root.selectedPart = -1; backend.selectedAudioClip = -1
-                backend.selectedZoom = -1; backend.selectedMask = -1
-                backend.selectedOverlay = -1; backend.selectedPointerHide = -1
-                root.inspectorOpen = true
-            }
-        }
-        function onSelectedAudioClipChanged() {
-            if (backend.selectedAudioClip >= 0) {
-                backend.selectedShape = -1
-                root.selectedPart = -1
-                backend.selectedZoom = -1
-                backend.selectedMask = -1
-                backend.selectedOverlay = -1
-                backend.selectedPointerHide = -1
-                root.inspectorOpen = true
-            }
-        }
+        function onSelectedShapeChanged() { if (backend.selectedShape >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
+        function onSelectedAudioClipChanged() { if (backend.selectedAudioClip >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onSelectedOverlayChanged() { if (backend.selectedOverlay >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onSelectedPointerHideChanged() { if (backend.selectedPointerHide >= 0) { root.selectedPart = -1; root.inspectorOpen = true } }
         function onTimelineChanged() { root.selectedPart = -1 }

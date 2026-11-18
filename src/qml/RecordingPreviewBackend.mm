@@ -909,6 +909,8 @@ void RecordingPreviewBackend::setSelectedPointerHide(int index)
 {
     index = index >= 0 && index < int(m_cursorEffects.hiddenRanges.size()) ? index : -1;
     if (index >= 0) {
+        setSelectedShape(-1);
+        setSelectedAudioClip(-1);
         setSelectedZoom(-1);
         setSelectedMask(-1);
         setSelectedOverlay(-1);
@@ -1001,6 +1003,8 @@ void RecordingPreviewBackend::setSelectedMask(int index)
 {
     index = index >= 0 && index < int(m_redaction.masks.size()) ? index : -1;
     if (index >= 0) {
+        setSelectedShape(-1);
+        setSelectedAudioClip(-1);
         setSelectedZoom(-1);
         setSelectedOverlay(-1);
         setSelectedPointerHide(-1);
@@ -1279,6 +1283,8 @@ void RecordingPreviewBackend::setSelectedZoom(int index)
 {
     index = index >= 0 && index < int(m_zoom.segments().size()) ? index : -1;
     if (index >= 0) {
+        setSelectedShape(-1);
+        setSelectedAudioClip(-1);
         setSelectedMask(-1);
         setSelectedOverlay(-1);
         setSelectedPointerHide(-1);
@@ -1998,6 +2004,13 @@ QVariantList RecordingPreviewBackend::shapes() const
 void RecordingPreviewBackend::setSelectedShape(int index)
 {
     index = index >= 0 && index < int(m_shapes.segments.size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedAudioClip(-1);
+        setSelectedZoom(-1);
+        setSelectedMask(-1);
+        setSelectedOverlay(-1);
+        setSelectedPointerHide(-1);
+    }
     if (m_selectedShape == index) return;
     m_selectedShape = index; emit selectedShapeChanged();
 }
@@ -2111,6 +2124,13 @@ QVariantList RecordingPreviewBackend::audioClips() const
 void RecordingPreviewBackend::setSelectedAudioClip(int index)
 {
     index = index >= 0 && index < int(m_audioClips.clips.size()) ? index : -1;
+    if (index >= 0) {
+        setSelectedShape(-1);
+        setSelectedZoom(-1);
+        setSelectedMask(-1);
+        setSelectedOverlay(-1);
+        setSelectedPointerHide(-1);
+    }
     if (m_selectedAudioClip == index) return;
     m_selectedAudioClip = index;
     emit selectedAudioClipChanged();
@@ -2268,6 +2288,8 @@ void RecordingPreviewBackend::setSelectedOverlay(int index)
 {
     index = index >= 0 && index < int(m_overlays.segments.size()) ? index : -1;
     if (index >= 0) {
+        setSelectedShape(-1);
+        setSelectedAudioClip(-1);
         setSelectedZoom(-1);
         setSelectedMask(-1);
         setSelectedPointerHide(-1);
