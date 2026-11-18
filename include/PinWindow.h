@@ -383,6 +383,8 @@ private:
     // Crop or cut-out: tools that edit the image and own every pointer press.
     bool isImageEditToolActive() const;
     void syncCutOutDraftUi();
+    // Enter, Apply and double-click for the cut-out band.
+    bool commitCutOutDraft();
     bool handleCutOutDraftKey(QKeyEvent* event);
     // An arrow key as a step in unrotated source pixels (1, or 10 with Shift).
     // False for any other key or modifier.

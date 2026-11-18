@@ -309,6 +309,15 @@ void CutOutToolHandler::setSource(const QSize& pixelSize, qreal devicePixelRatio
 }
 
 void CutOutToolHandler::setViewOrientation(int rotationAngle, bool flipHorizontal, bool flipVertical) {
+    const int normalized = ((rotationAngle % 360) + 360) % 360;
+    if (normalized == m_rotationAngle && flipHorizontal == m_flipHorizontal
+        && flipVertical == m_flipVertical) {
+        return;
+    }
+    // A drag in progress was mapped with the old orientation.
+    if (m_mode != Mode::Idle) {
+        cancelDrawing();
+    }
     const Axis shown = viewAxis();
     m_rotationAngle = ((rotationAngle % 360) + 360) % 360;
     m_flipHorizontal = flipHorizontal;
@@ -362,9 +371,11 @@ bool CutOutToolHandler::commitDraft() {
         qWarning() << "CutOutToolHandler::commitDraft: Commit callback not set.";
         return false;
     }
-    // On success the host replaces the image, which drops the draft through
-    // setSource(); a refused strip stays for another try.
-    return m_commitCallback(m_model.request());
+    if (!m_commitCallback(m_model.request())) {
+        return false;   // refused: the band stays for another try
+    }
+    discardDraft();   // do not depend on the host leaving the tool
+    return true;
 }
 
 void CutOutToolHandler::discardDraft() {

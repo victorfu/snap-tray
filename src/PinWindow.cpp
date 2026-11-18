@@ -3301,8 +3301,11 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
         // The same for the cut-out band (#371).
         if (isCutOutToolActive()) {
             CutOutToolHandler* cutOutHandler = cutOutToolHandler();
-            if (cutOutHandler && cutOutHandler->draftContains(mapToOriginalCoords(event->position()))) {
-                cutOutHandler->commitDraft();
+            const bool inside =
+                cutOutHandler && cutOutHandler->draftContains(mapToOriginalCoords(event->position()));
+            cancelImageEditGesture();
+            if (inside) {
+                commitCutOutDraft();
             }
             return;
         }
@@ -3918,9 +3921,7 @@ void PinWindow::initializeAnnotationComponents()
         }
     });
     connect(optionsVM, &PinToolOptionsViewModel::cutOutApplyRequested, this, [this]() {
-        if (CutOutToolHandler* cutOutHandler = cutOutToolHandler(); cutOutHandler && isCutOutToolActive()) {
-            cutOutHandler->commitDraft();
-        }
+        commitCutOutDraft();
     });
     connect(optionsVM, &PinToolOptionsViewModel::cutOutCancelRequested, this, [this]() {
         if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
@@ -4296,8 +4297,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
     // Each live frame is a new image and would drop the crop selection as it
     // is drawn; say what to do instead of offering a tool that cannot work.
-    if (tool == ToolId::Crop && m_isLiveMode && !m_livePaused) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Pause Live Update to crop"));
+    if ((tool == ToolId::Crop || tool == ToolId::CutOut) && m_isLiveMode && !m_livePaused) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+                           tool == ToolId::Crop ? tr("Pause Live Update to crop")
+                                                : tr("Stop Live Update before cutting out a strip"));
         syncToolbarActiveButtonForVisibleState();
         return;
     }
@@ -4308,9 +4311,13 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     // Choosing Crop again while a selection waits keeps it: the click is far
     // more likely a slip than a wish to throw the draft away. Esc or Cancel
     // discard it.
-    if (sameToolClicked && tool == ToolId::Crop) {
+    if (sameToolClicked && (tool == ToolId::Crop || tool == ToolId::CutOut)) {
         const CropToolHandler* cropHandler = cropToolHandler();
-        if (cropHandler && cropHandler->hasDraft()) {
+        const CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+        const bool waiting = tool == ToolId::Crop
+            ? (cropHandler && cropHandler->hasDraft())
+            : (cutOutHandler && cutOutHandler->hasDraft());
+        if (waiting) {
             if (m_toolbar) {
                 m_toolbar->viewModel()->setActiveTool(toolId);
             }
@@ -4544,7 +4551,7 @@ bool PinWindow::handleCutOutDraftKey(QKeyEvent* event)
         return false;
     }
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        cutOutHandler->commitDraft();
+        commitCutOutDraft();
         return true;
     }
 
@@ -5140,11 +5147,31 @@ bool PinWindow::commitCropDraft()
 void PinWindow::cancelImageEditGesture()
 {
     CropToolHandler* cropHandler = cropToolHandler();
-    if (cropHandler && cropHandler->isDrawing()) {
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    const bool cropDrawing = cropHandler && cropHandler->isDrawing();
+    const bool cutOutDrawing = cutOutHandler && cutOutHandler->isDrawing();
+    if (cropDrawing) {
         cropHandler->cancelDrawing();
+    }
+    if (cutOutDrawing) {
+        cutOutHandler->cancelDrawing();
+    }
+    if (cropDrawing || cutOutDrawing) {
         refreshCropCursor();
         update();
     }
+}
+
+bool PinWindow::commitCutOutDraft()
+{
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    if (!cutOutHandler || !isCutOutToolActive() || !cutOutHandler->hasDraft()) {
+        return false;
+    }
+    // As for crop: the second press of a double-click began a drag.
+    cutOutHandler->cancelDrawing();
+    // applyStrip() explains every refusal itself.
+    return cutOutHandler->commitDraft();
 }
 
 void PinWindow::undoCrop()
@@ -6635,7 +6662,7 @@ void PinWindow::startLiveCapture()
     invalidateAutoBlurRequest();
     m_isLiveMode = true;
     // Frames are about to replace the image under the crop tool.
-    if (isCropToolActive()) {
+    if (isImageEditToolActive()) {
         leaveCropTool();
     }
     syncHoverBar();
@@ -6758,7 +6785,7 @@ void PinWindow::resumeLiveCapture()
 
     m_livePaused = false;
     // Frames are about to replace the image under the crop tool.
-    if (isCropToolActive()) {
+    if (isImageEditToolActive()) {
         leaveCropTool();
     }
     if (m_captureTimer) {

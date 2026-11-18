@@ -118,6 +118,8 @@ private slots:
     void toolArrowKeysMoveTheBandAlongItsAxisOnScreen();
     void subToolbarShowsOperationDirectionAndResult();
     void exportMatchesWhatIsShown();
+    void realDoubleClickAppliesTheBand();
+    void lostReleaseAndLiveUpdateLeaveNoStuckTool();
 };
 
 void TestPinWindowStripCutOut::removeAndInsert_PixelsAndSize_data()
@@ -917,6 +919,79 @@ void TestPinWindowStripCutOut::exportMatchesWhatIsShown()
     // The stroke is drawn where it moved to, not where it was.
     QVERIFY(exported.copy(0, 100, 300, 50) != bare.copy(0, 100, 300, 50));
     QCOMPARE(exported.copy(0, 0, 300, 90), bare.copy(0, 0, 300, 90));
+}
+
+namespace {
+
+void sendMouse(PinWindow& window, QEvent::Type type, const QPoint& pos,
+               Qt::MouseButtons buttons = Qt::LeftButton)
+{
+    QMouseEvent event(type, QPointF(pos), QPointF(window.mapToGlobal(pos)),
+                      Qt::LeftButton, buttons, Qt::NoModifier);
+    QCoreApplication::sendEvent(&window, &event);
+}
+
+}  // namespace
+
+// Same as crop (#386 review): Qt delivers the second press before the
+// double-click, which put the tool in a drag and made the commit a no-op.
+void TestPinWindowStripCutOut::realDoubleClickAppliesTheBand()
+{
+    PinWindow window(patternPixmap(300, 240), QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::CutOut));
+    CutOutToolHandler* tool = window.cutOutToolHandler();
+    dragTool(window.m_toolManager, QPointF(150, 60), QPointF(150, 150));
+    QVERIFY(tool->hasDraft());
+
+    const QPoint inside(150, 100);
+    sendMouse(window, QEvent::MouseButtonPress, inside);
+    sendMouse(window, QEvent::MouseButtonRelease, inside, Qt::NoButton);
+    sendMouse(window, QEvent::MouseButtonPress, inside);
+    sendMouse(window, QEvent::MouseButtonDblClick, inside);
+    sendMouse(window, QEvent::MouseButtonRelease, inside, Qt::NoButton);
+
+    QCOMPARE(window.size(), QSize(300, 150));
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+    QVERIFY(!tool->hasDraft());
+    QVERIFY(!tool->isDrawing());
+}
+
+void TestPinWindowStripCutOut::lostReleaseAndLiveUpdateLeaveNoStuckTool()
+{
+    PinWindow window(patternPixmap(300, 240), QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::CutOut));
+    CutOutToolHandler* tool = window.cutOutToolHandler();
+    dragTool(window.m_toolManager, QPointF(150, 60), QPointF(150, 150));
+    const ImageStrip::Request before = tool->request();
+
+    // A move under way when the window is deactivated: no release follows.
+    sendMouse(window, QEvent::MouseButtonPress, QPoint(150, 100));
+    sendMouse(window, QEvent::MouseMove, QPoint(150, 130));
+    QVERIFY(tool->isDrawing());
+    QEvent deactivate(QEvent::WindowDeactivate);
+    QCoreApplication::sendEvent(&window, &deactivate);
+    QVERIFY(!tool->isDrawing());
+    QCOMPARE(tool->request().start, before.start);
+
+    // Choosing Cut Out again keeps the waiting band.
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::CutOut));
+    QVERIFY(window.isCutOutToolActive());
+    QVERIFY(tool->hasDraft());
+
+    // Running Live Update replaces the image every frame: no tool.
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    window.m_isLiveMode = true;
+    window.m_livePaused = false;
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::CutOut));
+    QVERIFY(!window.isCutOutToolActive());
+    window.m_livePaused = true;
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::CutOut));
+    QVERIFY(window.isCutOutToolActive());
+    window.resumeLiveCapture();
+    QVERIFY(!window.isCutOutToolActive());
+    window.m_isLiveMode = false;
 }
 
 QTEST_MAIN(TestPinWindowStripCutOut)
