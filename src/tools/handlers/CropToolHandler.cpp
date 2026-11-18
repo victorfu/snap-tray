@@ -2,205 +2,413 @@
 #include "tools/ToolContext.h"
 
 #include <QDebug>
+#include <QFontMetrics>
 #include <QPainter>
 #include <QPen>
-#include <QBrush>
+#include <QtMath>
+
+namespace {
+
+const QColor kDimColor(0, 0, 0, 128);
+const QColor kGridColor(255, 255, 255, 80);
+const QColor kLabelBackground(0, 0, 0, 180);
+const QColor kHandleOutline(0, 0, 0, 160);
+constexpr int kLabelFontPixelSize = 12;
+constexpr int kLabelPadding = 4;
+constexpr int kLabelGap = 8;
+constexpr int kLabelCornerRadius = 3;
+constexpr int kBorderWidth = 2;
+
+} // namespace
 
 void CropToolHandler::onActivate(ToolContext* ctx) {
     Q_UNUSED(ctx);
-    m_isDrawing = false;
+    m_mode = Mode::Idle;
+    m_hoverHandle = Handle::None;
 }
 
 void CropToolHandler::onDeactivate(ToolContext* ctx) {
     Q_UNUSED(ctx);
-    cancelDrawing();
+    // Leaving the tool drops the draft: it never lingers under another tool.
+    discardDraft();
+}
+
+bool CropToolHandler::canInteract() const {
+    return !m_imageSize.isEmpty() && !m_model.sourceSize().isEmpty();
+}
+
+QPoint CropToolHandler::toSource(const QPointF& toolPos) const {
+    if (!canInteract()) {
+        return QPoint();
+    }
+    const QSize source = m_model.sourceSize();
+    return QPoint(
+        qBound(0, qRound(toolPos.x() * source.width() / m_imageSize.width()), source.width()),
+        qBound(0, qRound(toolPos.y() * source.height() / m_imageSize.height()), source.height()));
+}
+
+QRectF CropToolHandler::draftToolRect() const {
+    if (!hasDraft() || !canInteract()) {
+        return QRectF();
+    }
+    const QSize source = m_model.sourceSize();
+    const qreal scaleX = static_cast<qreal>(m_imageSize.width()) / source.width();
+    const qreal scaleY = static_cast<qreal>(m_imageSize.height()) / source.height();
+    const QRect rect = m_model.rect();
+    return QRectF(rect.x() * scaleX, rect.y() * scaleY,
+                  rect.width() * scaleX, rect.height() * scaleY);
+}
+
+bool CropToolHandler::draftContains(const QPointF& toolPos) const {
+    return hasDraft() && draftToolRect().contains(toolPos);
+}
+
+CropToolHandler::Handle CropToolHandler::hitTest(const QPointF& toolPos) const {
+    const QRectF rect = draftToolRect();
+    if (rect.isEmpty()) {
+        return Handle::None;
+    }
+
+    // A handle reaches kHandleHitRadius outward, but inward only a quarter of
+    // the draft, so even a draft a few pixels across keeps a movable middle.
+    const qreal innerX = qMin(kHandleHitRadius, rect.width() * kHandleInnerFraction);
+    const qreal innerY = qMin(kHandleHitRadius, rect.height() * kHandleInnerFraction);
+    const auto nearEdge = [](qreal pos, qreal edge, qreal before, qreal after) {
+        return pos >= edge - before && pos <= edge + after;
+    };
+    const bool nearLeft = nearEdge(toolPos.x(), rect.left(), kHandleHitRadius, innerX);
+    const bool nearRight = nearEdge(toolPos.x(), rect.right(), innerX, kHandleHitRadius);
+    const bool nearTop = nearEdge(toolPos.y(), rect.top(), kHandleHitRadius, innerY);
+    const bool nearBottom = nearEdge(toolPos.y(), rect.bottom(), innerY, kHandleHitRadius);
+    const bool withinX = toolPos.x() >= rect.left() - kHandleHitRadius
+        && toolPos.x() <= rect.right() + kHandleHitRadius;
+    const bool withinY = toolPos.y() >= rect.top() - kHandleHitRadius
+        && toolPos.y() <= rect.bottom() + kHandleHitRadius;
+    if (!withinX || !withinY) {
+        return Handle::None;
+    }
+
+    if (nearLeft && nearTop) return Handle::TopLeft;
+    if (nearRight && nearTop) return Handle::TopRight;
+    if (nearLeft && nearBottom) return Handle::BottomLeft;
+    if (nearRight && nearBottom) return Handle::BottomRight;
+    if (nearLeft) return Handle::Left;
+    if (nearRight) return Handle::Right;
+    if (nearTop) return Handle::Top;
+    if (nearBottom) return Handle::Bottom;
+    return rect.contains(toolPos) ? Handle::Move : Handle::None;
 }
 
 void CropToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos) {
-    if (!m_imageSize.isValid() || m_imageSize.isEmpty()) {
-        qWarning() << "CropToolHandler::onMousePress: Image size not set. Cannot start crop.";
-        return;
-    }
-    m_isDrawing = true;
-    m_startPoint = pos;
-    m_currentPoint = pos;
-    ctx->repaint();
+    onMousePressF(ctx, QPointF(pos));
 }
 
 void CropToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos) {
-    if (!m_isDrawing) return;
-    m_currentPoint = pos;
-    ctx->repaint();
+    onMouseMoveF(ctx, QPointF(pos));
 }
 
 void CropToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos) {
-    if (!m_isDrawing) return;
+    onMouseReleaseF(ctx, QPointF(pos));
+}
 
-    m_currentPoint = pos;
-    QRect cropRect = clampToImage(makeRect(m_startPoint, m_currentPoint));
-
-    m_isDrawing = false;
-
-    // Only apply if large enough
-    if (cropRect.width() >= kMinCropSize && cropRect.height() >= kMinCropSize) {
-        if (m_cropCallback) {
-            m_cropCallback(cropRect);
-        } else {
-            qWarning() << "CropToolHandler::onMouseRelease: Crop callback not set. Crop action discarded.";
-        }
-    } else {
-        qDebug() << "CropToolHandler: Crop region too small" << cropRect.size() << "minimum:" << kMinCropSize;
+void CropToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
+    if (!canInteract()) {
+        qWarning() << "CropToolHandler::onMousePress: Image size not set. Cannot start crop.";
+        return;
+    }
+    if (m_mode != Mode::Idle) {
+        return;
     }
 
+    m_pressToolPos = pos;
+    m_pressSourcePos = toSource(pos);
+    m_rectBeforeGesture = m_model.rect();
+    m_dragExceededThreshold = false;
+
+    m_activeHandle = hitTest(pos);
+    if (m_activeHandle == Handle::None) {
+        m_mode = Mode::Drawing;
+    } else if (m_activeHandle == Handle::Move) {
+        m_mode = Mode::Moving;
+    } else {
+        m_mode = Mode::Resizing;
+    }
+    ctx->repaint();
+}
+
+void CropToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
+    if (m_mode == Mode::Idle) {
+        m_hoverHandle = hitTest(pos);
+        return;
+    }
+
+    if (!m_dragExceededThreshold) {
+        const QPointF travel = pos - m_pressToolPos;
+        if (qMax(qAbs(travel.x()), qAbs(travel.y())) < kDragThreshold) {
+            return;
+        }
+        m_dragExceededThreshold = true;
+    }
+
+    const QPoint sourcePos = toSource(pos);
+    switch (m_mode) {
+    case Mode::Drawing:
+        m_model.setRectFromDrag(m_pressSourcePos, sourcePos);
+        break;
+    case Mode::Moving:
+        m_model.moveRect(m_rectBeforeGesture, sourcePos - m_pressSourcePos);
+        break;
+    case Mode::Resizing:
+        m_model.resizeRect(m_rectBeforeGesture, m_activeHandle, sourcePos);
+        break;
+    case Mode::Idle:
+        break;
+    }
+    notifyDraftChanged();
+    ctx->repaint();
+}
+
+void CropToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
+    if (m_mode == Mode::Idle) {
+        return;
+    }
+
+    if (m_dragExceededThreshold) {
+        onMouseMoveF(ctx, pos);
+    }
+    // A click, or a drag that ended with nothing selectable, keeps the
+    // previous draft instead of silently dropping it.
+    if (!m_dragExceededThreshold || !m_model.hasRect()) {
+        m_model.restoreRect(m_rectBeforeGesture);
+    }
+
+    m_mode = Mode::Idle;
+    m_activeHandle = Handle::None;
+    m_hoverHandle = hitTest(pos);
+    notifyDraftChanged();
     ctx->repaint();
 }
 
 void CropToolHandler::drawPreview(QPainter& painter) const {
-    if (!m_isDrawing) return;
-
-    QRect cropRect = makeRect(m_startPoint, m_currentPoint);
-    if (cropRect.isEmpty()) return;
-
-    QRect clampedCrop = clampToImage(cropRect);
-    if (clampedCrop.isEmpty()) return;
-
-    QRect imageRect(QPoint(0, 0), m_imageSize);
+    const QRectF crop = draftToolRect();
+    if (crop.isEmpty()) {
+        return;
+    }
+    const QRectF image(QPointF(0, 0), QSizeF(m_imageSize));
 
     painter.save();
 
-    // Draw dimmed overlay outside crop area
-    QColor dimColor(0, 0, 0, 128);
-    // Top strip
-    if (clampedCrop.top() > imageRect.top()) {
-        painter.fillRect(QRect(imageRect.left(), imageRect.top(),
-                               imageRect.width(), clampedCrop.top() - imageRect.top()), dimColor);
-    }
-    // Bottom strip
-    if (clampedCrop.bottom() < imageRect.bottom()) {
-        painter.fillRect(QRect(imageRect.left(), clampedCrop.bottom() + 1,
-                               imageRect.width(), imageRect.bottom() - clampedCrop.bottom()), dimColor);
-    }
-    // Left strip (between top and bottom strips)
-    if (clampedCrop.left() > imageRect.left()) {
-        painter.fillRect(QRect(imageRect.left(), clampedCrop.top(),
-                               clampedCrop.left() - imageRect.left(), clampedCrop.height()), dimColor);
-    }
-    // Right strip (between top and bottom strips)
-    if (clampedCrop.right() < imageRect.right()) {
-        painter.fillRect(QRect(clampedCrop.right() + 1, clampedCrop.top(),
-                               imageRect.right() - clampedCrop.right(), clampedCrop.height()), dimColor);
-    }
+    // Dim everything outside the selection.
+    painter.fillRect(QRectF(image.left(), image.top(), image.width(), crop.top() - image.top()), kDimColor);
+    painter.fillRect(QRectF(image.left(), crop.bottom(), image.width(), image.bottom() - crop.bottom()), kDimColor);
+    painter.fillRect(QRectF(image.left(), crop.top(), crop.left() - image.left(), crop.height()), kDimColor);
+    painter.fillRect(QRectF(crop.right(), crop.top(), image.right() - crop.right(), crop.height()), kDimColor);
 
-    // Draw crop rectangle border (white dashed)
-    QPen borderPen(Qt::white, 2, Qt::DashLine);
-    painter.setPen(borderPen);
+    painter.setPen(QPen(Qt::white, kBorderWidth, Qt::DashLine));
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(clampedCrop);
+    painter.drawRect(crop);
 
-    // Draw rule-of-thirds grid (thin semi-transparent white)
-    QPen gridPen(QColor(255, 255, 255, 80), 1, Qt::SolidLine);
-    painter.setPen(gridPen);
-    int thirdW = clampedCrop.width() / 3;
-    int thirdH = clampedCrop.height() / 3;
-    // Vertical lines
-    painter.drawLine(clampedCrop.left() + thirdW, clampedCrop.top(),
-                     clampedCrop.left() + thirdW, clampedCrop.bottom());
-    painter.drawLine(clampedCrop.left() + 2 * thirdW, clampedCrop.top(),
-                     clampedCrop.left() + 2 * thirdW, clampedCrop.bottom());
-    // Horizontal lines
-    painter.drawLine(clampedCrop.left(), clampedCrop.top() + thirdH,
-                     clampedCrop.right(), clampedCrop.top() + thirdH);
-    painter.drawLine(clampedCrop.left(), clampedCrop.top() + 2 * thirdH,
-                     clampedCrop.right(), clampedCrop.top() + 2 * thirdH);
-
-    // Draw corner handles
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(Qt::white);
-    int hs = kHandleSize;
-    // Top-left
-    painter.drawRect(QRect(clampedCrop.left() - hs / 2, clampedCrop.top() - hs / 2, hs, hs));
-    // Top-right
-    painter.drawRect(QRect(clampedCrop.right() - hs / 2, clampedCrop.top() - hs / 2, hs, hs));
-    // Bottom-left
-    painter.drawRect(QRect(clampedCrop.left() - hs / 2, clampedCrop.bottom() - hs / 2, hs, hs));
-    // Bottom-right
-    painter.drawRect(QRect(clampedCrop.right() - hs / 2, clampedCrop.bottom() - hs / 2, hs, hs));
-
-    // Draw size label
-    QString sizeText = QString("%1 × %2").arg(clampedCrop.width()).arg(clampedCrop.height());
-    QFont font = painter.font();
-    font.setPixelSize(12);
-    painter.setFont(font);
-    QFontMetrics fm(font);
-    QRect textRect = fm.boundingRect(sizeText);
-    int textX = clampedCrop.center().x() - textRect.width() / 2;
-    int textY = clampedCrop.bottom() + 20;
-    // If text would go below image, put it above the crop rect
-    if (textY + textRect.height() > m_imageSize.height()) {
-        textY = clampedCrop.top() - 8;
+    // Rule-of-thirds grid.
+    painter.setPen(QPen(kGridColor, 1, Qt::SolidLine));
+    for (int i = 1; i <= 2; ++i) {
+        const qreal x = crop.left() + crop.width() * i / 3.0;
+        const qreal y = crop.top() + crop.height() * i / 3.0;
+        painter.drawLine(QPointF(x, crop.top()), QPointF(x, crop.bottom()));
+        painter.drawLine(QPointF(crop.left(), y), QPointF(crop.right(), y));
     }
-    // Background for text
-    QRect bgRect(textX - 4, textY - textRect.height(), textRect.width() + 8, textRect.height() + 4);
+
+    // Corner and edge handles.
+    painter.setPen(QPen(kHandleOutline, 1));
+    painter.setBrush(Qt::white);
+    const qreal half = kHandleSize / 2.0;
+    const QPointF center = crop.center();
+    const QPointF handleCenters[] = {
+        crop.topLeft(), crop.topRight(), crop.bottomLeft(), crop.bottomRight(),
+        QPointF(center.x(), crop.top()), QPointF(center.x(), crop.bottom()),
+        QPointF(crop.left(), center.y()), QPointF(crop.right(), center.y()),
+    };
+    for (const QPointF& handleCenter : handleCenters) {
+        painter.drawRect(QRectF(handleCenter.x() - half, handleCenter.y() - half, kHandleSize, kHandleSize));
+    }
+
+    // Size label in source pixels. The host may paint through a rotation or a
+    // mirror, so the label is placed in device space and drawn upright.
+    const QRect sourceRect = m_model.rect();
+    const QSize shownSize = m_model.viewTransposed() ? sourceRect.size().transposed() : sourceRect.size();
+    const QString sizeText = QStringLiteral("%1 \u00D7 %2 px").arg(shownSize.width()).arg(shownSize.height());
+    const QTransform world = painter.worldTransform();
+    const QRectF viewCrop = world.mapRect(crop);
+    const QRectF viewImage = world.mapRect(image);
+    painter.resetTransform();
+
+    QFont font = painter.font();
+    font.setPixelSize(kLabelFontPixelSize);
+    painter.setFont(font);
+    const QFontMetrics metrics(font);
+    const QSize textSize = metrics.size(Qt::TextSingleLine, sizeText);
+    QRectF labelRect(0, 0, textSize.width() + 2 * kLabelPadding, textSize.height() + kLabelPadding);
+    qreal labelTop = viewCrop.bottom() + kLabelGap;
+    if (labelTop + labelRect.height() > viewImage.bottom()) {
+        labelTop = viewCrop.top() - kLabelGap - labelRect.height();
+    }
+    if (labelTop < viewImage.top()) {
+        labelTop = viewCrop.top() + kLabelGap;
+    }
+    labelRect.moveTo(qBound(viewImage.left(),
+                            viewCrop.center().x() - labelRect.width() / 2.0,
+                            qMax(viewImage.left(), viewImage.right() - labelRect.width())),
+                     labelTop);
     painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(0, 0, 0, 180));
-    painter.drawRoundedRect(bgRect, 3, 3);
-    // Text
+    painter.setBrush(kLabelBackground);
+    painter.drawRoundedRect(labelRect, kLabelCornerRadius, kLabelCornerRadius);
     painter.setPen(Qt::white);
-    painter.drawText(textX, textY, sizeText);
+    painter.drawText(labelRect, Qt::AlignCenter, sizeText);
 
     painter.restore();
 }
 
 void CropToolHandler::cancelDrawing() {
-    m_isDrawing = false;
+    if (m_mode == Mode::Idle) {
+        return;
+    }
+    // Abandon the drag only; the draft from before it stays.
+    m_model.restoreRect(m_rectBeforeGesture);
+    m_mode = Mode::Idle;
+    m_activeHandle = Handle::None;
+    notifyDraftChanged();
 }
 
 bool CropToolHandler::handleEscape(ToolContext* ctx) {
-    if (m_isDrawing) {
+    if (m_mode != Mode::Idle) {
         cancelDrawing();
+        ctx->repaint();
+        return true;
+    }
+    if (hasDraft()) {
+        discardDraft();
         ctx->repaint();
         return true;
     }
     return false;
 }
 
-QCursor CropToolHandler::cursor() const {
+Qt::CursorShape CropToolHandler::cursorForHandle(Handle handle) const {
+    const bool transposed = m_rotationAngle == 90 || m_rotationAngle == 270;
+    // A quarter turn or a single mirror swaps the two diagonals on screen.
+    const bool diagonalSwapped = transposed != (m_flipHorizontal != m_flipVertical);
+    switch (handle) {
+    case Handle::Move:
+        return Qt::SizeAllCursor;
+    case Handle::Left:
+    case Handle::Right:
+        return transposed ? Qt::SizeVerCursor : Qt::SizeHorCursor;
+    case Handle::Top:
+    case Handle::Bottom:
+        return transposed ? Qt::SizeHorCursor : Qt::SizeVerCursor;
+    case Handle::TopLeft:
+    case Handle::BottomRight:
+        return diagonalSwapped ? Qt::SizeBDiagCursor : Qt::SizeFDiagCursor;
+    case Handle::TopRight:
+    case Handle::BottomLeft:
+        return diagonalSwapped ? Qt::SizeFDiagCursor : Qt::SizeBDiagCursor;
+    case Handle::None:
+        break;
+    }
     return Qt::CrossCursor;
 }
 
-void CropToolHandler::setCropCallback(std::function<void(const QRect&)> callback) {
+QCursor CropToolHandler::cursor() const {
+    if (m_mode == Mode::Moving || m_mode == Mode::Resizing) {
+        return cursorForHandle(m_activeHandle);
+    }
+    if (m_mode == Mode::Drawing) {
+        return Qt::CrossCursor;
+    }
+    return cursorForHandle(m_hoverHandle);
+}
+
+void CropToolHandler::setCropCallback(CropCallback callback) {
     m_cropCallback = std::move(callback);
+}
+
+void CropToolHandler::setDraftChangedCallback(std::function<void()> callback) {
+    m_draftChangedCallback = std::move(callback);
 }
 
 void CropToolHandler::setImageSize(const QSize& size) {
     m_imageSize = size;
 }
 
-QRect CropToolHandler::makeRect(const QPoint& start, const QPoint& end) const {
-    return QRect(start, end).normalized();
+void CropToolHandler::setSource(const QSize& pixelSize, qreal devicePixelRatio, qint64 token) {
+    const bool hadDraft = hasDraft() || m_mode != Mode::Idle;
+    const bool replaced = token != m_sourceToken || pixelSize != m_model.sourceSize();
+    m_sourceToken = token;
+    if (replaced) {
+        m_mode = Mode::Idle;
+        m_activeHandle = Handle::None;
+        m_hoverHandle = Handle::None;
+        m_model.clear();
+    }
+    m_model.setSource(pixelSize, devicePixelRatio);
+    if (replaced && hadDraft) {
+        notifyDraftChanged();
+    }
 }
 
-QRect CropToolHandler::clampToImage(const QRect& rect) const {
-    if (!m_imageSize.isValid() || m_imageSize.isEmpty() || rect.isEmpty()) {
-        return QRect();
+void CropToolHandler::setViewOrientation(int rotationAngle, bool flipHorizontal, bool flipVertical) {
+    m_rotationAngle = ((rotationAngle % 360) + 360) % 360;
+    m_flipHorizontal = flipHorizontal;
+    m_flipVertical = flipVertical;
+    const bool transposed = m_rotationAngle == 90 || m_rotationAngle == 270;
+    if (transposed != m_model.viewTransposed()) {
+        m_model.setViewTransposed(transposed);
+        notifyDraftChanged();
     }
+}
 
-    // Accept endpoint-inclusive coordinates (x == width, y == height), then
-    // map back to pixel-index bounds so edge-aligned crops keep their last row/column.
-    const QRect endpointBounds(
-        QPoint(0, 0),
-        QSize(m_imageSize.width() + 1, m_imageSize.height() + 1));
-    QRect clamped = rect.intersected(endpointBounds);
-    if (clamped.isEmpty()) {
-        return QRect();
+void CropToolHandler::setAspect(Aspect aspect) {
+    if (m_mode != Mode::Idle) {
+        cancelDrawing();
     }
+    m_model.setAspect(aspect);
+    notifyDraftChanged();
+}
 
-    const int maxX = m_imageSize.width() - 1;
-    const int maxY = m_imageSize.height() - 1;
-    clamped.setLeft(qBound(0, clamped.left(), maxX));
-    clamped.setTop(qBound(0, clamped.top(), maxY));
-    clamped.setRight(qBound(0, clamped.right(), maxX));
-    clamped.setBottom(qBound(0, clamped.bottom(), maxY));
+bool CropToolHandler::nudgeDraft(const QPoint& sourceDelta) {
+    if (!hasDraft() || m_mode != Mode::Idle) {
+        return false;
+    }
+    m_model.nudge(sourceDelta);
+    notifyDraftChanged();
+    return true;
+}
 
-    return clamped.isValid() ? clamped : QRect();
+bool CropToolHandler::commitDraft() {
+    if (!hasDraft() || m_mode != Mode::Idle) {
+        return false;
+    }
+    if (!m_cropCallback) {
+        qWarning() << "CropToolHandler::commitDraft: Crop callback not set. Crop action discarded.";
+        return false;
+    }
+    // The host replaces the image on success, which drops the draft through
+    // setSource(); a refused crop leaves it in place for another try.
+    return m_cropCallback(m_model.rect());
+}
+
+void CropToolHandler::discardDraft() {
+    const bool hadDraft = hasDraft() || m_mode != Mode::Idle;
+    m_mode = Mode::Idle;
+    m_activeHandle = Handle::None;
+    m_hoverHandle = Handle::None;
+    m_model.clear();
+    if (hadDraft) {
+        notifyDraftChanged();
+    }
+}
+
+void CropToolHandler::notifyDraftChanged() {
+    if (m_draftChangedCallback) {
+        m_draftChangedCallback();
+    }
 }

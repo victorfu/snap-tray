@@ -1748,6 +1748,11 @@ target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)
 set_tests_properties(Tools_TextToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Tools_CropDraftModel Tools/tst_CropDraftModel.cpp)
+target_link_libraries(Tools_CropDraftModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_CropDraftModel COMMAND Tools_CropDraftModel)
+set_tests_properties(Tools_CropDraftModel PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Tools_CropToolHandler Tools/handlers/tst_CropToolHandler.cpp)
 target_link_libraries(Tools_CropToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_CropToolHandler COMMAND Tools_CropToolHandler)

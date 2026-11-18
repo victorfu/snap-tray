@@ -30,6 +30,7 @@ private slots:
     void testTaskSettingsAndBeautifyTranslatedForAllLocales();
     void testAutoBlurHintTranslatedForAllLocales();
     void testStyleStripNamesTranslatedForAllLocales();
+    void testCropDraftControlsTranslatedForAllLocales();
     void testSharedFrameStylesTranslatedForAllLocales();
     void testRecordingPreviewAudioNoticeTranslatedForAllLocales();
     void testRecordingPreviewCropTranslatedForAllLocales();
@@ -373,6 +374,43 @@ void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
                      qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
                                     .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
         }
+    }
+}
+
+// #358: the crop strip (aspect presets, Apply, Cancel) is translated.
+void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
+{
+    const QList<QPair<QByteArray, QByteArray>> messages = {
+        {"PinToolOptionsViewModel", "Crop"},
+        {"PinToolOptionsViewModel", "Free"},
+        {"PinToolOptionsViewModel", "Free aspect ratio"},
+        {"PinToolOptionsViewModel", "Original aspect ratio"},
+        {"PinToolOptionsViewModel", "Aspect ratio %1"},
+        {"CropSection", "Cancel"},
+        {"CropSection", "Cancel crop"},
+        {"CropSection", "Apply"},
+        {"CropSection", "Apply crop"},
+    };
+
+    const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));
+    const QStringList qmFiles = translationsDir.entryList(
+        {QStringLiteral("snaptray_*.qm")}, QDir::Files, QDir::Name);
+    QVERIFY(!qmFiles.isEmpty());
+
+    for (const QString& qmFile : qmFiles) {
+        QTranslator translator;
+        const QString path = translationsDir.filePath(qmFile);
+        QVERIFY2(translator.load(path),
+                 qPrintable(QStringLiteral("Failed to load translation file: %1").arg(path)));
+        for (const auto& [context, source] : messages) {
+            const QString translated = translator.translate(context.constData(), source.constData());
+            QVERIFY2(!translated.isEmpty() && translated != QString::fromUtf8(source),
+                     qPrintable(QStringLiteral("%1 has no translation for %2 \"%3\"")
+                                    .arg(qmFile, QString::fromUtf8(context), QString::fromUtf8(source))));
+        }
+        // "Original" is spelled the same in several languages; it only has to exist.
+        QVERIFY2(!translator.translate("PinToolOptionsViewModel", "Original").isEmpty(),
+                 qPrintable(qmFile));
     }
 }
 

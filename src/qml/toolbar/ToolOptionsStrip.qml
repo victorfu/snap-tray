@@ -312,6 +312,14 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
+        // Crop draft controls (#358).
+        CropSection {
+            objectName: "toolOptionsCropSection"
+            visible: root.hasViewModel && root.viewModel.showCropSection
+            viewModel: root.viewModel
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
         // Drawing order of the selected annotation (#268).
         ArrangeSection {
             objectName: "toolOptionsArrangeSection"

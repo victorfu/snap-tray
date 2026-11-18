@@ -65,6 +65,7 @@ struct ColorPickSource;
 class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
+class CropToolHandler;
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
@@ -340,7 +341,23 @@ private:
     void rebuildManagedCursorAt(const QPoint& localPos);
     void restoreAnnotationCursorAt(const QPoint& localPos);
     void syncFloatingUiCursor();
+    // Crops to a rect in tool (view) coordinates, widened to whole logical
+    // pixels. The crop tool commits through applyCropSourcePixels() instead;
+    // both end in commitCropGeometry().
     void applyCrop(const QRect& cropRect);
+    // Crops to a rect in source pixels (the crop draft's units, #358).
+    // Returns false, changing nothing, when the rect cannot be applied.
+    bool applyCropSourcePixels(const QRect& sourcePixelRect);
+    bool commitCropGeometry(const QRectF& exactPhysicalCropRect,
+                            const QSize& croppedLogicalSize,
+                            const QPointF& annotationOffsetDisplay);
+    void leaveCropTool();
+    QSize cropSourcePixelSize() const;
+    CropToolHandler* cropToolHandler() const;
+    bool isCropToolActive() const;
+    void syncCropDraftUi();
+    bool handleCropDraftKey(QKeyEvent* event);
+    void refreshCropCursor();
     void undoCrop();
     void redoCrop();
     bool canUndoCrop();
@@ -575,7 +592,7 @@ private:
         bool croppedFlipV = false;
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
-        QPoint annotationOffsetDisplay;
+        QPointF annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
         bool isLayout = false;
         qreal layoutViewScale = 1.0;
@@ -585,6 +602,9 @@ private:
     QVector<CropUndoEntry> m_cropUndoStack;
     QVector<CropUndoEntry> m_cropRedoStack;
     static constexpr int kMaxCropUndoSize = 10;
+    // Arrow keys move the crop draft by this many source pixels (#358).
+    static constexpr int kCropNudgeStep = 1;
+    static constexpr int kCropNudgeLargeStep = 10;   // with Shift
     ToolId m_currentToolId = ToolId::Selection;
     QColor m_annotationColor;
     int m_annotationWidth = 3;

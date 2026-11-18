@@ -6,6 +6,7 @@
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "tools/CropDraftModel.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
 #include "ui/DesignSystem.h"
@@ -75,7 +76,7 @@ bool PinToolOptionsViewModel::hasContent() const
 {
     return m_showColor || m_showWidth || m_showText ||
            m_showArrowStyle || m_showLineStyle || m_showShape ||
-           m_showSize || m_showAutoBlur;
+           m_showSize || m_showAutoBlur || m_showCrop;
 }
 
 void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
@@ -95,7 +96,11 @@ void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
     m_showShape = showShape;
     m_showSize = showSize;
     m_showAutoBlur = showAutoBlur;
+    // Only showForTool() turns the crop section on.
+    const bool hadCrop = m_showCrop;
+    m_showCrop = false;
     emit sectionVisibilityChanged();
+    if (hadCrop) emit targetChanged();   // the strip label said "Crop"
 }
 
 void PinToolOptionsViewModel::setShowingEmojiPicker(bool visible)
@@ -157,6 +162,72 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showShapeSection,
                            config.showSizeSection,
                            config.showAutoBlurSection);
+    if (config.showCropSection) {
+        m_showCrop = true;
+        emit sectionVisibilityChanged();
+        emit targetChanged();
+    }
+}
+
+QVariantList PinToolOptionsViewModel::cropAspectOptions() const
+{
+    QVariantList options;
+    for (const CropDraftModel::AspectOption& option : CropDraftModel::aspectOptions()) {
+        QString label;
+        QString name;
+        if (option.aspect == CropDraftModel::Aspect::Free) {
+            label = tr("Free");
+            name = tr("Free aspect ratio");
+        } else if (option.aspect == CropDraftModel::Aspect::Original) {
+            label = tr("Original");
+            name = tr("Original aspect ratio");
+        } else {
+            label = QStringLiteral("%1:%2").arg(option.widthUnits).arg(option.heightUnits);
+            name = tr("Aspect ratio %1").arg(label);
+        }
+        options.append(QVariantMap{
+            {"value", static_cast<int>(option.aspect)}, {"label", label}, {"name", name}});
+    }
+    return options;
+}
+
+void PinToolOptionsViewModel::setCropAspect(int aspect)
+{
+    if (m_cropAspect == aspect || !CropDraftModel::isValidAspect(aspect)) {
+        return;
+    }
+    m_cropAspect = aspect;
+    emit cropAspectChanged();
+}
+
+void PinToolOptionsViewModel::setCropDraft(bool hasDraft, const QSize& pixelSize)
+{
+    const QString sizeText = hasDraft
+        ? QStringLiteral("%1 \u00D7 %2 px").arg(pixelSize.width()).arg(pixelSize.height())
+        : QString();
+    if (m_cropHasDraft == hasDraft && m_cropSizeText == sizeText) {
+        return;
+    }
+    m_cropHasDraft = hasDraft;
+    m_cropSizeText = sizeText;
+    emit cropDraftChanged();
+}
+
+void PinToolOptionsViewModel::handleCropAspectSelected(int aspect)
+{
+    if (CropDraftModel::isValidAspect(aspect)) {
+        emit cropAspectSelected(aspect);
+    }
+}
+
+void PinToolOptionsViewModel::handleCropApply()
+{
+    emit cropApplyRequested();
+}
+
+void PinToolOptionsViewModel::handleCropCancel()
+{
+    emit cropCancelRequested();
 }
 
 QString PinToolOptionsViewModel::autoBlurHintText() const
@@ -568,6 +639,7 @@ constexpr SelectionSections kSelectionSections[] = {
 
 QString PinToolOptionsViewModel::targetLabel() const
 {
+    if (m_showCrop) return tr("Crop");
     if (!m_editingSelection) return tr("New object");
     QString name;
     switch (m_targetKind) {

@@ -3,6 +3,7 @@
 #include "annotations/AnnotationStyle.h"
 #include <QObject>
 #include <QColor>
+#include <QSize>
 #include <QVariantList>
 #include "tools/ToolId.h"
 
@@ -33,6 +34,13 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(bool showShapeSection READ showShapeSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showSizeSection READ showSizeSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showAutoBlurSection READ showAutoBlurSection NOTIFY sectionVisibilityChanged)
+    Q_PROPERTY(bool showCropSection READ showCropSection NOTIFY sectionVisibilityChanged)
+
+    // Crop section (#358): aspect preset, draft size and apply / cancel.
+    Q_PROPERTY(QVariantList cropAspectOptions READ cropAspectOptions CONSTANT)
+    Q_PROPERTY(int cropAspect READ cropAspect NOTIFY cropAspectChanged)
+    Q_PROPERTY(bool cropHasDraft READ cropHasDraft NOTIFY cropDraftChanged)
+    Q_PROPERTY(QString cropSizeText READ cropSizeText NOTIFY cropDraftChanged)
 
     // Color section
     Q_PROPERTY(QVariantList colorPalette READ colorPalette CONSTANT)
@@ -113,7 +121,16 @@ public:
     bool showShapeSection() const { return m_showShape; }
     bool showSizeSection() const { return m_showSize; }
     bool showAutoBlurSection() const { return m_showAutoBlur; }
+    bool showCropSection() const { return m_showCrop; }
     bool hasContent() const;
+
+    // Crop draft state, pushed by the host that owns the crop tool.
+    QVariantList cropAspectOptions() const;
+    int cropAspect() const { return m_cropAspect; }
+    void setCropAspect(int aspect);
+    bool cropHasDraft() const { return m_cropHasDraft; }
+    QString cropSizeText() const { return m_cropSizeText; }
+    void setCropDraft(bool hasDraft, const QSize& pixelSize);
 
     bool markerTextSnapAvailable() const { return m_markerTextSnapAvailable; }
     bool markerTextSnapEnabled() const { return m_markerTextSnapEnabled; }
@@ -268,6 +285,11 @@ signals:
     void stepBadgeSizeSelected(int size);
     void autoBlurRequested();
     void emojiPickerRequested();
+    void cropAspectChanged();
+    void cropDraftChanged();
+    void cropAspectSelected(int aspect);   // CropDraftModel::Aspect
+    void cropApplyRequested();
+    void cropCancelRequested();
 
 public slots:
     // Called from QML
@@ -290,6 +312,9 @@ public slots:
     void handleStepBadgeSizeSelected(int size);
     void handleAutoBlurClicked();
     void handleEmojiPickerRequested();
+    void handleCropAspectSelected(int aspect);
+    void handleCropApply();
+    void handleCropCancel();
     void handleZOrderRequested(int move);
 
     // Returns true if the wheel delta was consumed (width adjusted)
@@ -321,7 +346,13 @@ private:
     bool m_showShape = false;
     bool m_showSize = false;
     bool m_showAutoBlur = false;
+    bool m_showCrop = false;
     bool m_showingEmojiPicker = false;
+
+    // Crop
+    int m_cropAspect = 0;
+    bool m_cropHasDraft = false;
+    QString m_cropSizeText;
 
     // Selected-object styling
     struct SavedDefaults {

@@ -6,6 +6,10 @@
 
 #include "annotations/MosaicBlurType.h"
 #include "PinWindow.h"
+#include "qml/PinToolOptionsViewModel.h"
+#include "qml/QmlFloatingSubToolbar.h"
+#include "tools/ToolManager.h"
+#include "tools/handlers/CropToolHandler.h"
 
 #include "annotations/AnnotationLayer.h"
 #include "annotations/MarkerStroke.h"
@@ -121,6 +125,21 @@ private slots:
     void testHandleToolbarUndo_NonTopRemovalPrecedesCropUndo();
     void testHandleToolbarRedo_NewAnnotationBranchInvalidatesCropRedo();
     void testHistoryFloorInvalidatesUnreachableCropBoundary();
+    void cropDraft_ReleaseDoesNotCropAndEscapeLeavesNoUndo();
+    void cropDraft_EnterAppliesOnceAndUndoRestores();
+    void cropDraft_SourcePixelsAtHighDpr_CropsExactPixels();
+    void cropDraft_ZoomedView_MovesAnnotationsWithImage();
+    void cropDraft_RotatedAndFlipped_CropsWhatIsSelected_data();
+    void cropDraft_RotatedAndFlipped_CropsWhatIsSelected();
+    void cropDraft_ArrowKeysMoveOneSourcePixelOnScreenDirection_data();
+    void cropDraft_ArrowKeysMoveOneSourcePixelOnScreenDirection();
+    void cropDraft_SwitchingToolDiscardsDraft();
+    void cropDraft_ReplacedImageDiscardsDraft();
+    void cropDraft_HidingToolbarWithSpaceDiscardsDraft();
+    void cropDraft_FractionalSampleRect_KeepsExactExtent();
+    void cropDraft_WholeImageAppliesWithoutUndoEntry();
+    void cropDraft_SubToolbarShowsSizeAndAspect();
+    void cropDraft_DoubleClickAppliesInsideOnly();
 };
 
 void TestPinWindowCropUndo::initTestCase()
@@ -1936,6 +1955,474 @@ void TestPinWindowCropUndo::undoDuringGestureLeavesCrop()
     QVERIFY(window.canUndoCrop());   // still cropped
     QCOMPARE(firstPoint(*window.m_annotationLayer), QPoint(30, 30));
     window.m_annotationLayer->cancelGesture();
+}
+
+namespace {
+
+// Drags on the crop tool in tool (unrotated display) coordinates.
+void dragCropTool(ToolManager* manager, const QPointF& from, const QPointF& to)
+{
+    manager->handleMousePress(from);
+    manager->handleMouseMove((from + to) / 2.0);
+    manager->handleMouseMove(to);
+    manager->handleMouseRelease(to);
+}
+
+void pressKey(PinWindow& window, int key, Qt::KeyboardModifiers modifiers = Qt::NoModifier)
+{
+    QKeyEvent event(QEvent::KeyPress, key, modifiers);
+    QCoreApplication::sendEvent(&window, &event);
+}
+
+}  // namespace
+
+void TestPinWindowCropUndo::cropDraft_ReleaseDoesNotCropAndEscapeLeavesNoUndo()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    QVERIFY(window.isCropToolActive());
+    CropToolHandler* crop = window.cropToolHandler();
+    QVERIFY(crop != nullptr);
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        QVector<QPoint>{QPoint(100, 70), QPoint(130, 90)}, QColor(Qt::red), 3,
+        LineEndStyle::None, LineStyle::Solid));
+    const QRect annotationBounds = window.m_annotationLayer->itemAt(0)->boundingRect();
+
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+
+    // Releasing the mouse leaves an adjustable draft; the image is untouched.
+    QVERIFY(crop->hasDraft());
+    QCOMPARE(crop->draftRect(), QRect(20, 10, 100, 60));
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.canUndoCrop());
+    QVERIFY(window.isCropToolActive());
+
+    // Escape discards the draft only: the pin stays open, still in the crop tool.
+    QSignalSpy closedSpy(&window, &PinWindow::closed);
+    pressKey(window, Qt::Key_Escape);
+    QVERIFY(!crop->hasDraft());
+    QCOMPARE(closedSpy.count(), 0);
+    QVERIFY(window.isCropToolActive());
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.m_annotationLayer->itemAt(0)->boundingRect(), annotationBounds);
+    QVERIFY(!window.canUndoCrop());
+    QVERIFY(window.m_cropRedoStack.isEmpty());
+}
+
+void TestPinWindowCropUndo::cropDraft_EnterAppliesOnceAndUndoRestores()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+
+    // Enter without a draft does nothing.
+    pressKey(window, Qt::Key_Return);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    // Adjusting the draft never touches history.
+    pressKey(window, Qt::Key_Right);
+    pressKey(window, Qt::Key_Down);
+    dragCropTool(window.m_toolManager, QPointF(70, 40), QPointF(80, 45));
+    QCOMPARE(crop->draftRect(), QRect(31, 16, 100, 60));
+    QVERIFY(!window.canUndoCrop());
+    QVERIFY(!window.m_annotationLayer->canUndo());
+
+    pressKey(window, Qt::Key_Return);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source.copy(QRect(31, 16, 100, 60))));
+    QCOMPARE(window.size(), QSize(100, 60));
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+    QVERIFY(!window.isCropToolActive());
+    QVERIFY(!crop->hasDraft());
+
+    // A second Enter has no draft left to apply.
+    pressKey(window, Qt::Key_Return);
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.size(), QSize(200, 120));
+    window.handleToolbarRedo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source.copy(QRect(31, 16, 100, 60))));
+}
+
+void TestPinWindowCropUndo::cropDraft_SourcePixelsAtHighDpr_CropsExactPixels()
+{
+    // 2x image: 200x120 device pixels shown as 100x60 logical pixels.
+    QPixmap source = createPatternPixmap(200, 120, 2.0);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    QCOMPARE(window.size(), QSize(100, 60));
+    QCOMPARE(window.cropSourcePixelSize(), QSize(200, 120));
+
+    // An odd pixel origin is not on the logical grid, yet crops exactly.
+    QVERIFY(window.applyCropSourcePixels(QRect(11, 7, 100, 50)));
+    QPixmap expected = source.copy(QRect(11, 7, 100, 50));
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expected));
+    QCOMPARE(window.m_contentLogicalSize, QSize(50, 25));
+    QCOMPARE(window.size(), QSize(50, 25));
+    // The shown and exported image is a pixel copy, not a resample.
+    const QImage expectedImage = expected.toImage();
+    QCOMPARE(window.getExportPixmapCore(false, true).toImage().convertToFormat(expectedImage.format()),
+             expectedImage);
+
+    window.undoCrop();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(window.size(), QSize(100, 60));
+    window.redoCrop();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expected));
+
+    // A rect outside the image is refused and changes nothing.
+    QVERIFY(!window.applyCropSourcePixels(QRect(500, 500, 10, 10)));
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, expected));
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+}
+
+void TestPinWindowCropUndo::cropDraft_ZoomedView_MovesAnnotationsWithImage()
+{
+    QPixmap source = createPatternPixmap(180, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setZoomLevel(2.0);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+
+    const QVector<QPoint> points = {QPoint(100, 70), QPoint(130, 90)};
+    window.m_annotationLayer->addItem(std::make_unique<PolylineAnnotation>(
+        points, QColor(Qt::red), 3, LineEndStyle::None, LineStyle::Solid));
+
+    // Tool space is the 360x240 zoomed view; the draft is in the 180x120 source.
+    dragCropTool(window.m_toolManager, QPointF(40, 20), QPointF(122, 82));
+    QCOMPARE(crop->draftRect(), QRect(20, 10, 41, 31));
+    QVERIFY(crop->commitDraft());
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source.copy(QRect(20, 10, 41, 31))));
+    auto* polyline = dynamic_cast<PolylineAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QVERIFY(polyline != nullptr);
+    QCOMPARE(polyline->points()[0], points[0] - QPoint(40, 20));
+    QCOMPARE(polyline->points()[1], points[1] - QPoint(40, 20));
+
+    window.handleToolbarUndo();
+    polyline = dynamic_cast<PolylineAnnotation*>(window.m_annotationLayer->itemAt(0));
+    QCOMPARE(polyline->points()[0], points[0]);
+}
+
+void TestPinWindowCropUndo::cropDraft_RotatedAndFlipped_CropsWhatIsSelected_data()
+{
+    QTest::addColumn<int>("quarterTurns");
+    QTest::addColumn<bool>("flipH");
+    QTest::addColumn<bool>("flipV");
+
+    QTest::newRow("plain") << 0 << false << false;
+    QTest::newRow("90") << 1 << false << false;
+    QTest::newRow("180") << 2 << false << false;
+    QTest::newRow("270") << 3 << false << false;
+    QTest::newRow("flipH") << 0 << true << false;
+    QTest::newRow("90+flipV") << 1 << false << true;
+}
+
+void TestPinWindowCropUndo::cropDraft_RotatedAndFlipped_CropsWhatIsSelected()
+{
+    QFETCH(int, quarterTurns);
+    QFETCH(bool, flipH);
+    QFETCH(bool, flipV);
+
+    QPixmap source = createPatternPixmap(140, 90);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    for (int i = 0; i < quarterTurns; ++i) window.rotateRight();
+    if (flipH) window.flipHorizontal();
+    if (flipV) window.flipVertical();
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+
+    // Select on screen: the view rect (10,20)-(60,50), as the pointer sees it.
+    const QRect viewRect(10, 20, 50, 30);
+    dragCropTool(window.m_toolManager,
+                 window.mapToOriginalCoords(QPointF(viewRect.topLeft())),
+                 window.mapToOriginalCoords(QPointF(viewRect.x() + viewRect.width(),
+                                                    viewRect.y() + viewRect.height())));
+    QVERIFY(crop->hasDraft());
+    const QImage shownBefore = window.getExportPixmapCore(false, true).toImage();
+
+    QVERIFY(crop->commitDraft());
+    // What is shown afterwards is exactly the part that was selected on screen.
+    const QImage shownAfter = window.getExportPixmapCore(false, true).toImage();
+    QCOMPARE(shownAfter.size(), viewRect.size());
+    // Mirrored pins are drawn with a smooth transform that blends the
+    // outermost pixel row with what lay beyond it, so compare inside it.
+    const QRect inner = shownAfter.rect().adjusted(1, 1, -1, -1);
+    QCOMPARE(shownAfter.copy(inner), shownBefore.copy(viewRect).copy(inner));
+    QCOMPARE(window.m_rotationAngle, (quarterTurns * 90) % 360);
+    QCOMPARE(window.m_flipHorizontal, flipH);
+    QCOMPARE(window.m_flipVertical, flipV);
+}
+
+void TestPinWindowCropUndo::cropDraft_ArrowKeysMoveOneSourcePixelOnScreenDirection_data()
+{
+    QTest::addColumn<int>("quarterTurns");
+    QTest::addColumn<bool>("flipH");
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<qreal>("zoom");
+
+    QTest::newRow("plain") << 0 << false << 1.0 << 1.0;
+    QTest::newRow("retina") << 0 << false << 2.0 << 1.0;
+    QTest::newRow("fractional zoom") << 0 << false << 1.0 << 1.5;
+    QTest::newRow("retina zoomed out") << 0 << false << 2.0 << 0.75;
+    QTest::newRow("rotated 90") << 1 << false << 1.0 << 1.0;
+    QTest::newRow("rotated 270 flipped") << 3 << true << 2.0 << 1.0;
+    QTest::newRow("flipped") << 0 << true << 1.0 << 1.0;
+}
+
+void TestPinWindowCropUndo::cropDraft_ArrowKeysMoveOneSourcePixelOnScreenDirection()
+{
+    QFETCH(int, quarterTurns);
+    QFETCH(bool, flipH);
+    QFETCH(qreal, dpr);
+    QFETCH(qreal, zoom);
+
+    QPixmap source = createPatternPixmap(400, 240, dpr);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setZoomLevel(zoom);
+    for (int i = 0; i < quarterTurns; ++i) window.rotateRight();
+    if (flipH) window.flipHorizontal();
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+    QVERIFY(crop->nudgeDraft(QPoint(1, 0)) == false);
+
+    const QSize toolSize = window.cropToolImageSize();
+    dragCropTool(window.m_toolManager,
+                 QPointF(toolSize.width() * 0.25, toolSize.height() * 0.25),
+                 QPointF(toolSize.width() * 0.75, toolSize.height() * 0.75));
+    QVERIFY(crop->hasDraft());
+
+    struct Step { int key; QPoint screen; };
+    const Step steps[] = {
+        {Qt::Key_Right, QPoint(1, 0)}, {Qt::Key_Left, QPoint(-1, 0)},
+        {Qt::Key_Down, QPoint(0, 1)}, {Qt::Key_Up, QPoint(0, -1)},
+    };
+    for (const Step& step : steps) {
+        const QRect before = crop->draftRect();
+        const QPointF shownBefore = window.mapFromOriginalCoords(crop->draftToolRect().center());
+        pressKey(window, step.key);
+        const QRect after = crop->draftRect();
+        const QPointF shownAfter = window.mapFromOriginalCoords(crop->draftToolRect().center());
+
+        // Exactly one source pixel, whatever the zoom or pixel ratio...
+        QCOMPARE(after.size(), before.size());
+        QCOMPARE((after.topLeft() - before.topLeft()).manhattanLength(), 1);
+        // ...in the direction of the arrow as the user sees the image.
+        const QPointF moved = shownAfter - shownBefore;
+        QVERIFY2(QPointF::dotProduct(moved, QPointF(step.screen)) > 0.0,
+                 qPrintable(QStringLiteral("key %1 moved the draft by (%2, %3) on screen")
+                                .arg(step.key).arg(moved.x()).arg(moved.y())));
+        QVERIFY(qFuzzyIsNull(step.screen.x() == 0 ? moved.x() : moved.y()));
+    }
+
+    // Shift takes ten-pixel steps.
+    const QRect before = crop->draftRect();
+    pressKey(window, Qt::Key_Right, Qt::ShiftModifier);
+    QCOMPARE((crop->draftRect().topLeft() - before.topLeft()).manhattanLength(), 10);
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.canUndoCrop());
+}
+
+void TestPinWindowCropUndo::cropDraft_SwitchingToolDiscardsDraft()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    QVERIFY(crop->hasDraft());
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Pencil));
+    QVERIFY(!crop->hasDraft());
+    // Enter under another tool must not apply a crop that is no longer shown.
+    pressKey(window, Qt::Key_Return);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    QVERIFY(!crop->hasDraft());
+    QVERIFY(!window.canUndoCrop());
+
+    // Hiding the toolbar leaves the tool, and the draft with it.
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    QVERIFY(crop->hasDraft());
+    window.hideToolbar();
+    QVERIFY(!crop->hasDraft());
+}
+
+void TestPinWindowCropUndo::cropDraft_ReplacedImageDiscardsDraft()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    QVERIFY(crop->commitDraft());
+    QCOMPARE(window.size(), QSize(100, 60));
+
+    // Draft on the cropped image, then undo back to the larger one.
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    dragCropTool(window.m_toolManager, QPointF(10, 10), QPointF(60, 40));
+    QVERIFY(crop->hasDraft());
+    window.handleToolbarUndo();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY2(!crop->hasDraft(), "A draft must not carry over to another image");
+
+    // Zooming and resizing the view show the same image: the draft stays.
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    const QRect draft = crop->draftRect();
+    window.setZoomLevel(1.5);
+    QVERIFY(crop->hasDraft());
+    QCOMPARE(crop->draftRect(), draft);
+}
+
+void TestPinWindowCropUndo::cropDraft_HidingToolbarWithSpaceDiscardsDraft()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+    QVERIFY(crop->hasDraft());
+
+    // Space hides the toolbar but remembers the tool; the draft must not
+    // come back with it.
+    window.hideToolbarPreservingToolState();
+    QVERIFY(!window.m_annotationMode);
+    QVERIFY(!crop->hasDraft());
+    QVERIFY(!window.m_subToolbar->viewModel()->cropHasDraft());
+    pressKey(window, Qt::Key_Return);
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+
+    window.setZoomLevel(2.0);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    QVERIFY(!crop->hasDraft());
+    QVERIFY(!window.canUndoCrop());
+}
+
+void TestPinWindowCropUndo::cropDraft_FractionalSampleRect_KeepsExactExtent()
+{
+    // A 125% capture: the shown region starts a quarter pixel into the pixmap.
+    QPixmap source = createPatternPixmap(126, 80, 1.25);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen != nullptr);
+    window.setSourceRegion(QRect(25, 40, 100, 64), screen);
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+    QCOMPARE(window.cropSourcePixelSize(), QSize(125, 80));
+
+    QVERIFY(window.applyCropSourcePixels(QRect(10, 10, 50, 40)));
+    // The sampled extent is exactly the 50 x 40 device pixels selected, offset
+    // by the same quarter pixel; it shows as 40 x 32 logical pixels.
+    QCOMPARE(window.m_sourceSampleRect.size(), QSizeF(50.0, 40.0));
+    QCOMPARE(window.m_sourceSampleRect.left() - qFloor(window.m_sourceSampleRect.left()), 0.25);
+    QCOMPARE(window.m_contentLogicalSize, QSize(40, 32));
+    QCOMPARE(window.cropSourcePixelSize(), QSize(50, 40));
+
+    window.undoCrop();
+    QCOMPARE(window.m_sourceSampleRect, QRectF(0.25, 0.0, 125.0, 80.0));
+    QCOMPARE(window.m_contentLogicalSize, QSize(100, 64));
+}
+
+void TestPinWindowCropUndo::cropDraft_WholeImageAppliesWithoutUndoEntry()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+
+    dragCropTool(window.m_toolManager, QPointF(0, 0), QPointF(200, 120));
+    QCOMPARE(crop->draftRect(), QRect(0, 0, 200, 120));
+    pressKey(window, Qt::Key_Return);
+
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QVERIFY(!window.canUndoCrop());
+    QVERIFY(!window.isCropToolActive());
+    QVERIFY(!crop->hasDraft());
+}
+
+void TestPinWindowCropUndo::cropDraft_SubToolbarShowsSizeAndAspect()
+{
+    QPixmap source = createPatternPixmap(400, 240, 2.0);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+    auto* options = window.m_subToolbar->viewModel();
+
+    QVERIFY(options->showCropSection());
+    QVERIFY(options->hasContent());
+    QVERIFY(!options->cropHasDraft());
+    QVERIFY(options->cropSizeText().isEmpty());
+
+    // The pin is 200x120 logical px; the label reports real source pixels.
+    dragCropTool(window.m_toolManager, QPointF(10, 10), QPointF(110, 60));
+    QVERIFY(options->cropHasDraft());
+    QCOMPARE(options->cropSizeText(), QStringLiteral("200 \u00D7 100 px"));
+
+    // Picking a preset in the strip re-fits the draft right away.
+    options->handleCropAspectSelected(static_cast<int>(CropDraftModel::Aspect::Square));
+    QCOMPARE(crop->aspect(), CropDraftModel::Aspect::Square);
+    QCOMPARE(options->cropAspect(), static_cast<int>(CropDraftModel::Aspect::Square));
+    QCOMPARE(crop->draftRect().width(), crop->draftRect().height());
+    QCOMPARE(options->cropSizeText(),
+             QStringLiteral("%1 \u00D7 %1 px").arg(crop->draftRect().width()));
+
+    // Cancel in the strip discards, Apply crops.
+    options->handleCropCancel();
+    QVERIFY(!crop->hasDraft());
+    QVERIFY(!options->cropHasDraft());
+    options->handleCropApply();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+
+    dragCropTool(window.m_toolManager, QPointF(10, 10), QPointF(110, 60));
+    const QRect draft = crop->draftRect();
+    options->handleCropApply();
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source.copy(draft)));
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+    QVERIFY(!window.isCropToolActive());
+    QVERIFY(!options->cropHasDraft());
+}
+
+void TestPinWindowCropUndo::cropDraft_DoubleClickAppliesInsideOnly()
+{
+    QPixmap source = createPatternPixmap(200, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
+    CropToolHandler* crop = window.cropToolHandler();
+    dragCropTool(window.m_toolManager, QPointF(20, 10), QPointF(120, 70));
+
+    auto doubleClick = [&window](const QPoint& pos) {
+        QMouseEvent event(QEvent::MouseButtonDblClick, QPointF(pos), QPointF(window.mapToGlobal(pos)),
+                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        window.mouseDoubleClickEvent(&event);
+    };
+
+    // Outside the draft: nothing is applied and the pin is not closed.
+    QSignalSpy closedSpy(&window, &PinWindow::closed);
+    doubleClick(QPoint(180, 100));
+    QVERIFY(crop->hasDraft());
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source));
+    QCOMPARE(closedSpy.count(), 0);
+
+    doubleClick(QPoint(60, 40));
+    QVERIFY(pixmapsEqual(window.m_originalPixmap, source.copy(QRect(20, 10, 100, 60))));
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
 }
 
 QTEST_MAIN(TestPinWindowCropUndo)

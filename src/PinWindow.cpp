@@ -2848,6 +2848,15 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // The crop draft owns every press: its handles and body must not be
+        // taken by an annotation lying under them (#358).
+        if (isCropToolActive()) {
+            m_annotationLayer->clearSelection();
+            m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
+            refreshCropCursor();
+            return;
+        }
+
         // Erasing must take precedence over selecting or transforming existing items.
         if (m_annotationMode && m_currentToolId == ToolId::Eraser && m_toolManager) {
             m_annotationLayer->clearSelection();
@@ -3061,6 +3070,13 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
         return;
     }
 
+    // The crop tool also follows a hovering pointer, for its handle cursors.
+    if (isCropToolActive() && !m_isResizing && !m_isDragging) {
+        m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
+        refreshCropCursor();
+        return;
+    }
+
     // In annotation mode with active drawing, route to ToolManager
     if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
         m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
@@ -3219,6 +3235,9 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                         static_cast<int>(m_annotationLayer->itemCount() - 1));
                 }
                 m_toolManager->handleMouseRelease(mapToOriginalCoords(event->position()), event->modifiers());
+                if (isCropToolActive()) {
+                    refreshCropCursor();
+                }
                 if (m_currentToolId == ToolId::EmojiSticker) {
                     compensateNewestEmojiIfNeeded(previousLastItem);
                 } else if (m_currentToolId == ToolId::StepBadge) {
@@ -3257,6 +3276,16 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
 void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Double-clicking the crop draft applies it; elsewhere it does
+        // nothing, rather than closing the pin in the middle of a crop (#358).
+        if (isCropToolActive()) {
+            CropToolHandler* cropHandler = cropToolHandler();
+            if (cropHandler && cropHandler->draftContains(mapToOriginalCoords(event->position()))) {
+                cropHandler->commitDraft();
+            }
+            return;
+        }
+
         // In annotation mode with active drawing, forward to tool handler
         // (e.g., polyline mode uses double-click to finish drawing)
         if (m_annotationMode && m_toolManager && m_toolManager->isDrawing()) {
@@ -3436,6 +3465,11 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
             return;
         }
         // Ignore other keys in layout mode
+        return;
+    }
+
+    if (handleCropDraftKey(event)) {
+        event->accept();
         return;
     }
 
@@ -3735,9 +3769,12 @@ void PinWindow::initializeAnnotationComponents()
     refreshMosaicSources();
 
     // Set up crop tool callback
-    if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
-        cropHandler->setCropCallback([this](const QRect& rect) { applyCrop(rect); });
-        cropHandler->setImageSize(cropToolImageSize());
+    if (auto* cropHandler = cropToolHandler()) {
+        cropHandler->setCropCallback([this](const QRect& sourcePixelRect) {
+            return applyCropSourcePixels(sourcePixelRect);
+        });
+        cropHandler->setDraftChangedCallback([this]() { syncCropDraftUi(); });
+        syncCropHandlerImageSize();
     } else {
         qWarning() << "PinWindow: Failed to get CropToolHandler. Crop tool will not function.";
     }
@@ -3832,6 +3869,23 @@ void PinWindow::initializeAnnotationComponents()
     // Initialize QML sub-toolbar
     m_subToolbar = std::make_unique<SnapTray::QmlFloatingSubToolbar>(static_cast<QObject*>(nullptr));
     auto* optionsVM = m_subToolbar->viewModel();
+    connect(optionsVM, &PinToolOptionsViewModel::cropAspectSelected, this, [this](int aspect) {
+        if (CropToolHandler* cropHandler = cropToolHandler()) {
+            cropHandler->setAspect(static_cast<CropToolHandler::Aspect>(aspect));
+            update();
+        }
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cropApplyRequested, this, [this]() {
+        if (CropToolHandler* cropHandler = cropToolHandler(); cropHandler && isCropToolActive()) {
+            cropHandler->commitDraft();
+        }
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cropCancelRequested, this, [this]() {
+        if (CropToolHandler* cropHandler = cropToolHandler()) {
+            cropHandler->discardDraft();
+            update();
+        }
+    });
     auto syncTextFormattingToSubToolbar = [this, optionsVM]() {
         if (!m_textAnnotationEditor) {
             return;
@@ -4093,6 +4147,11 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     }
 
     m_annotationMode = false;
+    // However the tools are left (another tool, Space, the toolbar's close
+    // button), an unapplied crop selection does not wait for a later return.
+    if (CropToolHandler* cropHandler = cropToolHandler()) {
+        cropHandler->discardDraft();
+    }
     if (clearActiveTool) {
         m_currentToolId = ToolId::Selection;
         if (m_toolManager) {
@@ -4244,6 +4303,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
             m_subToolbar->showForTool(toolId);
             updateSubToolbarPosition();
         }
+        if (tool == ToolId::Crop) {
+            syncCropHandlerImageSize();
+            syncCropDraftUi();
+        }
     }
     else {
         exitAnnotationMode();
@@ -4331,18 +4394,96 @@ void PinWindow::syncCropHandlerImageSize()
         return;
     }
 
-    if (auto* cropHandler = dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))) {
+    if (auto* cropHandler = cropToolHandler()) {
         cropHandler->setImageSize(cropToolImageSize());
+        // A replaced image (undo, redo, layout, another capture) has another
+        // cache key, which drops any crop draft made on the old one.
+        cropHandler->setSource(cropSourcePixelSize(),
+                               m_originalPixmap.devicePixelRatio(),
+                               m_originalPixmap.cacheKey());
+        cropHandler->setViewOrientation(m_rotationAngle, m_flipHorizontal, m_flipVertical);
     }
+}
+
+CropToolHandler* PinWindow::cropToolHandler() const
+{
+    return m_toolManager
+        ? dynamic_cast<CropToolHandler*>(m_toolManager->handler(ToolId::Crop))
+        : nullptr;
+}
+
+bool PinWindow::isCropToolActive() const
+{
+    return m_annotationMode && m_currentToolId == ToolId::Crop && m_toolManager;
+}
+
+void PinWindow::syncCropDraftUi()
+{
+    CropToolHandler* cropHandler = cropToolHandler();
+    if (!cropHandler) {
+        return;
+    }
+    if (m_subToolbar) {
+        // Shown the way the pin shows the image: a quarter turn swaps the sides.
+        QSize shownSize = cropHandler->draftRect().size();
+        if (m_rotationAngle % 180 != 0) shownSize.transpose();
+        auto* optionsVM = m_subToolbar->viewModel();
+        optionsVM->setCropAspect(static_cast<int>(cropHandler->aspect()));
+        optionsVM->setCropDraft(cropHandler->hasDraft(), shownSize);
+        updateSubToolbarPosition();
+    }
+    update();
+}
+
+void PinWindow::refreshCropCursor()
+{
+    auto& cursorManager = CursorManager::instance();
+    cursorManager.setHoverTargetForWidget(this, HoverTarget::None);
+    cursorManager.updateToolCursorForWidget(this);
+    cursorManager.reapplyCursorForWidget(this);
+}
+
+bool PinWindow::handleCropDraftKey(QKeyEvent* event)
+{
+    if (!isCropToolActive()) {
+        return false;
+    }
+    CropToolHandler* cropHandler = cropToolHandler();
+    if (!cropHandler || !cropHandler->hasDraft()) {
+        return false;
+    }
+
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        cropHandler->commitDraft();
+        return true;
+    }
+
+    static const QHash<int, QPoint> kArrowSteps = {
+        {Qt::Key_Left, QPoint(-1, 0)},
+        {Qt::Key_Right, QPoint(1, 0)},
+        {Qt::Key_Up, QPoint(0, -1)},
+        {Qt::Key_Down, QPoint(0, 1)},
+    };
+    const auto step = kArrowSteps.constFind(event->key());
+    if (step == kArrowSteps.constEnd()) {
+        return false;
+    }
+    const Qt::KeyboardModifiers modifiers = event->modifiers() & ~Qt::KeypadModifier;
+    if (modifiers != Qt::NoModifier && modifiers != Qt::ShiftModifier) {
+        return false;
+    }
+    // Arrows follow the screen; the draft is stored unrotated and unmirrored.
+    const int distance = modifiers == Qt::ShiftModifier ? kCropNudgeLargeStep : kCropNudgeStep;
+    const QPointF sourceStep = buildOrientationLinearTransform(
+        m_rotationAngle, m_flipHorizontal, m_flipVertical).inverted().map(QPointF(*step) * distance);
+    cropHandler->nudgeDraft(sourceStep.toPoint());
+    return true;
 }
 
 void PinWindow::applyCrop(const QRect& cropRect)
 {
     if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
     if (cropRect.isEmpty()) return;
-
-    qreal dpr = m_originalPixmap.devicePixelRatio();
-    if (dpr <= 0.0) dpr = 1.0;
 
     // Crop tool coordinates follow the same space used by annotation tools.
     // This space tracks display size (including zoom) and orientation mapping.
@@ -4404,6 +4545,17 @@ void PinWindow::applyCrop(const QRect& cropRect)
         static_cast<qreal>(sourceLogicalRect.height()) * previousSampleRect.height()
             / sourceLogicalSize.height());
 
+    commitCropGeometry(exactPhysicalCropRect, sourceLogicalRect.size(), QPointF(annotationOffsetDisplay));
+}
+
+bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
+                                   const QSize& croppedLogicalSize,
+                                   const QPointF& annotationOffsetDisplay)
+{
+    qreal dpr = m_originalPixmap.devicePixelRatio();
+    if (dpr <= 0.0) dpr = 1.0;
+    const QRectF previousSampleRect = sourceSampleRect();
+
     // Convert the exact sampled crop into a covering device rect for QPixmap::copy.
     const QRect deviceRect = coveringRectForRectF(exactPhysicalCropRect);
 
@@ -4413,13 +4565,13 @@ void PinWindow::applyCrop(const QRect& cropRect)
     if (clampedDeviceRect.isEmpty()) {
         qWarning() << "PinWindow::applyCrop: crop rect does not intersect pixmap bounds."
                     << "deviceRect:" << deviceRect << "pixmapSize:" << m_originalPixmap.size();
-        return;
+        return false;
     }
 
     QPixmap cropped = m_originalPixmap.copy(clampedDeviceRect);
     if (cropped.isNull()) {
         qWarning() << "PinWindow::applyCrop: QPixmap::copy returned null for rect:" << clampedDeviceRect;
-        return;
+        return false;
     }
 
     // Save current state for undo AFTER validation succeeds
@@ -4437,7 +4589,7 @@ void PinWindow::applyCrop(const QRect& cropRect)
     // Apply the cropped pixmap
     m_originalPixmap = cropped;
     m_originalPixmap.setDevicePixelRatio(dpr);
-    setContentLogicalSize(sourceLogicalRect.size());
+    setContentLogicalSize(croppedLogicalSize);
     setSourceSampleRect(exactPhysicalCropRect.translated(-clampedDeviceRect.topLeft()));
 
     // Cropping changes the canvas bounds/origin, so stored multi-region layout
@@ -4459,7 +4611,7 @@ void PinWindow::applyCrop(const QRect& cropRect)
     // Translate annotations in display/tool coordinates (same space as tool input).
     if (m_annotationLayer) {
         entry.annotationHistoryState = m_annotationLayer->historyStateToken();
-        m_annotationLayer->translateAll(QPointF(-annotationOffsetDisplay.x(), -annotationOffsetDisplay.y()));
+        m_annotationLayer->translateAll(-annotationOffsetDisplay);
     }
 
     m_cropRedoStack.clear();
@@ -4468,6 +4620,18 @@ void PinWindow::applyCrop(const QRect& cropRect)
         m_cropUndoStack.removeFirst();
     }
 
+    leaveCropTool();
+
+    // Update display
+    updateSize();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+    return true;
+}
+
+void PinWindow::leaveCropTool()
+{
     // Exit crop mode and switch to Selection
     if (m_toolbar) {
         m_toolbar->viewModel()->setActiveTool(static_cast<int>(ToolId::Selection));
@@ -4477,13 +4641,56 @@ void PinWindow::applyCrop(const QRect& cropRect)
         m_toolManager->setCurrentTool(ToolId::Selection);
     }
     exitAnnotationMode();
+}
 
-    // Update display
-    updateSize();
-    updateToolbarPosition();
-    syncCropHandlerImageSize();
-    updateUndoRedoState();
+QSize PinWindow::cropSourcePixelSize() const
+{
+    const QRectF sampleRect = sourceSampleRect();
+    if (sampleRect.isEmpty()) {
+        return QSize();
+    }
+    return QSize(qMax(1, qRound(sampleRect.width())), qMax(1, qRound(sampleRect.height())));
+}
 
+bool PinWindow::applyCropSourcePixels(const QRect& sourcePixelRect)
+{
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+
+    const QSize gridSize = cropSourcePixelSize();
+    const QSize toolImageSize = cropToolImageSize();
+    const QRect pixelRect = sourcePixelRect.intersected(QRect(QPoint(0, 0), gridSize));
+    if (pixelRect.isEmpty() || toolImageSize.isEmpty()) {
+        qWarning() << "PinWindow::applyCropSourcePixels: nothing to crop."
+                   << "rect:" << sourcePixelRect << "source:" << gridSize;
+        return false;
+    }
+    if (pixelRect.size() == gridSize) {
+        // The whole image is selected: nothing changes and nothing to undo.
+        leaveCropTool();
+        return true;
+    }
+
+    qreal dpr = m_originalPixmap.devicePixelRatio();
+    if (dpr <= 0.0) dpr = 1.0;
+
+    // One draft unit is one device pixel of the sampled source.
+    const QRectF previousSampleRect = sourceSampleRect();
+    const QRectF exactPhysicalCropRect = QRectF(
+        previousSampleRect.left() + pixelRect.x(),
+        previousSampleRect.top() + pixelRect.y(),
+        pixelRect.width(),
+        pixelRect.height()).intersected(previousSampleRect);
+    if (exactPhysicalCropRect.isEmpty()) {
+        return false;
+    }
+
+    const QSize croppedLogicalSize(qMax(1, qRound(pixelRect.width() / dpr)),
+                                   qMax(1, qRound(pixelRect.height() / dpr)));
+    // Annotations live in tool/display space, which may be zoomed.
+    const QPointF annotationOffsetDisplay(
+        static_cast<qreal>(pixelRect.x()) * toolImageSize.width() / gridSize.width(),
+        static_cast<qreal>(pixelRect.y()) * toolImageSize.height() / gridSize.height());
+    return commitCropGeometry(exactPhysicalCropRect, croppedLogicalSize, annotationOffsetDisplay);
 }
 
 void PinWindow::undoCrop()
@@ -4508,8 +4715,7 @@ void PinWindow::undoCrop()
                     return -entry.layoutAnnotationOffsets.value(key);
                 });
         } else {
-            m_annotationLayer->translateAll(QPointF(entry.annotationOffsetDisplay.x(),
-                                                    entry.annotationOffsetDisplay.y()));
+            m_annotationLayer->translateAll(entry.annotationOffsetDisplay);
         }
     }
     m_cropRedoStack.append(entry);
@@ -4553,8 +4759,7 @@ void PinWindow::redoCrop()
                     return delta;
                 });
         } else {
-            m_annotationLayer->translateAll(QPointF(-entry.annotationOffsetDisplay.x(),
-                                                    -entry.annotationOffsetDisplay.y()));
+            m_annotationLayer->translateAll(-entry.annotationOffsetDisplay);
         }
     }
 
@@ -6136,6 +6341,8 @@ void PinWindow::updateLiveFrame()
 
         // Update display
         updateSize(/*liveFrame=*/true);
+        // A new frame is a new image: a crop draft made on the last one goes.
+        syncCropHandlerImageSize();
     }
 }
 
@@ -6366,6 +6573,13 @@ bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
 
 void PinWindow::updateAnnotationCursor(const QPoint& pos)
 {
+    if (isCropToolActive()) {
+        // Crop presses never reach annotations, so their hover cursors would lie.
+        CursorManager::instance().setHoverTargetForWidget(this, HoverTarget::None);
+        CursorManager::instance().reapplyCursorForWidget(this);
+        return;
+    }
+
     // Map to original coords for hit testing
     QPoint mappedPos = mapToOriginalCoords(pos);
     auto& cursorManager = CursorManager::instance();

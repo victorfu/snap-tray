@@ -93,6 +93,19 @@ Press `Space`, or click **Annotate** on the hover bar, to open a lightweight ann
 - Utility tools: Crop, Measure
 - Action tools: OCR (macOS/Windows only; hidden in Linux beta), QR Code Scan, Save, Copy
 
+### Crop
+
+Choose **Crop** on the annotation toolbar, or **Image processing > Crop** in the context menu, then drag over the part to keep. Releasing the mouse leaves a draft selection: nothing is cropped until you apply it.
+
+- Drag inside the draft to move it, or drag one of its eight handles to resize it. Dragging outside starts a new selection.
+- Pick an aspect ratio in the options strip: Free, Original, 1:1, 16:9, 9:16, 4:3 or 3:2. The draft is re-fitted at once and stays inside the image. On a rotated pin the ratio applies to the image as you see it.
+- Arrow keys move the draft by one pixel of the image, `Shift` + arrow by ten.
+- `Enter`, **Apply**, or a double-click inside the draft crops. `Esc` or **Cancel** discards the draft; a second `Esc` hides the toolbar as before.
+
+The size shown next to the draft and in the options strip is in pixels of the image itself, not of the zoomed pin, so a pin from a 2x display reports twice its on-screen size. Positions move pixel by pixel; sizes are limited to those the pin shows without resampling (any size at 1x, even sizes at 2x, or the full width or height).
+
+Applying adds one undo step, like before. Adjusting the draft adds none. Switching to another tool, hiding the toolbar or undoing to another image discards the draft.
+
 ## Next step
 
 Use [Hotkeys](/docs/hotkeys/) to bind pin actions for faster workflows.

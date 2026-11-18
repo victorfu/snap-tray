@@ -18,6 +18,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
+- Cropping a pinned image now leaves an adjustable selection first: move it, resize it by its handles, pick an aspect ratio (Free, Original, 1:1, 16:9, 9:16, 4:3, 3:2), nudge it one image pixel at a time with the arrow keys, then press Enter to apply or Esc to cancel. Sizes are shown in real image pixels.
 - Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
 - GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.
 - Windows recording defaults to WGC, preserves precise frame times and avoids repeatedly encoding still desktops. DXGI can recover from temporary capture loss; WASAPI starts asynchronously and reports audio gaps and timestamp repairs.
