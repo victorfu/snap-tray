@@ -3,7 +3,9 @@
 // reported only once the file is published.
 #include <QtTest/QtTest>
 
+#include <QClipboard>
 #include <QColorSpace>
+#include <QGuiApplication>
 #include <QDir>
 #include <QFile>
 #include <QImage>
@@ -89,6 +91,7 @@ private slots:
     void destroyedRunnerFinishesTheFileWithoutCallback();
     void waitWithoutReportingFinishesTheFile();
     void staleReservedClipboardCopyIsSuperseded();
+    void anyOtherClipboardChangeSupersedesAReservedCopy();
 };
 
 void TestPinExportJob::uniqueSaveNeverReplacesAFile()
@@ -372,6 +375,24 @@ void TestPinExportJob::staleReservedClipboardCopyIsSuperseded()
     PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
         solidImage({8, 8}, Qt::red), qApp,
         [&](PlatformFeatures::ClipboardCopyResult copied) { result = copied; }, stale);
+    QTRY_VERIFY(result.has_value());
+    QCOMPARE(*result, PlatformFeatures::ClipboardCopyResult::Superseded);
+}
+
+void TestPinExportJob::anyOtherClipboardChangeSupersedesAReservedCopy()
+{
+    // A text copy (OCR result, pin info) or another app changing the
+    // clipboard while the beautified picture renders: Qt reports it with
+    // dataChanged, emitted here so the real clipboard is left alone.
+    const quint64 reserved = PlatformFeatures::reserveClipboardRequest();
+    QVERIFY(PlatformFeatures::isLatestClipboardRequest(reserved));
+    emit QGuiApplication::clipboard()->dataChanged();
+    QVERIFY(!PlatformFeatures::isLatestClipboardRequest(reserved));
+
+    std::optional<PlatformFeatures::ClipboardCopyResult> result;
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        solidImage({8, 8}, Qt::red), qApp,
+        [&](PlatformFeatures::ClipboardCopyResult copied) { result = copied; }, reserved);
     QTRY_VERIFY(result.has_value());
     QCOMPARE(*result, PlatformFeatures::ClipboardCopyResult::Superseded);
 }

@@ -1,4 +1,5 @@
 #include "PlatformFeatures.h"
+#include <QScopedValueRollback>
 #include "platform/MacCLIInstaller.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
@@ -177,6 +178,7 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
             }
             return;
         }
+        const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
         const bool success = copyImageToClipboardForGui(image);
         if (completion) {
             completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
@@ -192,6 +194,7 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
                 }
                 return;
             }
+            const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
             const bool success = copyImageToClipboardForGui(image);
             if (completion) {
                 completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
