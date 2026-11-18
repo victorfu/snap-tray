@@ -580,6 +580,7 @@ public:
         LONGLONG duration = 0;
         if (SUCCEEDED(hr)) hr = presentationDuration(m_reader.Get(), &duration);
         if (FAILED(hr)) return failed(hr);
+        m_rotation = MFGetAttributeUINT32(native.Get(), MF_MT_VIDEO_ROTATION, 0);
         m_size = area.size(); m_duration = hnsToMs(duration);
         UINT32 numerator = 30, denominator = 1;
         MFGetAttributeRatio(native.Get(), MF_MT_FRAME_RATE, &numerator, &denominator);
@@ -591,6 +592,23 @@ public:
         if (SUCCEEDED(hr)) hr = rgb->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_RGB32);
         if (SUCCEEDED(hr)) hr = m_reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, nullptr, rgb.Get());
         return SUCCEEDED(hr) || failed(hr);
+    }
+    QImage sampleAt(qint64 ms) override
+    {
+        if (!m_reader || m_rotation != 0) return {}; // masks require display-oriented pixels
+        constexpr qint64 kSequentialGapMs = 2000;
+        if (ms < m_position / 1000 + kSequentialGapMs) return frameAt(ms);
+        PROPVARIANT position;
+        PropVariantInit(&position);
+        HRESULT hr = InitPropVariantFromInt64(ms * 10000, &position);
+        if (SUCCEEDED(hr)) hr = m_reader->SetCurrentPosition(GUID_NULL, position);
+        PropVariantClear(&position);
+        if (FAILED(hr)) return {};
+        m_next.Reset();
+        m_frame = {};
+        m_eof = false;
+        m_position = -1;
+        return frameAt(ms);
     }
     QImage frameAt(qint64 ms) override { return frameAtMicroseconds(ms * 1000); }
     QImage frameAtMicroseconds(qint64 us) override
@@ -647,6 +665,7 @@ private:
     LONGLONG m_nextTime = 0;
     QSize m_size;
     QImage m_frame;
+    UINT32 m_rotation = 0;
     qint64 m_duration = 0, m_position = -1;
     double m_fps = 30.0;
     bool m_eof = false;

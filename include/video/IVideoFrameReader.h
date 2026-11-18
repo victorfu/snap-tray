@@ -15,6 +15,8 @@ public:
 
     virtual bool load(const QString& filePath) = 0;
     virtual QImage frameAt(qint64 positionMs) = 0;
+    // Sparse source-time samples for the editor on a dedicated reader.
+    virtual QImage sampleAt(qint64 positionMs) { return frameAt(positionMs); }
     // Native edited MP4 export samples fractional-fps sources without first
     // rounding the requested time down to a millisecond.
     virtual QImage frameAtMicroseconds(qint64 positionUs) { return frameAt(positionUs / 1000); }

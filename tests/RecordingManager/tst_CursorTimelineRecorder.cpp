@@ -11,6 +11,7 @@
 
 #include "recording/CursorTimelineRecorder.h"
 #include "recording/CursorEffects.h"
+#include "recording/ZoomTrack.h"
 #include "recording/WindowsCursorSupport.h"
 
 using namespace SnapTray;
@@ -919,6 +920,25 @@ void TestCursorTimelineRecorder::delayedLogicalClickBetweenPolls()
     QCOMPARE(timeline.buttons[0].position, expected);
     QCOMPARE(timeline.buttons[1].tMs, 175);
     QCOMPARE(timeline.buttons[1].position, expected + QPoint(qRound(10 * scale), 0));
+
+    // Exercise both consumers with the deserialized sidecar and independently
+    // calculated event position, after the surrounding poll samples diverged.
+    CursorEffectSettings settings;
+    settings.showCursor = false;
+    settings.clickStyle = CursorEffectSettings::ClickStyle::Ripple;
+    QImage frame(timeline.info.frameSize, QImage::Format_ARGB32_Premultiplied);
+    frame.fill(Qt::transparent);
+    CursorEffectRenderer(timeline, settings).paint(frame, 200, {{}, frame.size(), frame.size()});
+    QVERIFY(frame.pixelColor(expected).alpha() > 0);
+    QCOMPARE(frame.pixelColor(timeline.samples.back().position).alpha(), 0);
+
+    AutoZoomOptions options;
+    options.bounds = frame.rect();
+    options.durationMs = 2500;
+    options.maxScale = 4;
+    const auto zooms = generateAutoZoom(timeline, options);
+    QCOMPARE(zooms.size(), size_t(1));
+    QVERIFY(QLineF(zooms.front().focus, QPointF(expected)).length() < 1.0);
 }
 
 QTEST_MAIN(TestCursorTimelineRecorder)

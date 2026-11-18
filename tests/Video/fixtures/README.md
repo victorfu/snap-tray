@@ -66,3 +66,15 @@ boundaries without relying on a live capture encoder. Generate with:
 ffmpeg -f lavfi -i 'color=c=white:s=64x64:r=30:d=2' -c:v libx264 -pix_fmt yuv420p -an redaction-30fps.mp4
 ffmpeg -f lavfi -i 'color=c=white:s=64x64:r=5:d=2' -c:v libx264 -pix_fmt yuv420p -an redaction-5fps.mp4
 ```
+
+
+## Filmstrip rotation and sparse seeking
+
+`filmstrip-rotated-vfr.mp4` reuses the eight compressed frames of
+`edit-vfr.mp4`. Its presentation timestamps are 2048 times farther apart
+and its display matrix rotates the picture 90 degrees. The editor can seek
+over 54 minutes of source time with a fixture under 2 KiB.
+
+```bash
+ffmpeg -itsscale 2048 -display_rotation:v:0 90 -i edit-vfr.mp4 -map 0:v -c copy filmstrip-rotated-vfr.mp4
+```

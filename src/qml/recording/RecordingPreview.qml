@@ -1936,6 +1936,14 @@ Item {
                 border.color: ComponentTokens.editorClipBorder
             }
 
+            RecordingFilmstrip {
+                id: filmstrip
+                anchors.fill: trackRect
+                anchors.margins: 2
+                backend: root.previewBackend
+                Accessible.ignored: true
+            }
+
             // Cut-out parts are shaded, parts at another speed are labelled (#185).
             Repeater {
                 model: backend.timelineParts
@@ -1950,8 +1958,10 @@ Item {
                     height: trackRect.height
                     z: 1
                     radius: 5
-                    color: chosen ? ComponentTokens.editorSelection
-                         : modelData.deleted ? "transparent" : ComponentTokens.editorClip
+                    readonly property color clipColor: chosen ? ComponentTokens.editorSelection
+                        : modelData.deleted ? "transparent" : ComponentTokens.editorClip
+                    color: filmstrip.hasTiles && (chosen || !modelData.deleted)
+                        ? Qt.alpha(clipColor, chosen ? 0.55 : 0.25) : clipColor
                     border.width: chosen ? 2 : 1
                     border.color: chosen ? root.accent : ComponentTokens.editorClipBorder
                     opacity: modelData.deleted && !chosen ? 0.55 : 1

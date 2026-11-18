@@ -7102,6 +7102,10 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
 <context>
     <name>ScreenPickerDialog</name>
     <message>
+        <source>Preview script</source>
+        <translation>Esikatsele käsikirjoitusta</translation>
+    </message>
+    <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="337" />
         <source>Cancel</source>
         <translation>Peruuta</translation>

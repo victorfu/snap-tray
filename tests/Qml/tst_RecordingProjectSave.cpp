@@ -17,6 +17,9 @@ Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 #include <QThreadPool>
 
 #include "qml/RecordingPreviewBackend.h"
+#include "qml/RecordingFilmstrip.h"
+#include <QPainter>
+#include <QQuickView>
 #include "recording/RecordingProject.h"
 #include "settings/RecordingSettingsManager.h"
 
@@ -211,6 +214,22 @@ void tst_RecordingProjectSave::recoverCommittedDraft()
     QCOMPARE(state.redaction.masks.front().rect, QRect(40, 30, 60, 40));
     QCOMPARE(state.audio.microphoneGainDb, -6);
     QCOMPARE(QImage(state.appearance.imagePath).pixelColor(0, 0), QColor(Qt::magenta));
+    auto* strip = restored.m_view->rootObject()->findChild<RecordingFilmstrip*>();
+    QVERIFY(strip);
+    // The restored fixture is solid red through this interval. Black pixels
+    // in the actual video lane must therefore come from the recovered mask.
+    const auto maskedTileVisible = [strip] {
+        QImage surface(strip->size().toSize(), QImage::Format_ARGB32_Premultiplied);
+        if (surface.isNull()) return false;
+        surface.fill(Qt::transparent);
+        QPainter painter(&surface);
+        strip->paint(&painter);
+        painter.end();
+        for (int x = surface.width() / 5; x < surface.width() / 2; ++x)
+            if (surface.pixelColor(x, surface.height() / 2) == QColor(Qt::black)) return true;
+        return false;
+    };
+    QTRY_VERIFY(maskedTileVisible());
     restored.undo();
     QVERIFY(restored.flushDraft());
     QVERIFY(!RecordingDraft::exists(source));

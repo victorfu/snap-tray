@@ -7098,6 +7098,10 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 <context>
     <name>ScreenPickerDialog</name>
     <message>
+        <source>Preview script</source>
+        <translation>Xem trước kịch bản</translation>
+    </message>
+    <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="337" />
         <source>Cancel</source>
         <translation>Hủy</translation>

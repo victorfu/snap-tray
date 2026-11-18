@@ -7102,6 +7102,10 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
 <context>
     <name>ScreenPickerDialog</name>
     <message>
+        <source>Preview script</source>
+        <translation>Förhandsvisa manus</translation>
+    </message>
+    <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="337" />
         <source>Cancel</source>
         <translation>Avbryt</translation>
