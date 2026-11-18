@@ -253,6 +253,9 @@ private:
     // and replaces it with the cut-out as one crop-undo step. Annotations
     // stay editable on top; mosaics resample the new image.
     void removeBackground();
+    // Any task the loading spinner stands for; one place for its timer and
+    // its painting, so the two cannot disagree.
+    bool hasSpinnerTask() const;
     // Esc while it runs: drops the job, the pin stays as it was.
     bool cancelBackgroundRemoval();
     void onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Result& result,

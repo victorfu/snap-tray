@@ -2220,15 +2220,19 @@ OCRManager* PinWindow::ensureOCRManager()
     return m_ocrManager;
 }
 
+bool PinWindow::hasSpinnerTask() const
+{
+    return m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress
+        || m_backgroundRemovalInProgress;
+}
+
 void PinWindow::updateLoadingSpinnerState()
 {
     if (!m_loadingSpinner) {
         return;
     }
 
-    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress
-        || m_backgroundRemovalInProgress;
-    if (hasInFlightTask) {
+    if (hasSpinnerTask()) {
         m_loadingSpinner->start();
     } else {
         m_loadingSpinner->stop();
@@ -2922,8 +2926,8 @@ void PinWindow::paintEvent(QPaintEvent* event)
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
-    // Draw loading spinner when OCR, QR, or auto-blur is in progress
-    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) {
+    // Draw loading spinner while OCR, QR, auto-blur or background removal runs
+    if (hasSpinnerTask()) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
