@@ -594,6 +594,7 @@ add_library(snaptray_platform STATIC
     src/QRCodeManager.cpp
     src/platform/QtQuickBackendPolicy.cpp
     src/platform/KeyboardModifiers.cpp
+    src/platform/ClipboardRequestOrder.cpp
     # Scroll area detection and scroll injection (#265)
     src/scrollcapture/ScrollCaptureCommon.cpp
     $<$<NOT:$<PLATFORM_ID:Darwin,Windows>>:
@@ -959,6 +960,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/RegionLayoutRenderer.cpp
     src/pinwindow/PinMergeHelper.cpp
     src/pinwindow/PinLayoutGeometry.cpp
+    src/pinwindow/PinExportJob.cpp
 
     # Screen canvas
     include/ScreenCanvas.h
@@ -1047,6 +1049,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/RegionLayoutManager.h
     include/pinwindow/PinMergeHelper.h
     include/pinwindow/PinLayoutGeometry.h
+    include/pinwindow/PinExportJob.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h

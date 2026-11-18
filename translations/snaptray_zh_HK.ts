@@ -2749,6 +2749,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>匯出為...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>仍在匯出上一張圖片</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2750,6 +2750,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>Εξαγωγή ως...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Η προηγούμενη εικόνα εξάγεται ακόμα</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

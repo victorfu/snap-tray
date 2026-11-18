@@ -29,6 +29,11 @@ private slots:
     void testApplyToPixmap_HiDPI_CorrectLogicalSize();
     void testApplyToPixmap_BorderInsideThePicture();
 
+    // applyToImage (#353) must draw exactly what applyToPixmap draws
+    void testApplyToImage_NullSource();
+    void testApplyToImage_MatchesApplyToPixmap_data();
+    void testApplyToImage_MatchesApplyToPixmap();
+
     // render tests
     void testRender_NullSource_NoOp();
     void testRender_FitsTargetRect();
@@ -311,6 +316,80 @@ void tst_BeautifyRenderer::testApplyToPixmap_BorderInsideThePicture()
     settings.borderEnabled = false;
     const QImage plain = BeautifyRenderer::applyToPixmap(source, settings).toImage();
     QCOMPARE(QColor(plain.pixel(21, 60)), QColor(Qt::red));
+}
+
+void tst_BeautifyRenderer::testApplyToImage_NullSource()
+{
+    QVERIFY(BeautifyRenderer::applyToImage(QImage(), BeautifySettings()).isNull());
+}
+
+void tst_BeautifyRenderer::testApplyToImage_MatchesApplyToPixmap_data()
+{
+    QTest::addColumn<int>("background");
+    QTest::addColumn<int>("cornerRadius");
+    QTest::addColumn<bool>("shadow");
+    QTest::addColumn<bool>("border");
+    QTest::addColumn<int>("aspect");
+    QTest::addColumn<qreal>("dpr");
+    QTest::addColumn<bool>("transparent");
+
+    const int solid = static_cast<int>(BeautifyBackgroundType::Solid);
+    const int linear = static_cast<int>(BeautifyBackgroundType::LinearGradient);
+    const int radial = static_cast<int>(BeautifyBackgroundType::RadialGradient);
+    const int autoRatio = static_cast<int>(BeautifyAspectRatio::Auto);
+    const int wide = static_cast<int>(BeautifyAspectRatio::Wide_16_9);
+    QTest::newRow("plain") << solid << 0 << false << false << autoRatio << 1.0 << false;
+    QTest::newRow("rounded-shadow-border") << linear << 12 << true << true << autoRatio << 1.0 << false;
+    QTest::newRow("hidpi-rounded") << radial << 9 << true << false << wide << 2.0 << false;
+    QTest::newRow("fractional-dpr") << linear << 6 << false << true << autoRatio << 1.5 << true;
+    QTest::newRow("transparent-source") << solid << 10 << true << true << wide << 2.0 << true;
+}
+
+void tst_BeautifyRenderer::testApplyToImage_MatchesApplyToPixmap()
+{
+    QFETCH(int, background);
+    QFETCH(int, cornerRadius);
+    QFETCH(bool, shadow);
+    QFETCH(bool, border);
+    QFETCH(int, aspect);
+    QFETCH(qreal, dpr);
+    QFETCH(bool, transparent);
+
+    QImage source(QSize(150, 96), QImage::Format_ARGB32_Premultiplied);
+    for (int y = 0; y < source.height(); ++y) {
+        for (int x = 0; x < source.width(); ++x) {
+            source.setPixelColor(x, y, QColor(x % 256, (y * 3) % 256, (x + y) % 256,
+                                              transparent && x < 20 ? 90 : 255));
+        }
+    }
+    source.setDevicePixelRatio(dpr);
+
+    BeautifySettings settings;
+    settings.backgroundType = static_cast<BeautifyBackgroundType>(background);
+    settings.backgroundColor = QColor(30, 60, 90);
+    settings.gradientStartColor = QColor(200, 40, 120);
+    settings.gradientEndColor = QColor(20, 180, 220);
+    settings.gradientAngle = 35;
+    settings.padding = 17;
+    settings.cornerRadius = cornerRadius;
+    settings.shadowEnabled = shadow;
+    settings.shadowBlur = 14;
+    settings.shadowOffsetX = 3;
+    settings.shadowOffsetY = 5;
+    settings.borderEnabled = border;
+    settings.borderWidth = 3;
+    settings.borderColor = QColor(250, 250, 10);
+    settings.aspectRatio = static_cast<BeautifyAspectRatio>(aspect);
+
+    const QImage fromPixmap = BeautifyRenderer::applyToPixmap(
+        QPixmap::fromImage(source, Qt::NoOpaqueDetection), settings).toImage();
+    const QImage fromImage = BeautifyRenderer::applyToImage(source, settings);
+
+    QCOMPARE(fromImage.size(), fromPixmap.size());
+    QCOMPARE(fromImage.devicePixelRatio(), fromPixmap.devicePixelRatio());
+    QCOMPARE(fromImage.hasAlphaChannel(), fromPixmap.hasAlphaChannel());
+    QCOMPARE(fromImage.convertToFormat(QImage::Format_ARGB32_Premultiplied),
+             fromPixmap.convertToFormat(QImage::Format_ARGB32_Premultiplied));
 }
 
 QTEST_MAIN(tst_BeautifyRenderer)

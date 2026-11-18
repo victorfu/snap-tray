@@ -2,6 +2,7 @@
 #include "PinWindow.h"
 
 #include <QDebug>
+#include <utility>
 
 PinWindowManager::PinWindowManager(QObject *parent)
     : QObject(parent)
@@ -10,6 +11,13 @@ PinWindowManager::PinWindowManager(QObject *parent)
 
 PinWindowManager::~PinWindowManager()
 {
+    // On quit there is no event loop left to delete the closed pins, so their
+    // destructors would never wait for a save still being written (#353).
+    for (PinWindow* window : std::as_const(m_windows)) {
+        if (window) {
+            window->finishExportBeforeQuit();
+        }
+    }
     closeAllWindows();
 }
 

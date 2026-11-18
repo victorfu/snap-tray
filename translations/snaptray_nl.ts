@@ -2750,6 +2750,10 @@ Grootte: %2</translation>
         <source>Export As...</source>
         <translation>Exporteren als...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>De vorige afbeelding wordt nog geëxporteerd</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

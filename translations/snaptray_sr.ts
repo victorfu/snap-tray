@@ -2751,6 +2751,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>Извези као...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Претходна слика се још увек извози</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

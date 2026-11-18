@@ -53,6 +53,8 @@ class QmlWindowedToolbar;
 class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
+class PinExportRunner;
+struct PinExportRequest;
 class QmlDialog;
 class ImageExportDialogController;
 struct CaptureSessionWriteRequest;
@@ -124,6 +126,10 @@ public:
 
     // Pin window manager
     void setPinWindowManager(PinWindowManager* manager);
+    // Finishes a save or Beautify export still being written, without
+    // reporting it. Called when the app quits, where closing a pin no longer
+    // deletes it, so the file is never left half-written (#353).
+    void finishExportBeforeQuit();
 
     // Click-through mode
     void setClickThrough(bool enabled);
@@ -240,6 +246,17 @@ private:
     void saveToFile();
     void copyToClipboard();
     bool ensureAutoBlurReadyForExport();
+    // While an earlier save, Beautify save or Beautify copy of this pin is
+    // still running, tells the user and returns true; otherwise false.
+    bool rejectIfExportInProgress();
+    // Composes (beautified when request.beautify is set) and writes the
+    // request's snapshot off the GUI thread, then reports it with
+    // saveCompleted/saveFailed once the file is published or has failed.
+    // `snapshot` is the pixmap saveCompleted reports for an unbeautified
+    // save. Edits made meanwhile are not part of the file (#353).
+    void startFileExport(SnapTray::PinExportRequest request, const QPixmap& snapshot,
+                         bool rememberDirectoryOnSuccess,
+                         std::optional<SnapTray::CaptureSessionWriteRequest> history);
     QPixmap getExportPixmapCore(bool includeDisplayEffects, bool nativeResolution = false) const;
     void drawAnnotationsForExport(QPainter& painter, const QSize& logicalSize,
                                   bool nativeResolution = false) const;
@@ -693,12 +710,15 @@ private:
     // What the Beautify panel opens with: this pin's settings, else the
     // global last-used ones.
     BeautifySettings beautifyPanelSettings() const;
-    // The new history entry for a beautified export, where `result` is
-    // `source` with `settings` applied. Built when the picture is rendered so
-    // the document matches it; submitted once the export has succeeded.
-    // Existing entries are never rewritten.
+    // The new history entry for a beautified export of `source` with
+    // `settings`. Built when the export's snapshot is taken so the document
+    // matches it; the caller sets resultImage to the rendered picture and
+    // submits it once the export has succeeded. Existing entries are never
+    // rewritten.
     SnapTray::CaptureSessionWriteRequest beautifiedHistoryRequest(
-        const QPixmap& source, const QPixmap& result, const BeautifySettings& settings) const;
+        const QPixmap& source, const BeautifySettings& settings) const;
+    // The pin's save, Beautify save and Beautify copy, one at a time (#353).
+    std::unique_ptr<SnapTray::PinExportRunner> m_exportRunner;
     std::unique_ptr<SnapTray::QmlBeautifyPanel> m_beautifyPanel;
     // This pin's own Beautify settings once it has any; the panel opens with
     // them rather than with the global last-used ones.

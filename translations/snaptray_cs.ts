@@ -2751,6 +2751,10 @@ Velikost: %2</translation>
         <source>Export As...</source>
         <translation>Exportovat jako...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Předchozí obrázek se stále exportuje</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

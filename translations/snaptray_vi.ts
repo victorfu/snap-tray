@@ -2749,6 +2749,10 @@ Kích thước: %2</translation>
         <source>Export As...</source>
         <translation>Xuất thành...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Vẫn đang xuất ảnh trước đó</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2749,6 +2749,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>名前を付けて書き出し...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>前の画像をエクスポートしています</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

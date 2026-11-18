@@ -2600,6 +2600,10 @@ English is always included and cannot be removed.</source>
         <source>Export As...</source>
         <translation>ส่งออกเป็น...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>ยังคงส่งออกภาพก่อนหน้าอยู่</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

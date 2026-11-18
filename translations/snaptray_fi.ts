@@ -2750,6 +2750,10 @@ Koko: %2</translation>
         <source>Export As...</source>
         <translation>Vie nimellä...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Edellistä kuvaa viedään yhä</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

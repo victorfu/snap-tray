@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QPixmap>
 
+#include <atomic>
 #include <functional>
 
 #include "platform/PlatformCapabilities.h"
@@ -43,10 +44,20 @@ public:
 
     // Copy image to clipboard for interactive GUI flows.
     bool copyImageToClipboardForGui(const QImage& image) const;
+    // Clipboard requests are numbered in the order they are made. A copy whose
+    // picture is still being rendered off the GUI thread reserves its number
+    // when the user asks for it and passes it here once the picture is ready.
+    // If the clipboard was asked for or changed meanwhile, by another image
+    // copy or any other change (a text copy, another app), it is dropped and
+    // completes as Superseded, so a slow copy never overwrites a newer one
+    // (#353).
+    static quint64 reserveClipboardRequest();
+    static bool isLatestClipboardRequest(quint64 request);
     void copyImageToClipboardForGuiAsync(
         const QImage& image,
         QObject* context = nullptr,
-        ClipboardCopyCompletion completion = {}) const;
+        ClipboardCopyCompletion completion = {},
+        quint64 reservedRequest = 0) const;
 
     // CLI installation
     bool isCLIInstalled() const;
@@ -75,6 +86,11 @@ private:
     SnapTray::PlatformCapabilities m_capabilities;
     bool m_ocrAvailable;
     bool m_windowDetectionAvailable;
+    // Counts any clipboard change but the image copies written here, which
+    // are ordered by their requests instead.
+    static void trackClipboardChanges();
+    static inline std::atomic<quint64> s_lastClipboardRequest{0};
+    static inline bool s_writingImageCopy = false;
 };
 
 #endif // PLATFORMFEATURES_H

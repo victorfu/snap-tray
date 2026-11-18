@@ -27,6 +27,7 @@
 #include "pinwindow/RegionLayoutManager.h"
 #include "pinwindow/RegionLayoutRenderer.h"
 #include "pinwindow/PinMergeHelper.h"
+#include "pinwindow/PinExportJob.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
 #include "history/HistoryStore.h"
@@ -614,6 +615,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
     m_resizeHandler = new ResizeHandler(0, kMinPinSize, this);
     m_uiIndicators = new UIIndicators(this, this);
     m_toast = new SnapTray::QmlToast(this);
+    m_exportRunner = std::make_unique<SnapTray::PinExportRunner>();
     connect(m_uiIndicators, &UIIndicators::exitClickThroughRequested,
         this, [this]() { setClickThrough(false); });
 
@@ -657,6 +659,11 @@ PinWindow::~PinWindow()
 
     if (m_autoBlurWatcher) {
         m_autoBlurWatcher->waitForFinished();
+    }
+    // A save still being written when the pin closes is finished, not
+    // abandoned, and still reported (#353).
+    if (m_exportRunner) {
+        m_exportRunner->finishNow();
     }
 
     // Clean up cursor state before destruction (ensures Drag context is cleared)
@@ -1758,9 +1765,67 @@ void PinWindow::mergePinsFromContextMenu()
     m_pinWindowManager->closeWindows(result.mergedWindows);
 }
 
+bool PinWindow::rejectIfExportInProgress()
+{
+    if (!m_exportRunner->isBusy()) {
+        return false;
+    }
+    m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
+    return true;
+}
+
+void PinWindow::finishExportBeforeQuit()
+{
+    if (m_exportRunner) {
+        m_exportRunner->waitWithoutReporting();
+    }
+}
+
+void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixmap& snapshot,
+                                bool rememberDirectoryOnSuccess,
+                                std::optional<SnapTray::CaptureSessionWriteRequest> history)
+{
+    const bool beautified = request.beautify.has_value();
+    const QString requestedPath = request.filePath;
+    const bool started = m_exportRunner->start(
+        std::move(request),
+        [this, snapshot, beautified, rememberDirectoryOnSuccess, history = std::move(history)](
+            const SnapTray::PinExportResult& result) mutable {
+            if (result.renderFailed) {
+                emit saveFailed(result.filePath,
+                                beautified ? tr("Beautify rendering failed")
+                                           : tr("No image available to save"));
+                return;
+            }
+            if (!result.renderWarning.isEmpty()) {
+                qWarning() << "PinWindow: template warning:" << result.renderWarning;
+            }
+            if (!result.success) {
+                const QString detail = saveErrorDetail(result.error);
+                emit saveFailed(result.filePath,
+                                beautified ? tr("Failed to save beautified screenshot: %1").arg(detail)
+                                           : tr("Failed to save screenshot: %1").arg(detail));
+                return;
+            }
+            if (rememberDirectoryOnSuccess) {
+                FileSettingsManager::instance().rememberManualScreenshotSaveDirectory(result.filePath);
+            }
+            if (history) {
+                history->resultImage = result.image;
+                SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(*history));
+            }
+            emit saveCompleted(beautified ? QPixmap::fromImage(result.image) : snapshot,
+                               result.filePath);
+        });
+    if (!started) {
+        // Only reachable if a save dialog let another export start meanwhile.
+        emit saveFailed(requestedPath, tr("Still exporting the previous image"));
+    }
+}
+
 void PinWindow::saveToFile()
 {
-    if (!ensureAutoBlurReadyForExport()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 
@@ -1803,59 +1868,40 @@ void PinWindow::saveToFile()
     context.outputDir = savePath;
     const QString templateValue = fileSettings.loadFilenameTemplate();
 
+    SnapTray::PinExportRequest request;
+    bool rememberDirectoryOnSuccess = false;
     // Check auto-save setting
     if (fileSettings.loadAutoSaveScreenshots()) {
-        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
-        if (pixmapToSave.isNull()) {
-            emit saveFailed(QString(), tr("No image available to save"));
+        request.destination = SnapTray::PinExportRequest::Destination::UniqueFile;
+        request.uniqueSave = {savePath, templateValue, context};
+    } else {
+        // Show save dialog
+        rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+        const QString manualSavePath =
+            fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
+        QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
+            manualSavePath, templateValue, context, 1);
+        const QString filePath = NativeFileDialogUtils::getSaveFileName(
+            this,
+            tr("Save Screenshot"),
+            defaultName,
+            tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
+        if (filePath.isEmpty()) {
             return;
         }
+        request.destination = SnapTray::PinExportRequest::Destination::ExactFile;
+        request.filePath = filePath;
+    }
 
-        const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
-        const auto saved = ImageSaveUtils::saveImageUnique(
-            taggedImage, {savePath, templateValue, context});
-        if (saved.success) {
-            emit saveCompleted(pixmapToSave, saved.filePath);
-        }
-        else {
-            if (!saved.renderWarning.isEmpty()) {
-                qWarning() << "PinWindow: template warning:" << saved.renderWarning;
-            }
-            emit saveFailed(saved.filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saved.error)));
-        }
+    // The snapshot is taken on the GUI thread; encoding and writing are not.
+    const QPixmap pixmapToSave = getExportPixmapWithAnnotations();
+    if (pixmapToSave.isNull()) {
+        emit saveFailed(request.filePath, tr("No image available to save"));
         return;
     }
-
-    // Show save dialog
-    const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
-    const QString manualSavePath =
-        fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
-    QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
-        manualSavePath, templateValue, context, 1);
-    const QString filePath = NativeFileDialogUtils::getSaveFileName(
-        this,
-        tr("Save Screenshot"),
-        defaultName,
-        tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
-
-    if (!filePath.isEmpty()) {
-        QPixmap pixmapToSave = getExportPixmapWithAnnotations();
-        if (pixmapToSave.isNull()) {
-            emit saveFailed(filePath, tr("No image available to save"));
-            return;
-        }
-
-        const QImage taggedImage = tagImageWithScreenColorSpace(pixmapToSave.toImage(), exportScreen);
-        ImageSaveUtils::Error saveError;
-        if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-            if (rememberDirectoryOnSuccess) {
-                fileSettings.rememberManualScreenshotSaveDirectory(filePath);
-            }
-            emit saveCompleted(pixmapToSave, filePath);
-        } else {
-            emit saveFailed(filePath, tr("Failed to save screenshot: %1").arg(saveErrorDetail(saveError)));
-        }
-    }
+    request.source = pixmapToSave.toImage();
+    request.screenColorSpace = exportColorSpaceForScreen(exportScreen);
+    startFileExport(std::move(request), pixmapToSave, rememberDirectoryOnSuccess, std::nullopt);
 }
 
 void PinWindow::exportImage()
@@ -7473,7 +7519,7 @@ void PinWindow::setHistoryOrigin(const QString& entryId,
 }
 
 SnapTray::CaptureSessionWriteRequest PinWindow::beautifiedHistoryRequest(
-    const QPixmap& source, const QPixmap& result, const BeautifySettings& settings) const
+    const QPixmap& source, const BeautifySettings& settings) const
 {
     // The document is the picture a pin reopened from this entry starts from,
     // so, as for a merge, without this pin's opacity and watermark: the
@@ -7486,7 +7532,6 @@ SnapTray::CaptureSessionWriteRequest PinWindow::beautifiedHistoryRequest(
     const QSize logicalSize = logicalSizeFromPixmap(document);
 
     SnapTray::CaptureSessionWriteRequest request;
-    request.resultImage = result.toImage();
     request.beautify = settings;
     request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
 
@@ -7521,7 +7566,7 @@ SnapTray::CaptureSessionWriteRequest PinWindow::beautifiedHistoryRequest(
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 {
-    if (!ensureAutoBlurReadyForExport()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 
@@ -7532,35 +7577,59 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Copy failed"));
         return;
     }
-    QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
-    if (result.isNull()) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Beautify rendering failed"));
-        return;
-    }
 
     QScreen* exportScreen = m_sourceScreen.data();
     if (!exportScreen) {
         exportScreen = screen();
     }
-    const QImage clipboardImage = normalizeImageForExport(result.toImage(), exportScreen);
-    QPointer<PinWindow> safeThis(this);
-    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
-        clipboardImage,
-        qApp,
-        [safeThis, historyRequest = beautifiedHistoryRequest(source, result, settings)](
-            PlatformFeatures::ClipboardCopyResult result) {
-            // The copy happened even if the pin was closed meanwhile.
-            if (result == PlatformFeatures::ClipboardCopyResult::Success) {
-                SnapTray::HistoryRecorder::instance().submitCaptureSession(historyRequest);
-            }
-            if (!safeThis || result == PlatformFeatures::ClipboardCopyResult::Superseded) {
+    SnapTray::PinExportRequest request;
+    request.destination = SnapTray::PinExportRequest::Destination::Clipboard;
+    request.source = source.toImage();
+    request.beautify = settings;
+    request.screenColorSpace = exportColorSpaceForScreen(exportScreen);
+    // The clipboard's place is taken now, in the order the user asked: a copy
+    // made while this one renders replaces it rather than being overwritten.
+    const quint64 clipboardRequest = PlatformFeatures::reserveClipboardRequest();
+    // Rendering runs off the GUI thread; the clipboard is written on it.
+    const bool started = m_exportRunner->start(
+        std::move(request),
+        [this, clipboardRequest, historyRequest = beautifiedHistoryRequest(source, settings)](
+            const SnapTray::PinExportResult& rendered) mutable {
+            if (!rendered.success) {
+                if (m_isDestructing) {
+                    qWarning() << "PinWindow: Beautify copy failed while the pin closed";
+                    return;
+                }
+                m_toast->showToast(SnapTray::QmlToast::Level::Error,
+                                   rendered.renderFailed ? tr("Beautify rendering failed")
+                                                         : tr("Copy failed"));
                 return;
             }
-            const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
-            safeThis->m_toast->showToast(
-                success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
-                success ? tr("Beautified image copied") : tr("Copy failed"));
+            historyRequest.resultImage = rendered.image;
+            QPointer<PinWindow> safeThis(m_isDestructing ? nullptr : this);
+            PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+                rendered.clipboardImage,
+                qApp,
+                [safeThis, historyRequest = std::move(historyRequest)](
+                    PlatformFeatures::ClipboardCopyResult result) {
+                    // The copy happened even if the pin was closed meanwhile.
+                    if (result == PlatformFeatures::ClipboardCopyResult::Success) {
+                        SnapTray::HistoryRecorder::instance().submitCaptureSession(historyRequest);
+                    }
+                    if (!safeThis || result == PlatformFeatures::ClipboardCopyResult::Superseded) {
+                        return;
+                    }
+                    const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
+                    safeThis->m_toast->showToast(
+                        success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
+                        success ? tr("Beautified image copied") : tr("Copy failed"));
+                },
+                clipboardRequest);
         });
+    if (!started) {
+        // Only reachable if another export started since the check above.
+        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
+    }
 }
 
 void PinWindow::onBeautifyExport(const BeautifySettings& settings)
@@ -7586,7 +7655,7 @@ void PinWindow::onBeautifyExport(const BeautifySettings& settings)
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)
 {
-    if (!ensureAutoBlurReadyForExport()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 
@@ -7617,35 +7686,13 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
     context.outputDir = savePath;
     const QString templateValue = fileSettings.loadFilenameTemplate();
 
+    SnapTray::PinExportRequest request;
+    bool rememberDirectoryOnSuccess = false;
     if (fileSettings.loadAutoSaveScreenshots()) {
-        QPixmap source = getExportPixmapWithAnnotations();
-        if (source.isNull()) {
-            emit saveFailed(QString(), tr("No image available to save"));
-            return;
-        }
-        QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
-        if (result.isNull()) {
-            emit saveFailed(QString(), tr("Beautify rendering failed"));
-            return;
-        }
-
-        auto historyRequest = beautifiedHistoryRequest(source, result, settings);
-        const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
-        const auto saved = ImageSaveUtils::saveImageUnique(
-            taggedImage, {savePath, templateValue, context});
-        if (!saved.renderWarning.isEmpty()) {
-            qWarning() << "PinWindow: beautify template warning:" << saved.renderWarning;
-        }
-        if (saved.success) {
-            SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
-            emit saveCompleted(result, saved.filePath);
-        } else {
-            emit saveFailed(
-                saved.filePath,
-                tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saved.error)));
-        }
+        request.destination = SnapTray::PinExportRequest::Destination::UniqueFile;
+        request.uniqueSave = {savePath, templateValue, context};
     } else {
-        const bool rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
+        rememberDirectoryOnSuccess = fileSettings.loadUseLastScreenshotSaveLocation();
         const QString manualSavePath =
             fileSettings.resolveManualScreenshotSaveDirectory(rememberDirectoryOnSuccess);
         QString defaultName = FilenameTemplateEngine::buildUniqueFilePath(
@@ -7655,34 +7702,25 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
             tr("Save Beautified Screenshot"),
             defaultName,
             tr("PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;All Files (*)"));
-        if (!filePath.isEmpty()) {
-            QPixmap source = getExportPixmapWithAnnotations();
-            if (source.isNull()) {
-                emit saveFailed(filePath, tr("No image available to save"));
-                return;
-            }
-            QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
-            if (result.isNull()) {
-                emit saveFailed(filePath, tr("Beautify rendering failed"));
-                return;
-            }
-
-            auto historyRequest = beautifiedHistoryRequest(source, result, settings);
-            const QImage taggedImage = tagImageWithScreenColorSpace(result.toImage(), exportScreen);
-            ImageSaveUtils::Error saveError;
-            if (ImageSaveUtils::saveImageAtomically(taggedImage, filePath, QByteArray(), &saveError)) {
-                if (rememberDirectoryOnSuccess) {
-                    fileSettings.rememberManualScreenshotSaveDirectory(filePath);
-                }
-                SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
-                emit saveCompleted(result, filePath);
-            } else {
-                emit saveFailed(
-                    filePath,
-                    tr("Failed to save beautified screenshot: %1").arg(saveErrorDetail(saveError)));
-            }
+        if (filePath.isEmpty()) {
+            return;
         }
+        request.destination = SnapTray::PinExportRequest::Destination::ExactFile;
+        request.filePath = filePath;
     }
+
+    // The snapshot is taken on the GUI thread; beautifying, encoding and
+    // writing are not.
+    const QPixmap source = getExportPixmapWithAnnotations();
+    if (source.isNull()) {
+        emit saveFailed(request.filePath, tr("No image available to save"));
+        return;
+    }
+    request.source = source.toImage();
+    request.beautify = settings;
+    request.screenColorSpace = exportColorSpaceForScreen(exportScreen);
+    startFileExport(std::move(request), source, rememberDirectoryOnSuccess,
+                    beautifiedHistoryRequest(source, settings));
 }
 
 void PinWindow::keyReleaseEvent(QKeyEvent* event)

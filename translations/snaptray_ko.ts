@@ -2749,6 +2749,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>다른 이름으로 내보내기...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>이전 이미지를 아직 내보내는 중입니다</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

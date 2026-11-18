@@ -19,6 +19,8 @@
 #include "annotations/EmojiStickerAnnotation.h"
 #include "PinWindowManager.h"
 #include "pinwindow/PinWindowPlacement.h"
+#include "pinwindow/PinExportJob.h"
+#include <QClipboard>
 #include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/PinToolbarViewModel.h"
@@ -187,6 +189,14 @@ private slots:
     void testAutoBlurGaussianCoversMappedHiDpiRegion();
     void testAutomaticSavesPreserveEarlierImage_data();
     void testAutomaticSavesPreserveEarlierImage();
+    void testSaveIsWrittenOffTheGuiThreadFromItsSnapshot_data();
+    void testSaveIsWrittenOffTheGuiThreadFromItsSnapshot();
+    void testClosingAPinMidSaveStillReportsIt_data();
+    void testClosingAPinMidSaveStillReportsIt();
+    void testFailedSaveIsReported_data();
+    void testFailedSaveIsReported();
+    void testBeautifyCopyBlocksSaveAndYieldsToANewerCopy();
+    void testQuittingFinishesASaveInFlight();
     void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
     void testAutoBlurMapsCombinedRotationAndFlips_data();
     void testAutoBlurMapsCombinedRotationAndFlips();
@@ -474,13 +484,223 @@ void TestPinWindowStyleSync::testAutomaticSavesPreserveEarlierImage()
         first.saveToFile();
         second.saveToFile();
     }
-    QCOMPARE(a.count(), 1);
-    QCOMPARE(b.count(), 1);
+    // Saves finish off the GUI thread (#353).
+    QTRY_COMPARE(a.count(), 1);
+    QTRY_COMPARE(b.count(), 1);
     const QString firstPath = a.first().at(1).toString();
     const QString secondPath = b.first().at(1).toString();
     QVERIFY(firstPath != secondPath);
     QCOMPARE(QImage(firstPath).pixelColor(12, 12), QColor(Qt::red));
     QCOMPARE(QImage(secondPath).pixelColor(12, 12), QColor(Qt::blue));
+}
+
+void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot_data()
+{
+    QTest::addColumn<bool>("beautify");
+    QTest::newRow("pin") << false;
+    QTest::newRow("beautify") << true;
+}
+
+// #353: a pin's save returns before the save is reported, writes the picture
+// as it was when Save was pressed, and a second press meanwhile starts nothing.
+void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot()
+{
+    QFETCH(bool, beautify);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("snapshot.png");
+    QPixmap red(64, 64);
+    red.fill(Qt::red);
+    PinWindow window(red, QPoint(0, 0));
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+    BeautifySettings style;
+    style.padding = 0;
+    style.cornerRadius = 0;
+    style.shadowEnabled = false;
+    const auto save = [&] {
+        if (beautify) {
+            window.onBeautifySave(style);
+        } else {
+            window.saveToFile();
+        }
+    };
+
+    save();
+    QCOMPARE(saved.count(), 0);
+    // An edit made while the file is written, and a second press.
+    window.m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(
+        QRect(0, 0, 64, 64), ShapeType::Rectangle, QColor(Qt::blue), 4, true));
+    save();
+
+    QTRY_COMPARE(saved.count(), 1);
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(QImage(saved.first().at(1).toString()).pixelColor(32, 32), QColor(Qt::red));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files).size(), 1);
+
+    // Once it has finished, the next save takes the edited picture.
+    save();
+    QTRY_COMPARE(saved.count(), 2);
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(QImage(saved.last().at(1).toString()).pixelColor(32, 32), QColor(Qt::blue));
+}
+
+void TestPinWindowStyleSync::testClosingAPinMidSaveStillReportsIt_data()
+{
+    QTest::addColumn<bool>("beautify");
+    QTest::newRow("pin") << false;
+    QTest::newRow("beautify") << true;
+}
+
+// #353: a pin closed while its save is written waits for it and reports it
+// exactly once, with the picture it had when Save was pressed.
+void TestPinWindowStyleSync::testClosingAPinMidSaveStillReportsIt()
+{
+    QFETCH(bool, beautify);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("closing.png");
+    QPixmap red(1600, 1200);
+    red.fill(Qt::red);
+    auto* window = new PinWindow(red, QPoint(0, 0));
+    QSignalSpy saved(window, &PinWindow::saveCompleted);
+    QSignalSpy failed(window, &PinWindow::saveFailed);
+    BeautifySettings style;
+    style.padding = 0;
+    style.cornerRadius = 0;
+    style.shadowEnabled = false;
+    if (beautify) {
+        window->onBeautifySave(style);
+    } else {
+        window->saveToFile();
+    }
+    QCOMPARE(saved.count(), 0);
+
+    delete window;
+    QCOMPARE(saved.count(), 1);
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(QImage(saved.first().at(1).toString()).pixelColor(800, 600), QColor(Qt::red));
+    QCoreApplication::sendPostedEvents();
+    QCOMPARE(saved.count(), 1);
+}
+
+void TestPinWindowStyleSync::testFailedSaveIsReported_data()
+{
+    QTest::addColumn<bool>("beautify");
+    QTest::newRow("pin") << false;
+    QTest::newRow("beautify") << true;
+}
+
+// #353: a save that cannot be written is reported as failed, never as saved,
+// and the pin can try again.
+void TestPinWindowStyleSync::testFailedSaveIsReported()
+{
+    QFETCH(bool, beautify);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString blocker = dir.filePath(QStringLiteral("file"));
+    {
+        QFile file(blocker);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(blocker + QStringLiteral("/sub"));
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("failed.png");
+    QPixmap red(32, 32);
+    red.fill(Qt::red);
+    PinWindow window(red, QPoint(0, 0));
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+    BeautifySettings style;
+    style.padding = 0;
+    style.cornerRadius = 0;
+    style.shadowEnabled = false;
+    const auto save = [&] {
+        if (beautify) {
+            window.onBeautifySave(style);
+        } else {
+            window.saveToFile();
+        }
+    };
+
+    save();
+    QTRY_COMPARE(failed.count(), 1);
+    QCOMPARE(saved.count(), 0);
+    QVERIFY(!window.m_exportRunner->isBusy());
+    save();
+    QTRY_COMPARE(failed.count(), 2);
+    QCOMPARE(saved.count(), 0);
+}
+
+// #353: a Beautify copy and a save share one job at a time, and a copy made
+// while the beautified picture renders is not overwritten by it.
+void TestPinWindowStyleSync::testBeautifyCopyBlocksSaveAndYieldsToANewerCopy()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("blocked.png");
+    QPixmap red(64, 64);
+    red.fill(Qt::red);
+    PinWindow window(red, QPoint(0, 0));
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+    const QImage clipboardBefore = QGuiApplication::clipboard()->image();
+
+    window.onBeautifyCopy(BeautifySettings());
+    QVERIFY(window.m_exportRunner->isBusy());
+    window.saveToFile(); // rejected: the copy is still rendering
+    // Another copy requested meanwhile (as a plain Copy would).
+    PlatformFeatures::reserveClipboardRequest();
+
+    QTRY_VERIFY(!window.m_exportRunner->isBusy());
+    QCoreApplication::sendPostedEvents();
+    QCoreApplication::processEvents();
+    QCOMPARE(saved.count(), 0);
+    QCOMPARE(failed.count(), 0);
+    QVERIFY(QDir(dir.path()).entryList(QDir::Files).isEmpty());
+    // The stale beautified picture was dropped, not written to the clipboard.
+    QCOMPARE(QGuiApplication::clipboard()->image(), clipboardBefore);
+}
+
+// #353: on quit, closing a pin no longer deletes it, so the manager finishes
+// a save still being written instead of leaving it half-written.
+void TestPinWindowStyleSync::testQuittingFinishesASaveInFlight()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("quit.png");
+    QPixmap red(3000, 2000);
+    red.fill(Qt::red);
+    auto* manager = new PinWindowManager;
+    QPointer<PinWindow> window = manager->createPinWindow(red, QPoint(0, 0), false);
+    QVERIFY(window);
+    QSignalSpy saved(window.data(), &PinWindow::saveCompleted);
+    window->saveToFile();
+
+    delete manager;
+    // Published, with no staging file left, and not reported to a UI that
+    // is going away.
+    const QStringList files = QDir(dir.path()).entryList(QDir::Files | QDir::Hidden);
+    QCOMPARE(files.size(), 1);
+    QCOMPARE(QImage(dir.filePath(files.first())).pixelColor(1500, 1000), QColor(Qt::red));
+    QCOMPARE(saved.count(), 0);
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    delete window.data();
 }
 
 void TestPinWindowStyleSync::testAutoBlurGaussianCoversMappedHiDpiRegion()

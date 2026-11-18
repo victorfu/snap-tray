@@ -2754,6 +2754,10 @@ Size: %2</source>
         <source>Export As...</source>
         <translation>تصدير باسم...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>لا يزال تصدير الصورة السابقة جاريًا</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

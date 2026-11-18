@@ -2751,6 +2751,10 @@ Dydis: %2</translation>
         <source>Export As...</source>
         <translation>Eksportuoti kaip...</translation>
     </message>
+    <message>
+        <source>Still exporting the previous image</source>
+        <translation>Ankstesnis vaizdas dar eksportuojamas</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>
