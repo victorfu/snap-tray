@@ -134,15 +134,36 @@ DialogBase {
                         color: SemanticTokens.textSecondary
                         font.pixelSize: SemanticTokens.fontSizeCaption
                     }
+                    SettingsToggle {
+                        id: previewScript
+                        objectName: "setupPreviewScript"
+                        width: parent.width
+                        visible: prompterDisplay.currentIndex > 0
+                        enabled: scriptEditor.length > 0
+                        label: qsTr("Preview script")
+                        onToggled: value => checked = value
+                        onVisibleChanged: if (!visible) checked = false
+                    }
+
+                    RecordingPrompterView {
+                        objectName: "setupScriptReader"
+                        width: parent.width
+                        height: 180
+                        visible: previewScript.visible && previewScript.checked
+                        script: visible ? scriptEditor.text : ""
+                        onFontPixelsChanged: if (root.viewModel) root.viewModel.prompterFontSize = fontPixels
+                    }
+
                     ScrollView {
                         id: scriptBox
                         objectName: "prompterScriptBox"
                         width: parent.width
                         height: 120
-                        visible: prompterDisplay.currentIndex > 0
+                        visible: prompterDisplay.currentIndex > 0 && !previewScript.checked
                         clip: true
                         TextArea {
                             id: scriptEditor
+                            objectName: "setupScriptEditor"
                             placeholderText: qsTr("Type or paste your script for this recording")
                             Accessible.name: placeholderText
                             wrapMode: TextEdit.Wrap

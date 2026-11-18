@@ -443,7 +443,7 @@ QString RecordingManager::activeScreenSummary() const
 }
 
 void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area,
-                                            QScreen* promptDisplay, const QString& script)
+                                            QScreen* promptDisplay, const QString& script, int fontSize)
 {
     if (m_state == State::Recording || m_state == State::Paused ||
         m_state == State::Encoding || m_state == State::Preparing ||
@@ -470,6 +470,7 @@ void RecordingManager::startScreenRecording(QScreen* screen, const QRectF& area,
     }
     m_promptDisplay = promptDisplay;
     m_promptScript = script;
+    m_promptFontSize = qBound(14, fontSize, 64);
     m_targetScreen = targetScreen;
     // An area chosen before recording (#194), kept on this screen.
     const QRect roundedArea(qRound(area.x()), qRound(area.y()), qRound(area.width()), qRound(area.height()));
@@ -928,7 +929,7 @@ void RecordingManager::beginAsyncInitialization()
 
     if (!m_promptScript.isEmpty()) {
         m_prompter = std::make_unique<SnapTray::RecordingPrompter>(targetScreen, m_promptDisplay,
-                                                                   std::exchange(m_promptScript, {}), 28);
+                                                                   std::exchange(m_promptScript, {}), m_promptFontSize);
         const quintptr id = m_prompter->captureExclusionId();
         if (!id) {
             cancelRecording();

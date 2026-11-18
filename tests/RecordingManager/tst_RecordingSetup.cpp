@@ -509,6 +509,24 @@ void TestRecordingSetup::dialogShowsSetup()
     QVERIFY(find("setupMicrophoneToggle"));
     QVERIFY(find("setupSystemAudioToggle"));
     QVERIFY(find("setupShowBeforeRecordingToggle"));
+    auto* reader = find("setupScriptReader");
+    auto* editor = find("setupScriptEditor");
+    auto* previewToggle = find("setupPreviewScript");
+    QVERIFY(reader && editor && previewToggle);
+    QVERIFY(!reader->isVisible());
+    viewModel->setProperty("prompterDisplay", 0);
+    editor->setProperty("text", QStringLiteral("Local script 稿件"));
+    QVERIFY(QMetaObject::invokeMethod(previewToggle, "activateToggle"));
+    QTRY_VERIFY(reader->isVisible());
+    QCOMPARE(reader->property("script").toString(), viewModel->prompterScript());
+    reader->setProperty("fontPixels", 36);
+    QCOMPARE(viewModel->prompterFontSize(), 36);
+    viewModel->setSources({});
+    QVERIFY(!reader->isVisible());
+    QVERIFY(reader->property("script").toString().isEmpty());
+    viewModel->setSources({source});
+    QVERIFY(!viewModel->prompterScreen());
+
     // One screen: an explicit Start button.
     QVERIFY(find("setupStartButton"));
     QVERIFY(find("setupStartButton")->isVisible());

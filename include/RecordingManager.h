@@ -110,7 +110,7 @@ public slots:
     // preview's initial crop in edit mode, the recorded region in quick mode.
     // Fractional: at 150% a pixel edge can be 233.33 logical (#210).
     void startScreenRecording(QScreen* screen = nullptr, const QRectF& area = QRectF(),
-                              QScreen* promptDisplay = nullptr, const QString& script = {});
+                              QScreen* promptDisplay = nullptr, const QString& script = {}, int fontSize = 28);
     void stopRecording();           // Stop and save recording
     void cancelRecording();         // Cancel without saving
     void pauseRecording();          // Pause recording
@@ -247,6 +247,7 @@ private:
     QRect m_pendingInitialCrop;
     QPointer<QScreen> m_promptDisplay;
     QString m_promptScript;
+    int m_promptFontSize = 28;
     std::unique_ptr<SnapTray::RecordingPrompter> m_prompter;
     QPointer<SnapTray::QmlRecordingBoundary> m_areaBoundary;
     void showAreaBoundary();

@@ -7102,6 +7102,10 @@ Token di data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} o {date}</translation>
 <context>
     <name>ScreenPickerDialog</name>
     <message>
+        <source>Preview script</source>
+        <translation>Anteprima del copione</translation>
+    </message>
+    <message>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="337" />
         <source>Cancel</source>
         <translation>Annulla</translation>

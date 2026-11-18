@@ -72,6 +72,20 @@ double FrameReader::frameRate() const {
     if (!decoder.format) return 0;
     return av_q2d(av_guess_frame_rate(decoder.format, decoder.stream, nullptr));
 }
+QImage FrameReader::sampleAt(qint64 ms) {
+    if (!decoder.stream) return {};
+    // This reader returns coded pixels. Leave transformed media to the clip
+    // placeholder until its display transform can also be applied to masks.
+#if LIBAVFORMAT_VERSION_MAJOR >= 61
+    const auto* params = decoder.stream->codecpar;
+    if (av_packet_side_data_get(params->coded_side_data, params->nb_coded_side_data,
+                                AV_PKT_DATA_DISPLAYMATRIX)) return {};
+#else
+    if (av_stream_get_side_data(decoder.stream, AV_PKT_DATA_DISPLAYMATRIX, nullptr)) return {};
+#endif
+    if (av_dict_get(decoder.stream->metadata, "rotate", nullptr, 0)) return {};
+    return frameAt(ms);
+}
 QImage FrameReader::frameAt(qint64 ms) {
     if (!decoder.codec) return {};
     if (ms < lastRequest && !allowSeeking) {

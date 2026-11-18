@@ -36,6 +36,7 @@ public:
     ~FrameReader() override;
     bool load(const QString& path) override;
     QImage frameAt(qint64 ms) override;
+    QImage sampleAt(qint64 ms) override;
     QSize videoSize() const override;
     qint64 duration() const override;
     double frameRate() const override;

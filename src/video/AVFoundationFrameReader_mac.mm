@@ -31,6 +31,7 @@ public:
                 return false;
             }
 
+            m_asset = asset;
             const CGAffineTransform transform = track.preferredTransform;
             m_transform = QTransform(transform.a, transform.b, transform.c,
                                      transform.d, transform.tx, transform.ty);
@@ -83,6 +84,35 @@ public:
                 return false;
             }
             return !m_size.isEmpty();
+        }
+    }
+
+    QImage sampleAt(qint64 ms) override
+    {
+        @autoreleasepool {
+            if (!m_generator) {
+                m_generator = [[AVAssetImageGenerator alloc] initWithAsset:m_asset];
+                m_generator.appliesPreferredTrackTransform = YES;
+                m_generator.requestedTimeToleranceBefore = kCMTimeZero;
+                m_generator.requestedTimeToleranceAfter = kCMTimeZero;
+            }
+            CGImageRef image = [m_generator copyCGImageAtTime:CMTimeMake(ms, 1000)
+                                                   actualTime:nullptr error:nullptr];
+            if (!image) return {};
+            QImage frame(CGImageGetWidth(image), CGImageGetHeight(image), QImage::Format_RGB32);
+            CGColorSpaceRef color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+            CGContextRef context = frame.isNull() || !color ? nullptr : CGBitmapContextCreate(
+                frame.bits(), frame.width(), frame.height(), 8, frame.bytesPerLine(), color,
+                kCGBitmapByteOrder32Host | kCGImageAlphaNoneSkipFirst);
+            if (context) {
+                CGContextDrawImage(context, CGRectMake(0, 0, frame.width(), frame.height()), image);
+                CGContextRelease(context);
+            } else {
+                frame = {};
+            }
+            if (color) CGColorSpaceRelease(color);
+            CGImageRelease(image);
+            return frame;
         }
     }
 
@@ -152,6 +182,8 @@ private:
         }
         m_reader = nil;
         m_output = nil;
+        m_asset = nil;
+        m_generator = nil;
         m_currentFrame = {};
         m_size = {};
         m_duration = 0;
@@ -211,6 +243,8 @@ private:
         return m_transform.isIdentity() ? frame : frame.transformed(m_transform);
     }
 
+    AVAsset* m_asset = nil;
+    AVAssetImageGenerator* m_generator = nil;
     AVAssetReader* m_reader = nil;
     AVAssetReaderTrackOutput* m_output = nil;
     CMSampleBufferRef m_nextSample = nullptr;

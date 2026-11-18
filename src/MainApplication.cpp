@@ -1934,6 +1934,7 @@ void MainApplication::attachScreenPicker(SnapTray::QmlDialog* dialog,
 void MainApplication::onScreenPickerChosen(QScreen* screen)
 {
     const QString script = m_screenPickerViewModel ? m_screenPickerViewModel->prompterScript() : QString();
+    const int fontSize = m_screenPickerViewModel ? m_screenPickerViewModel->prompterFontSize() : 28;
     QPointer<QScreen> display = m_screenPickerViewModel ? m_screenPickerViewModel->prompterScreen() : nullptr;
     closeScreenPicker();
 
@@ -1946,13 +1947,13 @@ void MainApplication::onScreenPickerChosen(QScreen* screen)
         return;
     }
 
-    startRecordingOn(screen, display, script);
+    startRecordingOn(screen, display, script, fontSize);
 }
 
-void MainApplication::startRecordingOn(QScreen* screen, QPointer<QScreen> promptDisplay, const QString& script)
+void MainApplication::startRecordingOn(QScreen* screen, QPointer<QScreen> promptDisplay, const QString& script, int fontSize)
 {
     if (!RecordingSettingsManager::instance().preselectArea() || !screen) {
-        m_recordingManager->startScreenRecording(screen, {}, promptDisplay, script);
+        m_recordingManager->startScreenRecording(screen, {}, promptDisplay, script, fontSize);
         return;
     }
     // Choose an area of this screen first (#194); the capture stays full
@@ -1962,10 +1963,10 @@ void MainApplication::startRecordingOn(QScreen* screen, QPointer<QScreen> prompt
     m_areaSelector = selector;
     const QPointer<QScreen> target(screen);
     connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
-        [this, target, promptDisplay, script](const QRectF& area) {
+        [this, target, promptDisplay, script, fontSize](const QRectF& area) {
             closeAreaSelector();
             if (!target) return;
-            m_recordingManager->startScreenRecording(target.data(), area, promptDisplay, script);
+            m_recordingManager->startScreenRecording(target.data(), area, promptDisplay, script, fontSize);
         });
     connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [this]() { closeAreaSelector(); });
     selector->start(screen);

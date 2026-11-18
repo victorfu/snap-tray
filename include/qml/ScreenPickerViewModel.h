@@ -20,6 +20,7 @@ class ScreenPickerViewModel : public QObject
 
     Q_PROPERTY(QString prompterScript MEMBER m_prompterScript NOTIFY prompterChanged)
     Q_PROPERTY(int prompterDisplay MEMBER m_prompterDisplay NOTIFY prompterChanged)
+    Q_PROPERTY(int prompterFontSize MEMBER m_prompterFontSize NOTIFY prompterChanged)
     Q_PROPERTY(QString prompterError READ prompterError NOTIFY prompterChanged)
 
     // Recording setup shown with the screens. Changes are saved through
@@ -58,6 +59,7 @@ public:
 
     void setSources(const QVector<ScreenSourceInfo>& sources);
 
+    int prompterFontSize() const { return m_prompterFontSize; }
     QString prompterError() const { return m_prompterError; }
     QString prompterScript() const { return prompterScreen() ? m_prompterScript : QString(); }
     QScreen* prompterScreen() const { return m_screenRefs.value(m_prompterDisplay).data(); }
@@ -131,6 +133,7 @@ private:
     void loadAudioSettings();
     void saveAudioSettings();
 
+    int m_prompterFontSize = 28;
     int m_prompterDisplay = -1;
     QString m_prompterScript;
     QString m_prompterError;

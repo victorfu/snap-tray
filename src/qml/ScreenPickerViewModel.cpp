@@ -337,6 +337,7 @@ QString ScreenPickerViewModel::microphoneTestStatus() const
 
 void ScreenPickerViewModel::setSources(const QVector<ScreenSourceInfo>& sources)
 {
+    const QPointer<QScreen> selectedDisplay = prompterScreen();
     clearThumbnails();
     m_screens.clear();
     m_screenRefs.clear();
@@ -367,6 +368,13 @@ void ScreenPickerViewModel::setSources(const QVector<ScreenSourceInfo>& sources)
         m_screenIds.append(source.id);
     }
 
+    // A hotplug or reordered display list must not redirect a private script.
+    const int index = selectedDisplay ? m_screenRefs.indexOf(selectedDisplay) : -1;
+    if (m_prompterDisplay != index) {
+        m_prompterDisplay = index;
+        m_prompterError.clear();
+        emit prompterChanged();
+    }
     ++m_thumbnailCacheBuster;
     emit thumbnailCacheBusterChanged();
     emit screensChanged();

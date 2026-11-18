@@ -1346,6 +1346,8 @@ qt_add_qml_module(snaptray_qml
         include/qml/QmlCountdownOverlay.h
         src/qml/VideoPlaybackItem.cpp
         include/qml/VideoPlaybackItem.h
+        src/qml/RecordingFilmstrip.cpp
+        include/qml/RecordingFilmstrip.h
         src/qml/RecordingCursorOverlay.cpp
         include/qml/RecordingCursorOverlay.h
         src/qml/RecordingAppearanceOverlay.cpp
