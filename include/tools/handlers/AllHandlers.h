@@ -15,5 +15,6 @@
 #include "SelectionToolHandler.h"
 #include "CropToolHandler.h"
 #include "MeasureToolHandler.h"
+#include "CutOutToolHandler.h"
 
 #endif // ALLHANDLERS_H

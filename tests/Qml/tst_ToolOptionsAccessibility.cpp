@@ -11,6 +11,7 @@
 #include "annotations/AnnotationZOrder.h"
 #include "annotations/ArrowAnnotation.h"
 #include "qml/PinToolOptionsViewModel.h"
+#include "tools/CropDraftModel.h"
 #include "tools/ToolId.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
@@ -35,6 +36,8 @@ private slots:
     void styleMenusReadTheCurrentStyle();
     void textAndShapeTogglesAreCheckboxes();
     void arrangeButtonsAreNamedAndRequestMoves();
+    void cropControlsAreNamedAndFollowTheDraft();
+    void cutOutControlsAreNamedAndFollowTheDraft();
 
 private:
     std::unique_ptr<QQuickView> load(PinToolOptionsViewModel& viewModel);
@@ -387,6 +390,146 @@ void tst_ToolOptionsAccessibility::arrangeButtonsAreNamedAndRequestMoves()
     forward->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QCOMPARE(requested.count(), 1);
     QCOMPARE(requested.first().first().toInt(), int(AnnotationZOrderMove::Forward));
+}
+
+// #358: the crop strip offers the aspect presets as named choices and only
+// lets Apply / Cancel act while there is a draft.
+void tst_ToolOptionsAccessibility::cropControlsAreNamedAndFollowTheDraft()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(static_cast<int>(ToolId::Crop));
+    auto view = load(vm);
+    QVERIFY(view);
+    QQuickItem* root = view->rootObject();
+    auto* section = root->findChild<QQuickItem*>("toolOptionsCropSection");
+    QVERIFY(section);
+    QVERIFY(section->isVisible());
+    QVERIFY(root->width() >= section->width());
+
+    for (const QVariant& option : vm.cropAspectOptions()) {
+        QAccessibleInterface* choice = named(root, option.toMap().value("name").toString());
+        QVERIFY2(choice, qPrintable(option.toMap().value("name").toString()));
+        QCOMPARE(choice->role(), QAccessible::RadioButton);
+        QCOMPARE(choice->state().checked, option.toMap().value("value").toInt() == vm.cropAspect());
+    }
+
+    QSignalSpy selected(&vm, &PinToolOptionsViewModel::cropAspectSelected);
+    QAccessibleInterface* wide = named(root, QStringLiteral("Aspect ratio 16:9"));
+    QVERIFY(wide);
+    wide->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(selected.count(), 1);
+    QCOMPARE(selected.first().first().toInt(), static_cast<int>(CropDraftModel::Aspect::Wide16x9));
+    vm.setCropAspect(static_cast<int>(CropDraftModel::Aspect::Wide16x9));
+    QTRY_VERIFY(wide->state().checked);
+
+    // Without a draft Apply and Cancel are disabled and do nothing.
+    QSignalSpy apply(&vm, &PinToolOptionsViewModel::cropApplyRequested);
+    QSignalSpy cancel(&vm, &PinToolOptionsViewModel::cropCancelRequested);
+    auto* applyButton = root->findChild<QQuickItem*>("cropApplyButton");
+    auto* cancelButton = root->findChild<QQuickItem*>("cropCancelButton");
+    auto* sizeLabel = root->findChild<QQuickItem*>("cropSizeLabel");
+    QVERIFY(applyButton && cancelButton && sizeLabel);
+    QVERIFY(!applyButton->isEnabled());
+    QVERIFY(!cancelButton->isEnabled());
+    QVERIFY(!sizeLabel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(applyButton, "apply"));
+    QVERIFY(QMetaObject::invokeMethod(cancelButton, "cancel"));
+    QCOMPARE(apply.count(), 0);
+    QCOMPARE(cancel.count(), 0);
+
+    vm.setCropDraft(true, QSize(640, 360));
+    QTRY_VERIFY(applyButton->isEnabled());
+    QVERIFY(cancelButton->isEnabled());
+    QTRY_VERIFY(sizeLabel->isVisible());
+    QCOMPARE(sizeLabel->property("text").toString(), vm.cropSizeText());
+
+    QAccessibleInterface* applyAccessible = named(root, QStringLiteral("Apply crop"));
+    QAccessibleInterface* cancelAccessible = named(root, QStringLiteral("Cancel crop"));
+    QVERIFY(applyAccessible && cancelAccessible);
+    QCOMPARE(applyAccessible->role(), QAccessible::Button);
+    applyAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    cancelAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(apply.count(), 1);
+    QCOMPARE(cancel.count(), 1);
+
+    // A real click reaches the same handlers.
+    const QPointF applyCenter = applyButton->mapToScene(
+        QPointF(applyButton->width() / 2, applyButton->height() / 2));
+    QTest::mouseClick(view.get(), Qt::LeftButton, Qt::NoModifier, applyCenter.toPoint());
+    QCOMPARE(apply.count(), 2);
+
+    vm.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(!section->isVisible());
+}
+
+// #371: the cut-out strip names its two choices and only lets Apply / Cancel
+// act while a band is marked.
+void tst_ToolOptionsAccessibility::cutOutControlsAreNamedAndFollowTheDraft()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    auto view = load(vm);
+    QVERIFY(view);
+    QQuickItem* root = view->rootObject();
+    auto* section = root->findChild<QQuickItem*>("toolOptionsCutOutSection");
+    QVERIFY(section);
+    QVERIFY(section->isVisible());
+    QVERIFY(!root->findChild<QQuickItem*>("toolOptionsCropSection")->isVisible());
+    QVERIFY(root->width() >= section->width());
+
+    QAccessibleInterface* remove = named(root, QStringLiteral("Remove the strip and join the rest"));
+    QAccessibleInterface* insert = named(root, QStringLiteral("Insert a transparent strip"));
+    QAccessibleInterface* horizontal = named(root, QStringLiteral("Horizontal strip"));
+    QAccessibleInterface* vertical = named(root, QStringLiteral("Vertical strip"));
+    QVERIFY(remove && insert && horizontal && vertical);
+    QCOMPARE(remove->role(), QAccessible::RadioButton);
+    QVERIFY(remove->state().checked);
+    QVERIFY(!insert->state().checked);
+    QVERIFY(horizontal->state().checked);
+    QVERIFY(!vertical->state().checked);
+
+    QSignalSpy operation(&vm, &PinToolOptionsViewModel::cutOutOperationSelected);
+    QSignalSpy axis(&vm, &PinToolOptionsViewModel::cutOutAxisSelected);
+    insert->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    vertical->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(operation.count(), 1);
+    QCOMPARE(operation.first().first().toInt(), 1);
+    QCOMPARE(axis.count(), 1);
+    QCOMPARE(axis.first().first().toInt(), 1);
+    vm.setCutOutState(1, 1);
+    QTRY_VERIFY(insert->state().checked);
+    QVERIFY(vertical->state().checked);
+    QVERIFY(!remove->state().checked);
+
+    QSignalSpy apply(&vm, &PinToolOptionsViewModel::cutOutApplyRequested);
+    QSignalSpy cancel(&vm, &PinToolOptionsViewModel::cutOutCancelRequested);
+    auto* applyButton = root->findChild<QQuickItem*>("cutOutApplyButton");
+    auto* cancelButton = root->findChild<QQuickItem*>("cutOutCancelButton");
+    auto* sizeLabel = root->findChild<QQuickItem*>("cutOutSizeLabel");
+    QVERIFY(applyButton && cancelButton && sizeLabel);
+    QVERIFY(!applyButton->isEnabled());
+    QVERIFY(!cancelButton->isEnabled());
+    QVERIFY(!sizeLabel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(applyButton, "apply"));
+    QVERIFY(QMetaObject::invokeMethod(cancelButton, "cancel"));
+    QCOMPARE(apply.count(), 0);
+    QCOMPARE(cancel.count(), 0);
+
+    vm.setCutOutDraft(true, 60, QSize(660, 400));
+    QTRY_VERIFY(applyButton->isEnabled());
+    QTRY_VERIFY(sizeLabel->isVisible());
+    QCOMPARE(sizeLabel->property("text").toString(), vm.cutOutSizeText());
+    QAccessibleInterface* applyAccessible = named(root, QStringLiteral("Apply cut out"));
+    QAccessibleInterface* cancelAccessible = named(root, QStringLiteral("Cancel cut out"));
+    QVERIFY(applyAccessible && cancelAccessible);
+    QCOMPARE(applyAccessible->role(), QAccessible::Button);
+    applyAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    cancelAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(apply.count(), 1);
+    QCOMPARE(cancel.count(), 1);
+
+    vm.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(!section->isVisible());
 }
 
 QTEST_MAIN(tst_ToolOptionsAccessibility)

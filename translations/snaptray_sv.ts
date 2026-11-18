@@ -540,6 +540,52 @@
     </message>
 </context>
 <context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Avbryt beskärning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Verkställ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Verkställ beskärning</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Avbryt urklippning</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Verkställ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Verkställ urklippning</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -2001,6 +2047,86 @@ Storlek: %2</translation>
         <source>White</source>
         <translation>Vit</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Beskär</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Fri</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Fritt bildförhållande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Ursprungligt bildförhållande</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>Bildförhållande %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Klipp ut remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Ta bort</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Ta bort remsan och foga ihop resten</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Infoga</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Infoga en genomskinlig remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Vågrät</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Vågrät remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Lodrät</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Lodrät remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Återställ zoomen till 100 % för att klippa ut en remsa</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2555,6 +2681,41 @@ Storlek: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Spara förskönad skärmbild</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Stoppa liveuppdateringen innan du klipper ut en remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Remsan kan inte tillämpas</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Anteckningar korsar remsan. Flytta eller ta bort dem först.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>Bilden skulle bli för stor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Återställ zoomen till 100 % för att klippa ut en remsa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Det går inte att beskära den här markeringen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pausa liveuppdateringen för att beskära</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="0" />
@@ -8055,6 +8216,11 @@ Den kan användas av ett annat program.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Slutför flera regioner</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Klipp ut remsa</translation>
     </message>
 </context>
 <context>

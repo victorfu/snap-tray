@@ -540,6 +540,52 @@
     </message>
 </context>
 <context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Откажи опсецање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Примени</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Примени опсецање</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Откажи исецање</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Примени</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Примени исецање</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -2002,6 +2048,86 @@ Size: %2</source>
         <source>White</source>
         <translation>Бела</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Опсеци</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Слободно</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Слободан однос страница</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Оригинал</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Оригинални однос страница</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>Однос страница %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Исеци траку</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Уклони</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Уклони траку и споји остатак</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Уметни</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Уметни провидну траку</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Хоризонтално</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Хоризонтална трака</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Вертикално</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Вертикална трака</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Вратите зум на 100% да бисте исекли траку</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2556,6 +2682,41 @@ Size: %2</source>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Сачувај улепшани снимак екрана</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Зауставите ажурирање уживо пре исецања траке</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Ова трака се не може применити</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Анотације прелазе преко ове траке. Прво их померите или обришите.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>Слика би постала превелика</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Вратите зум на 100% да бисте исекли траку</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Није могуће опсећи ову селекцију</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Паузирајте ажурирање уживо да бисте опсекли</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="0" />
@@ -8059,6 +8220,11 @@ It may be in use by another application.</source>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Заврши снимање области</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Исеци траку</translation>
     </message>
 </context>
 <context>

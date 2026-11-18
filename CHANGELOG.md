@@ -9,6 +9,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Added
 
 - Export a smaller copy of a still image from a pin, Beautify or the Library: keep the size, scale by percent or limit the long edge, choose PNG or JPEG with an adjustable quality, and see the real size of the file before saving. The original image and its edits stay at full resolution.
+- Cut Out tool for pinned images: remove a band across the image and join the rest, or insert a transparent band, horizontally or vertically, as one undoable step. Redactions keep covering the same pixels; an annotation crossing the band blocks the operation instead of being distorted.
 - Recording shapes and numbered steps, with editable timing, fades, and a choice of following the content or staying fixed on screen.
 - Imported music and narration clips with volume, looping, source offsets and fades, preserved in editable projects and recovery.
 - Crisp enlarged pointers, steady pointer shapes, path straightening, animated loop returns and camera motion blur.
@@ -19,6 +20,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
+- Cropping a pinned image now leaves an adjustable selection first: move it, resize it by its handles, pick an aspect ratio (Free, Original, 1:1, 16:9, 9:16, 4:3, 3:2), nudge it one image pixel at a time with the arrow keys, then press Enter to apply or Esc to cancel. Sizes are shown in real image pixels.
 - Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
 - GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.
 - Windows recording defaults to WGC, preserves precise frame times and avoids repeatedly encoding still desktops. DXGI can recover from temporary capture loss; WASAPI starts asynchronously and reports audio gaps and timestamp repairs.

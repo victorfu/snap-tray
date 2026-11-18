@@ -540,6 +540,52 @@
     </message>
 </context>
 <context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Cancelar recorte</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Aplicar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Aplicar recorte</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Cancelar corte de faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Aplicar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Aplicar corte de faixa</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -2001,6 +2047,86 @@ Tamanho: %2</translation>
         <source>White</source>
         <translation>Branco</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Recortar</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Livre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Proporção livre</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Proporção original</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>Proporção %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cortar faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Remover</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Remover a faixa e juntar o resto</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Inserir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Inserir uma faixa transparente</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Na horizontal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Faixa horizontal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Na vertical</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Faixa vertical</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Redefina o zoom para 100% para recortar uma faixa</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2555,6 +2681,41 @@ Tamanho: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Salvar captura embelezada</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Pare a atualização ao vivo antes de cortar uma faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Não é possível aplicar esta faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Há anotações que cruzam esta faixa. Mova ou exclua-as primeiro.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>A imagem ficaria grande demais</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Redefina o zoom para 100% para recortar uma faixa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Não é possível recortar esta seleção</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pause a atualização ao vivo para recortar</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="0" />
@@ -8055,6 +8216,11 @@ Ele pode estar em uso por outro aplicativo.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Concluir múltiplas regiões</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Cortar faixa</translation>
     </message>
 </context>
 <context>

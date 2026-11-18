@@ -906,6 +906,16 @@ target_link_libraries(PinWindow_PinMergeHelper PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_PinMergeHelper COMMAND PinWindow_PinMergeHelper)
 set_tests_properties(PinWindow_PinMergeHelper PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(PinWindow_ImageStripTransform PinWindow/tst_ImageStripTransform.cpp)
+target_link_libraries(PinWindow_ImageStripTransform PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ImageStripTransform COMMAND PinWindow_ImageStripTransform)
+set_tests_properties(PinWindow_ImageStripTransform PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_StripCutOut PinWindow/tst_StripCutOut.cpp)
+target_link_libraries(PinWindow_StripCutOut PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_StripCutOut COMMAND PinWindow_StripCutOut)
+set_tests_properties(PinWindow_StripCutOut PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
 target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)
@@ -1758,6 +1768,11 @@ add_executable(Tools_TextToolHandler Tools/handlers/tst_TextToolHandler.cpp)
 target_link_libraries(Tools_TextToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_TextToolHandler COMMAND Tools_TextToolHandler)
 set_tests_properties(Tools_TextToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_CropDraftModel Tools/tst_CropDraftModel.cpp)
+target_link_libraries(Tools_CropDraftModel PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_CropDraftModel COMMAND Tools_CropDraftModel)
+set_tests_properties(Tools_CropDraftModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Tools_CropToolHandler Tools/handlers/tst_CropToolHandler.cpp)
 target_link_libraries(Tools_CropToolHandler PRIVATE snaptray_ui Qt6::Test)

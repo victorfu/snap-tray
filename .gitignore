@@ -69,3 +69,5 @@ firebase-debug.log
 /certs/
 
 release-linux/
+
+.worktrees/

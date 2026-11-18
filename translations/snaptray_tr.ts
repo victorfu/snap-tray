@@ -540,6 +540,52 @@
     </message>
 </context>
 <context>
+    <name>CropSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Cancel crop</source>
+        <translation>Kırpmayı iptal et</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply</source>
+        <translation>Uygula</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CropSection.qml" />
+        <source>Apply crop</source>
+        <translation>Kırpmayı uygula</translation>
+    </message>
+</context>
+<context>
+    <name>CutOutSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Cancel cut out</source>
+        <translation>Kesmeyi iptal et</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply</source>
+        <translation>Uygula</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/toolbar/CutOutSection.qml" />
+        <source>Apply cut out</source>
+        <translation>Kesmeyi uygula</translation>
+    </message>
+</context>
+<context>
     <name>DelayedCaptureIndicator</name>
     <message>
         <location filename="../src/qml/components/DelayedCaptureIndicator.qml" line="63" />
@@ -2000,6 +2046,86 @@ Boyut: %2</translation>
         <source>White</source>
         <translation>Beyaz</translation>
     </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Crop</source>
+        <translation>Kırp</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free</source>
+        <translation>Serbest</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Free aspect ratio</source>
+        <translation>Serbest en boy oranı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original</source>
+        <translation>Özgün</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Original aspect ratio</source>
+        <translation>Özgün en boy oranı</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Aspect ratio %1</source>
+        <translation>En boy oranı %1</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Şerit kes</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove</source>
+        <translation>Kaldır</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Remove the strip and join the rest</source>
+        <translation>Şeridi kaldır ve kalanı birleştir</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert</source>
+        <translation>Ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Insert a transparent strip</source>
+        <translation>Saydam bir şerit ekle</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal</source>
+        <translation>Yatay</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Horizontal strip</source>
+        <translation>Yatay şerit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical</source>
+        <translation>Dikey</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Vertical strip</source>
+        <translation>Dikey şerit</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Bir şerit kesmek için yakınlaştırmayı %100&apos;e sıfırlayın</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>
@@ -2554,6 +2680,41 @@ Boyut: %2</translation>
         <location filename="../src/PinWindow.cpp" line="6549" />
         <source>Save Beautified Screenshot</source>
         <translation>Güzelleştirilmiş Ekran Görüntüsünü Kaydet</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before cutting out a strip</source>
+        <translation>Şerit kesmeden önce Canlı Güncelleme’yi durdurun</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>This strip cannot be applied</source>
+        <translation>Bu şerit uygulanamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Annotations cross this strip. Move or delete them first.</source>
+        <translation>Bu şeridi kesen ek açıklamalar var. Önce bunları taşıyın veya silin.</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image would become too large</source>
+        <translation>Görsel çok büyük olacak</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Reset zoom to 100% to cut out a strip</source>
+        <translation>Bir şerit kesmek için yakınlaştırmayı %100&apos;e sıfırlayın</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Bu seçim kırpılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Kırpmak için canlı güncellemeyi duraklatın</translation>
     </message>
     <message>
         <location filename="../src/PinWindow.cpp" line="0" />
@@ -8051,6 +8212,11 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
         <location filename="../src/tools/ToolRegistry.cpp" line="362" />
         <source>Complete Multi-Region</source>
         <translation>Çoklu Bölgeyi Tamamla</translation>
+    </message>
+    <message>
+        <location filename="../src/tools/ToolRegistry.cpp" line="0" />
+        <source>Cut Out</source>
+        <translation>Şerit kes</translation>
     </message>
 </context>
 <context>
