@@ -288,8 +288,11 @@ void tst_RecordingPreviewTimeline::deleteSelectedShapeOrAudioClip()
         file.close();
         backend.addAudioClip(QUrl::fromLocalFile(wav));
         QTRY_VERIFY_WITH_TIMEOUT(!backend.importingAudio(), 20000);
-        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        // A headless host can report unavailable preview audio output after
+        // a successful import. These keyboard cases require the imported
+        // asset, not an output device; playback has its own integration test.
         QCOMPARE(backend.audioClips().size(), 1);
+        QVERIFY(backend.audioClips().first().toMap()["durationMs"].toLongLong() > 0);
     } else {
         QCOMPARE(backend.addShapeFromView(ShapeParameters::Rectangle,
                      {20, 20}, {100, 60}, {0, 0, 160, 90}), 0);
