@@ -38,6 +38,7 @@ private slots:
     void arrangeButtonsAreNamedAndRequestMoves();
     void cropControlsAreNamedAndFollowTheDraft();
     void cutOutControlsAreNamedAndFollowTheDraft();
+    void measureModeIsNamedAndExplainsAutoValues();
 
 private:
     std::unique_ptr<QQuickView> load(PinToolOptionsViewModel& viewModel);
@@ -527,6 +528,48 @@ void tst_ToolOptionsAccessibility::cutOutControlsAreNamedAndFollowTheDraft()
     cancelAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
     QCOMPARE(apply.count(), 1);
     QCOMPARE(cancel.count(), 1);
+
+    vm.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(!section->isVisible());
+}
+
+// #348: the Measure tool's two modes are radio buttons, and auto mode says
+// its values are image estimates.
+void tst_ToolOptionsAccessibility::measureModeIsNamedAndExplainsAutoValues()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(static_cast<int>(ToolId::Measure));
+    auto view = load(vm);
+    QVERIFY(view);
+    QQuickItem* root = view->rootObject();
+    auto* section = root->findChild<QQuickItem*>("toolOptionsMeasureSection");
+    QVERIFY(section);
+    QVERIFY(section->isVisible());
+    QVERIFY(!root->findChild<QQuickItem*>("toolOptionsCutOutSection")->isVisible());
+    QCOMPARE(vm.targetLabel(), QStringLiteral("Measure"));
+
+    QAccessibleInterface* manual = named(root, QStringLiteral("Measure by dragging a line"));
+    QAccessibleInterface* automatic =
+        named(root, QStringLiteral("Estimate the spans around the pointer from the image"));
+    QVERIFY(manual && automatic);
+    QCOMPARE(manual->role(), QAccessible::RadioButton);
+    QVERIFY(manual->state().checked);
+    QVERIFY(!automatic->state().checked);
+    auto* hint = root->findChild<QQuickItem*>("measureHintLabel");
+    QVERIFY(hint);
+    QVERIFY(!hint->isVisible());
+
+    QSignalSpy selected(&vm, &PinToolOptionsViewModel::measureModeSelected);
+    automatic->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(selected.count(), 1);
+    QCOMPARE(selected.first().first().toInt(), int(PinToolOptionsViewModel::MeasureAuto));
+    // The host decides; the strip follows what it pushes.
+    QVERIFY(!automatic->state().checked);
+    vm.setMeasureMode(PinToolOptionsViewModel::MeasureAuto);
+    QTRY_VERIFY(automatic->state().checked);
+    QVERIFY(!manual->state().checked);
+    QTRY_VERIFY(hint->isVisible());
+    QVERIFY(root->width() >= section->width());
 
     vm.showForTool(static_cast<int>(ToolId::Pencil));
     QTRY_VERIFY(!section->isVisible());

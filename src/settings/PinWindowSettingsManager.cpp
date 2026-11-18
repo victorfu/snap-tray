@@ -92,6 +92,18 @@ void PinWindowSettingsManager::saveProtectUnsavedEdits(bool enabled)
     settings.setValue(kSettingsKeyProtectUnsavedEdits, enabled);
 }
 
+bool PinWindowSettingsManager::loadMeasureAutoMode() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kSettingsKeyMeasureAutoMode, kDefaultMeasureAutoMode).toBool();
+}
+
+void PinWindowSettingsManager::saveMeasureAutoMode(bool enabled)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kSettingsKeyMeasureAutoMode, enabled);
+}
+
 int PinWindowSettingsManager::loadMaxCacheFiles() const
 {
     auto settings = SnapTray::getSettings();

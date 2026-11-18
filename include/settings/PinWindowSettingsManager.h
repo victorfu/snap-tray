@@ -37,6 +37,10 @@ public:
     bool loadProtectUnsavedEdits() const;
     void saveProtectUnsavedEdits(bool enabled);
 
+    // Measure tool: image-based auto mode next to the dragged line (#348).
+    bool loadMeasureAutoMode() const;
+    void saveMeasureAutoMode(bool enabled);
+
     // Max history entries (5 - 200)
     int loadMaxCacheFiles() const;
     void saveMaxCacheFiles(int maxFiles);
@@ -48,6 +52,7 @@ public:
     static constexpr bool kDefaultShadowEnabled = true;
     static constexpr bool kDefaultShowHoverControls = true;
     static constexpr bool kDefaultProtectUnsavedEdits = false;
+    static constexpr bool kDefaultMeasureAutoMode = false;
     static constexpr int kDefaultMaxCacheFiles = 20;
 
 private:
@@ -61,6 +66,7 @@ private:
     static constexpr const char* kSettingsKeyShadowEnabled = "pinWindow/shadowEnabled";
     static constexpr const char* kSettingsKeyShowHoverControls = "pinWindow/showHoverControls";
     static constexpr const char* kSettingsKeyProtectUnsavedEdits = "pinWindow/protectUnsavedEdits";
+    static constexpr const char* kSettingsKeyMeasureAutoMode = "pinWindow/measureAutoMode";
     static constexpr const char* kSettingsKeyMaxCacheFiles = "history/maxEntries";
 };
 

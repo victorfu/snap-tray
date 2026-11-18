@@ -132,6 +132,15 @@ Annotations entirely on one side keep their place or move with the pixels, and a
 
 Applying is one undo step that restores the image, its size, the annotations and the region layout together. Cut Out is not available during Live Update or while auto-blur is still running.
 
+### Measure
+
+**Measure** on the annotation toolbar has two modes in the options strip:
+
+- **Manual** (the default): drag a line to see `dx`, `dy` and its length. Hold `Shift` to keep it horizontal or vertical; `Esc` cancels the drag or clears the line.
+- **Auto**: hover over the image to see the horizontal and vertical span around the pointer, for example the width and height of a button or the gap between two elements. Edges come from the pixels of the image under your annotations: slow gradients, soft shadows and noise are not taken as edges. A span needs a clear edge on both sides; one that would run to the border of the image, or an axis with no clear edge, shows nothing rather than a guess. Dragging still measures a line as in Manual mode. The mode you choose is remembered. During Live Update, pause it to measure by hovering.
+
+Values are pixels of the image itself, not of the zoomed pin. Images from a high-DPI display also show logical units (`pt`), for example `80 px · 40 pt` at 2x. Auto values are marked with `≈`: they are estimates from the screenshot, not sizes from the app's layout or a design file.
+
 ### Remove the background (macOS)
 
 **Image processing > Remove Background** in the context menu keeps the subjects of the image (people, animals, objects) and makes everything else transparent. It uses the on-device foreground segmentation of macOS 14 and later; nothing is uploaded. Windows and Linux have no supported backend yet, so the item is not shown there.

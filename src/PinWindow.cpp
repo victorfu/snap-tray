@@ -53,6 +53,7 @@
 #include "tools/handlers/CropToolHandler.h"
 #include "qml/ImageExportDialogController.h"
 #include "tools/handlers/CutOutToolHandler.h"
+#include "tools/handlers/MeasureToolHandler.h"
 #include "pinwindow/ImageStripTransform.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
@@ -3118,6 +3119,9 @@ void PinWindow::ensureLiveTooltip()
 void PinWindow::leaveEvent(QEvent* event)
 {
     if (m_hoverBar) m_hoverBar->pointerLeft();
+    if (auto* measureHandler = measureToolHandler(); measureHandler && measureHandler->clearHover()) {
+        update();
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -3526,6 +3530,10 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
             // In annotation mode, check for annotation hovers
             // updateAnnotationCursor uses state-driven API and handles cursor automatically
             updateAnnotationCursor(event->pos());
+            // Auto measure follows a hovering pointer (#348).
+            if (isMeasureHoverActive()) {
+                m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
+            }
         }
     }
 }
@@ -4305,6 +4313,11 @@ void PinWindow::initializeAnnotationComponents()
         });
         cutOutHandler->setDraftChangedCallback([this]() { syncCutOutDraftUi(); });
     }
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setRasterProvider([this]() { return measureRaster(); },
+                                          [this]() { m_measureRaster.reset(); });
+        measureHandler->setAutoMode(PinWindowSettingsManager::instance().loadMeasureAutoMode());
+    }
     syncCropHandlerImageSize();
 
     // Load saved annotation settings
@@ -4418,6 +4431,13 @@ void PinWindow::initializeAnnotationComponents()
             update();
         }
     });
+    connect(optionsVM, &PinToolOptionsViewModel::measureModeSelected, this, [this](int mode) {
+        setMeasureAutoMode(mode == PinToolOptionsViewModel::MeasureAuto);
+    });
+    if (const MeasureToolHandler* measureHandler = measureToolHandler()) {
+        optionsVM->setMeasureMode(measureHandler->autoMode()
+            ? PinToolOptionsViewModel::MeasureAuto : PinToolOptionsViewModel::MeasureManual);
+    }
     connect(optionsVM, &PinToolOptionsViewModel::cutOutApplyRequested, this, [this]() {
         commitCutOutDraft();
     });
@@ -4700,6 +4720,12 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     if (CropToolHandler* cropHandler = cropToolHandler()) {
         cropHandler->discardDraft();
     }
+    // Measure stays the current tool without a deactivate: drop its spans
+    // and the image copy they were read from.
+    if (MeasureToolHandler* measureHandler = measureToolHandler()) {
+        measureHandler->clearHover();
+    }
+    m_measureRaster.reset();
     if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
         cutOutHandler->discardDraft();
     }
@@ -4998,6 +5024,81 @@ void PinWindow::syncCropHandlerImageSize()
                 cutOutHandler->canMarkStrip(), !qFuzzyCompare(m_zoomLevel, 1.0));
         }
     }
+    // Measure values are in the image's own pixels, whatever the zoom.
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setImageGeometry(cropToolImageSize(),
+                                         cropSourcePixelSize(),
+                                         m_originalPixmap.devicePixelRatio(),
+                                         m_originalPixmap.cacheKey());
+    }
+}
+
+MeasureToolHandler* PinWindow::measureToolHandler() const
+{
+    return m_toolManager
+        ? dynamic_cast<MeasureToolHandler*>(m_toolManager->handler(ToolId::Measure))
+        : nullptr;
+}
+
+bool PinWindow::isMeasureHoverActive() const
+{
+    if (!m_annotationMode || m_currentToolId != ToolId::Measure) {
+        return false;
+    }
+    // Every live frame is a new image: rescanning it per move would copy the
+    // whole frame each time. Manual measuring still works; pause to hover.
+    if (m_isLiveMode && !m_livePaused) {
+        return false;
+    }
+    const MeasureToolHandler* measureHandler = measureToolHandler();
+    return measureHandler && measureHandler->autoMode();
+}
+
+void PinWindow::setMeasureAutoMode(bool enabled)
+{
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setAutoMode(enabled);
+    }
+    PinWindowSettingsManager::instance().saveMeasureAutoMode(enabled);
+    if (m_subToolbar) {
+        m_subToolbar->viewModel()->setMeasureMode(
+            enabled ? PinToolOptionsViewModel::MeasureAuto : PinToolOptionsViewModel::MeasureManual);
+    }
+    update();
+}
+
+std::shared_ptr<const QImage> PinWindow::measureRaster() const
+{
+    if (m_originalPixmap.isNull()) {
+        return nullptr;
+    }
+    const QRectF sampleRect = sourceSampleRect();
+    const QRect rect = QRect(QPoint(qFloor(sampleRect.x()), qFloor(sampleRect.y())),
+                             cropSourcePixelSize())
+                           .intersected(m_originalPixmap.rect());
+    if (rect.isEmpty()) {
+        return nullptr;
+    }
+    const qint64 key = m_originalPixmap.cacheKey();
+    if (m_measureRaster && key == m_measureRasterKey && rect == m_measureRasterRect) {
+        return m_measureRaster;
+    }
+    // One 32-bit copy of the shown pixels (width x height x 4 bytes); released
+    // when the Measure tool stops using it.
+    m_measureRaster.reset();
+    QImage image = m_originalPixmap.toImage();
+    if (rect != image.rect()) {
+        image = image.copy(rect);
+    }
+    if (!MeasureEdgeScanner::isSupportedFormat(image.format())) {
+        image = std::move(image).convertToFormat(QImage::Format_ARGB32);
+    }
+    image.setDevicePixelRatio(1.0);
+    m_measureRaster = std::make_shared<const QImage>(std::move(image));
+    m_measureRasterKey = key;
+    m_measureRasterRect = rect;
+    ++m_measureRasterBuildCount;
+    return m_measureRaster;
 }
 
 CutOutToolHandler* PinWindow::cutOutToolHandler() const

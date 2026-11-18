@@ -47,6 +47,12 @@ class PinToolOptionsViewModel : public QObject
     // Shown instead of the size while no strip can be exact (odd zoom).
     Q_PROPERTY(QString cutOutHintText READ cutOutHintText NOTIFY cutOutDraftChanged)
 
+    // Measure section (#348): manual line or image-based auto spans.
+    Q_PROPERTY(bool showMeasureSection READ showMeasureSection NOTIFY sectionVisibilityChanged)
+    Q_PROPERTY(QVariantList measureModeOptions READ measureModeOptions CONSTANT)
+    Q_PROPERTY(int measureMode READ measureMode NOTIFY measureModeChanged)
+    Q_PROPERTY(bool measureAutoMode READ measureAutoMode NOTIFY measureModeChanged)
+
     // Crop section (#358): aspect preset, draft size and apply / cancel.
     Q_PROPERTY(QVariantList cropAspectOptions READ cropAspectOptions CONSTANT)
     Q_PROPERTY(int cropAspect READ cropAspect NOTIFY cropAspectChanged)
@@ -150,6 +156,14 @@ public:
     QString cutOutHintText() const;
     // `zoomed`: the pin is not at 100%, so resetting the zoom may help.
     void setCutOutAvailable(bool available, bool zoomed);
+
+    // Measure mode, pushed by the host that owns the tool.
+    enum MeasureMode { MeasureManual = 0, MeasureAuto = 1 };
+    bool showMeasureSection() const { return m_showMeasure; }
+    QVariantList measureModeOptions() const;
+    int measureMode() const { return m_measureMode; }
+    bool measureAutoMode() const { return m_measureMode == MeasureAuto; }
+    void setMeasureMode(int mode);
 
     // Crop draft state, pushed by the host that owns the crop tool.
     QVariantList cropAspectOptions() const;
@@ -323,6 +337,8 @@ signals:
     void cutOutAxisSelected(int axis);
     void cutOutApplyRequested();
     void cutOutCancelRequested();
+    void measureModeChanged();
+    void measureModeSelected(int mode);   // MeasureMode
 
 public slots:
     // Called from QML
@@ -352,6 +368,7 @@ public slots:
     void handleCutOutAxisSelected(int axis);
     void handleCutOutApply();
     void handleCutOutCancel();
+    void handleMeasureModeSelected(int mode);
     void handleZOrderRequested(int move);
 
     // Returns true if the wheel delta was consumed (width adjusted)
@@ -394,6 +411,10 @@ private:
     QString m_cutOutSizeText;
     bool m_cutOutAvailable = true;
     bool m_cutOutZoomed = false;
+
+    // Measure
+    bool m_showMeasure = false;
+    int m_measureMode = MeasureManual;
 
     // Crop
     int m_cropAspect = 0;
