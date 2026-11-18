@@ -46,7 +46,7 @@ public:
     void reset(int framesPerSecond);
 
     // `recordingTimeNs` must be non-decreasing (SessionClock guarantees it).
-    Decision onFrame(qint64 recordingTimeNs);
+    Decision onFrame(qint64 recordingTimeNs, bool sparseSource = false);
 
     // A pause is not a stall: the gap across it is not classified.
     void notePause();

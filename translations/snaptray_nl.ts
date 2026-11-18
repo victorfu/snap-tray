@@ -1480,6 +1480,22 @@ Bestandsgrootte: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>De opname is mogelijk in gebruik of kan niet meer worden hersteld. Open «Opnamen herstellen» opnieuw om de lijst te vernieuwen.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projectherstel mislukt</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>De herstelkopie kon niet worden geopend. Controleer de vrije schijfruimte en bestandsrechten. Het oorspronkelijke project blijft behouden.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Opname hersteld</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Het afzonderlijke herstelproject is geopend. De bewerkingen van het oorspronkelijke project konden niet worden gelezen; de oorspronkelijke map blijft behouden.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3354,6 +3370,10 @@ Grootte: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Toetsaanwijzingen konden niet worden opgeslagen. De opname gaat zonder deze verder.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Schermopname gebruikt tijdelijk de compatibiliteitsmodus</translation>
     </message>
 </context>
 <context>
@@ -5426,6 +5446,262 @@ Grootte: %2</translation>
         <source>Press bounce</source>
         <translation>Terugveren bij indrukken</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>%1 zooms automatisch toegevoegd</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Ongedaan maken</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Niet meer automatisch toevoegen</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Sluiten</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Pijl</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Rechthoek</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Ellips</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Lijn</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Markering</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Stapnummer</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Vorm</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Audioclip</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Voorbeeldsnelheid (benadering)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Het voorbeeld is beperkt tot 0,25×–2×. Export gebruikt de exacte clipsnelheid en behoudt de toonhoogte.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Sleep op het voorbeeld om deze vorm te tekenen</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Audio toevoegen…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Muziek of commentaar importeren (maximaal 30 minuten en 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF en WebP bevatten geen audio. Kies MP4 om audio toe te voegen.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Vormen</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Audioclip %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Afspeelsnelheid van deze clip in het geëxporteerde bestand</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Geluid behouden</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>De oorspronkelijke toonhoogte behouden bij het wijzigen van de clipsnelheid</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Aanwijzerstijl</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Scherp tekent herkende standaardaanwijzers opnieuw bij vergroting; aangepaste aanwijzers behouden hun opgenomen afbeelding</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Opgenomen</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Scherp</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Pad rechttrekken</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Kleine bochten verminderen vóór het vloeiend maken. Klikken en slepen behouden hun opgenomen posities.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Terug naar het begin</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Terugkeer naar het begin is beschikbaar voor GIF- en WebP-export</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Breng aanwijzer en camera terug naar het begin. De aanwijzer keert alleen terug als beide eindpunten zichtbaar zijn binnen de uitsnede.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Aanwijzervorm stabiliseren</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Korte vormveranderingen verbergen, behalve bij een klik</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF en WebP bevatten geen audio. Kies MP4 om audioclips te bewerken.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Volume</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Audio herhalen</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Het audiobestand herhalen om het bereik van deze clip te vullen</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Bronverschuiving (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Infaden (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Uitfaden (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Audiobegin</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Audio-einde</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Audioclip verwijderen</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Coördinatenruimte</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Inhoud — volgt zoom</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Scherm — vaste positie</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Lijndikte</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Pijlstijl</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Gevulde pijl</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Contourpijl</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Open pijl</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Beide uiteinden</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Beide uiteinden, contour</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Begin vorm</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Einde vorm</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Vorm verwijderen</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Aangepaste breedte</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Beperk de langste zijde of stel een breedte in. De afbeelding wordt nooit vergroot.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Eindeloos herhalen</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Kleiner bestand (langzamer)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Deze opties gelden in de editor. De snelle modus gebruikt direct de opnamegrootte en beeldsnelheid.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Bewegingsonscherpte camera</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Verzacht camerabewegingen terwijl aanwijzers en overlays scherp blijven</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5625,6 +5901,78 @@ Grootte: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Opgeslagen in %1, maar de opname kon niet als bewerkbaar project worden bewaard. Ze is hier nog geopend: sla opnieuw op of sluit haar om haar te verwijderen.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>De werkelijke bestandsgrootte wordt na export getoond.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Geëxporteerd bestand: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Meer dan 25 MB; verlaag grootte of beeldsnelheid om te delen.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Meer dan 10 MB; verlaag grootte of beeldsnelheid om te delen.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Audiovoorbeeld voorbereiden…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Het geïmporteerde audiobijbestand ontbreekt of is beschadigd.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Geen opgenomen klikgegevens beschikbaar.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Geen zichtbare klikken binnen de uitsnede en bewaarde clips.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Zooms toegevoegd: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Alle voorgestelde zooms overlappen toegevoegde of gewijzigde zooms.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>De voorgestelde vergroting is te klein om een zoom toe te voegen.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Audio toevoegen</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Audiobestanden (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Alle bestanden (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Een opname kan maximaal 128 audioclips bevatten.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Audio importeren…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>De audiobewerkingen konden niet worden opgeslagen voor crashherstel.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Kan audiovoorbeeld niet voorbereiden: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Kan audio niet importeren: %1</translation>
     </message>
 </context>
 <context>
@@ -6080,6 +6428,14 @@ Audio wordt niet ondersteund voor GIF-opnamen.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Hoe schermopnamen starten, wat ze vastleggen en wat er gebeurt als je stopt.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Automatisch zooms toevoegen aan nieuwe opnamen</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Zoom in op opgenomen klikken wanneer de editor opent. Dit kan in één stap ongedaan worden gemaakt.</translation>
     </message>
 </context>
 <context>
@@ -6609,6 +6965,10 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Alleen het gebied wordt opgenomen.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Zooms automatisch toevoegen</translation>
     </message>
 </context>
 <context>
@@ -8052,6 +8412,40 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Uitvoer: %1 × %2 pixels</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Onleesbaar project</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Open de opname zonder bewerkingen, toon de map of verwijder deze.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Toon de projectmap of verwijder het project.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Hersteld vanuit de vorige opslag</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Onleesbaar project</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Geopend in het voorbeeld</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Hersteld vanuit de vorige opslag</translation>
     </message>
 </context>
 </TS>

@@ -25,6 +25,7 @@ struct CursorShape {
     quint32 id = 0;      // 1-based; 0 means "unknown shape"
     QPoint hotspot;      // in image pixels
     QImage image;        // video pixels per image pixel: 1
+    QString kind;        // Optional standard cursor type (v1 readers ignore extra fields).
 };
 
 struct CursorSample {

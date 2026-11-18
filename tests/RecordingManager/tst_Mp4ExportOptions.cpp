@@ -2,6 +2,7 @@
 
 #include "encoding/VideoBitrate.h"
 #include "recording/Mp4ExportOptions.h"
+#include "recording/AnimatedExportOptions.h"
 #include "video/Mp4VideoSamples.h"
 #include "video/IVideoTranscoder.h"
 
@@ -12,6 +13,7 @@ class TestMp4ExportOptions : public QObject
     Q_OBJECT
 
 private slots:
+    void animatedOptions();
     void defaultsKeepTheExportAsBefore();
     void outputSizeKeepsAspectAndNeverUpscales_data();
     void outputSizeKeepsAspectAndNeverUpscales();
@@ -26,6 +28,31 @@ private slots:
     void samplesReadFromFragments();
     void samplesFollowTheEditList();
 };
+
+void TestMp4ExportOptions::animatedOptions()
+{
+    AnimatedExportOptions options;
+    QCOMPARE(options.outputSize({1920, 1080}), QSize(1920, 1080));
+    QCOMPARE(options.outputFrameRate(30), 30);
+    QCOMPARE(options.gifDepth(), 16);
+    QCOMPARE(options.webpQuality(), 80);
+    QVERIFY(options.looping);
+    options.resolution = AnimatedExportOptions::Resolution::Edge640;
+    QCOMPARE(options.outputSize({1920, 1080}), QSize(640, 360));
+    QCOMPARE(options.outputSize({1080, 1920}), QSize(360, 640));
+    QCOMPARE(options.outputSize({320, 200}), QSize(320, 200));
+    options.frameRate = 15;
+    QCOMPARE(options.outputFrameRate(60), 15);
+    QCOMPARE(options.outputFrameRate(10), 10);
+    options.quality = AnimatedExportOptions::Quality::Medium;
+    QCOMPARE(options.gifDepth(), 12);
+    QCOMPARE(options.webpQuality(), 60);
+    options.looping = false;
+    options.minimizeSize = true;
+    QCOMPARE(AnimatedExportOptions::fromJson(options.toJson()), options);
+    QCOMPARE(AnimatedExportOptions::fromJson({}), AnimatedExportOptions());
+    QCOMPARE(AnimatedExportOptions::fromJson({{"fps", 17}}).frameRate, 0);
+}
 
 void TestMp4ExportOptions::defaultsKeepTheExportAsBefore()
 {

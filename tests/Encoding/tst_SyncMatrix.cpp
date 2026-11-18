@@ -53,6 +53,12 @@ QVector<Row> rows()
         s = base; s.name = "early-and-repeated-pauses"; s.audio = Audio::Mixed;
         s.pauses = {{150, 400}, {1600, 300}, {2200, 250}}; s.durationMs = 3500; add(s);
         s = base; s.name = "static-screen"; s.staticFromMs = 1000; s.staticToMs = 2000; add(s);
+#ifdef Q_OS_WIN
+        s = base; s.name = "sparse-desktop-20s-mixed"; s.durationMs = 20000;
+        s.staticFromMs = 0; s.staticToMs = 18000; s.sparseDesktop = true; s.audio = Audio::Mixed; add(s);
+        s = base; s.name = "sparse-desktop-final-hold"; s.durationMs = 20000;
+        s.staticFromMs = 0; s.staticToMs = 20000; s.sparseDesktop = true; s.audio = Audio::None; add(s);
+#endif
         s = base; s.name = "audio-gap-one-source"; s.audio = Audio::Mixed; s.audioGapFromMs = 900; s.audioGapToMs = 1300; add(s);
         s = base; s.name = "audio-clock-offset-and-drift"; s.audioClockOffsetMs = 3; s.audioDriftPpm = 300; add(s);
         s = base; s.name = "slow-encoder"; s.slowEncoderMs = 150; add(s);

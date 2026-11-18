@@ -51,7 +51,7 @@ public:
     /**
      * @brief Finish encoding and write to file
      */
-    void finish();
+    void finish(qint64 endTimestampMs = -1);
 
     /**
      * @brief Abort encoding and clean up
@@ -75,6 +75,8 @@ public:
      * @param depth 1-16, higher values produce better colors but larger files
      */
     void setMaxBitDepth(int depth);
+    void setLooping(bool value) { m_looping = value; }
+    void setCoalesceFrames(bool value) { m_coalesceFrames = value; }
     int maxBitDepth() const { return m_maxBitDepth; }
 
 signals:
@@ -88,6 +90,7 @@ private:
     void fail(const QString &message);
     void cleanup();
     bool encodePendingFrame(int centiSeconds);
+    bool encodePendingDuration(qint64 durationMs);
     int calculateCentiseconds(qint64 durationMs);
 
     void *m_gifState;  // Opaque pointer to MsfGifState
@@ -98,6 +101,9 @@ private:
     qint64 m_framesWritten;
     QImage m_pendingFrame;
     qint64 m_pendingTimestampMs;
+    qint64 m_lastInputTimestampMs = -1;
+    bool m_looping = true;
+    bool m_coalesceFrames = true;
     qint64 m_delayRemainderUnits;
     QString m_lastError;
     bool m_running;

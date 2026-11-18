@@ -8,6 +8,7 @@
 #include "video/VideoTranscoderFaultInjection.h"
 #include "recording/Mp4ExportOptions.h"
 #include "recording/AudioTracks.h"
+#include "recording/RecordingFrameFilter.h"
 #include "encoding/VideoBitrate.h"
 
 #include <QCryptographicHash>
@@ -374,9 +375,12 @@ private slots:
     void hevcOutput();
     void windowsExportsH264Only();
     void sizeEstimateAgainstActual();
+    void spedPartsKeepAudioAndStayInSync();
     void segmentsStayInSync();
     void segmentsOfAVariableRateSource();
     void separateTracksAreRemixed();
+    void cameraBlurExportBenchmark();
+    void longPitchExportBenchmark();
 
 private:
     std::unique_ptr<IVideoTranscoder> m_transcoder;
@@ -1315,6 +1319,36 @@ void tst_VideoTranscoder::sizeEstimateAgainstActual()
 // #185: parts joined at cuts, one at twice the speed. Bursts in the kept
 // normal-speed parts land at their output times, each with its marker frame;
 // the fast part is silent; nothing drifts across the seams.
+void tst_VideoTranscoder::spedPartsKeepAudioAndStayInSync()
+{
+    if (!m_transcoder->supportsSegments()) QSKIP("This transcoder does not join parts");
+    const QString input = fixture(true);
+    QVERIFY2(!input.isEmpty() && !input.startsWith("ERROR:"), qPrintable(input));
+    for (bool allFast : {false, true}) {
+        VideoTranscodeRequest request;
+        request.inputPath = input;
+        request.outputPath = m_dir.filePath(allFast ? "all-fast.mp4" : "sound-speed-seams.mp4");
+        request.segments = allFast ? std::vector<SnapTray::TimelineSegment>{{0, 2000, 2.0}}
+            : std::vector<SnapTray::TimelineSegment>{{0, 700, 1.0}, {1100, 1500, 2.0}, {1500, 2000, 1.0}};
+        const auto result = m_transcoder->transcode(request, {});
+        QVERIFY2(result.success, qPrintable(result.errorMessage));
+        QVERIFY(result.audioCopied);
+        const auto probe = m_transcoder->probe(request.outputPath);
+        QVERIFY(probe.hasAudio);
+        QVERIFY(qAbs(probe.durationMs - (allFast ? 1000 : 1400)) <= kDurationToleranceMs);
+        DecodedAudio decoded;
+        QString error;
+        QVERIFY2(decodeAudioTrack(request.outputPath, kAudioSampleRate, &decoded, &error), qPrintable(error));
+        const auto onsets = pulseOnsetsMs(decoded);
+        const std::vector<double> expected = allFast ? std::vector<double>{100, 200, 300, 400, 500, 600, 700, 800, 900}
+            : std::vector<double>{200, 400, 600, 750, 850, 1000, 1200};
+        const QString detail = QStringLiteral("expected [%1] actual [%2]").arg(describe(expected), describe(onsets));
+        QCOMPARE(onsets.size(), expected.size());
+        for (size_t i = 0; i < expected.size(); ++i)
+            QVERIFY2(std::abs(onsets[i] - expected[i]) <= kFrameIntervalMs, qPrintable(detail));
+    }
+}
+
 void tst_VideoTranscoder::segmentsStayInSync()
 {
     if (!m_transcoder->supportsSegments()) QSKIP("This transcoder does not join parts");
@@ -1325,7 +1359,7 @@ void tst_VideoTranscoder::segmentsStayInSync()
     request.inputPath = input;
     request.outputPath = m_dir.filePath(QStringLiteral("segments.mp4"));
     // Kept: 0-700 (1x), 1100-1500 (2x), 1500-2000 (1x) = 700 + 200 + 500 ms.
-    request.segments = {{0, 700, 1.0}, {1100, 1500, 2.0}, {1500, 2000, 1.0}};
+    request.segments = {{0, 700, 1.0}, {1100, 1500, 2.0, false}, {1500, 2000, 1.0}};
     const VideoTranscodeResult result = m_transcoder->transcode(request, {});
     QVERIFY2(result.success, qPrintable(result.errorMessage));
     QVERIFY(result.audioCopied);
@@ -1486,6 +1520,126 @@ void tst_VideoTranscoder::separateTracksAreRemixed()
     for (qint64 i = from; i < from + 4800 && i < qint64(output.mono.size()); ++i)
         between = std::max(between, double(std::fabs(output.mono[size_t(i)])));
     QVERIFY2(between < 0.02, qPrintable(QString::number(between)));
+}
+
+void tst_VideoTranscoder::cameraBlurExportBenchmark()
+{
+    if (!qEnvironmentVariableIsSet("SNAPTRAY_ROADMAP_BENCHMARK")) QSKIP("Opt-in 1080p export benchmark");
+    const QSize size(1920, 1080);
+    const QString input = m_dir.filePath(QStringLiteral("blur-source.mp4"));
+    std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+    QVERIFY(encoder);
+    QVERIFY2(encoder->start(input, size, 30), qPrintable(encoder->lastError()));
+    QImage picture(size, QImage::Format_RGB32); picture.fill(Qt::white);
+    { QPainter p(&picture);
+      for (int x = 0; x < size.width(); x += 40) p.fillRect(x, 0, 10, size.height(), Qt::blue);
+      for (int y = 0; y < size.height(); y += 40) p.fillRect(0, y, size.width(), 10, Qt::red); }
+    for (int i = 0; i < 300; ++i) {
+        encoder->writeFrameNs(picture, qint64(i) * 1000000000LL / 30);
+        QCOMPARE(encoder->framesWritten(), i + 1);
+    }
+    QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+    encoder->finishAtNs(10000000000LL);
+    if (finished.isEmpty()) QVERIFY(finished.wait(30000));
+    QVERIFY(finished.first().first().toBool());
+    SnapTray::PreviewEditState state;
+    state.cursor.showCursor = false;
+    state.zoom.setSegments({{1500, 3500, 2.0, QPointF(650, 420), true},
+                            {6500, 8500, 2.0, QPointF(1250, 650), true}});
+    double baseline = 0;
+    for (auto mode : {SnapTray::ZoomTrack::MotionBlur::Off, SnapTray::ZoomTrack::MotionBlur::Low,
+                      SnapTray::ZoomTrack::MotionBlur::High}) {
+        state.zoom.motionBlur = mode;
+        const auto filter = SnapTray::recordingFrameFilter(state, size, {}, {}, {}, {}, 10000, 30);
+        QElapsedTimer timer; timer.start();
+        for (int i = 0; i < 30; ++i) { QImage frame = picture; filter(frame, 1200, 1233); QVERIFY(!frame.isNull()); }
+        const double frameMs = timer.nsecsElapsed() / 30e6;
+        VideoTranscodeRequest request;
+        request.inputPath = input;
+        request.outputPath = m_dir.filePath(QStringLiteral("blur-%1.mp4").arg(int(mode)));
+        request.frameFilter = filter;
+        request.videoBitrate = 5000000;
+        timer.restart();
+        const auto result = m_transcoder->transcode(request, {});
+        const double totalMs = timer.nsecsElapsed() / 1e6;
+        QVERIFY2(result.success, qPrintable(result.errorMessage));
+        QVERIFY(qAbs(m_transcoder->probe(request.outputPath).durationMs - 10000) < 40);
+        if (mode == SnapTray::ZoomTrack::MotionBlur::Off) baseline = totalMs;
+        qInfo("Camera blur %d: transition %.3f ms/frame; 10 s/4 transitions export %.1f ms (%.2fx Off)",
+              int(mode), frameMs, totalMs, totalMs / baseline);
+    }
+}
+
+void tst_VideoTranscoder::longPitchExportBenchmark()
+{
+    if (!qEnvironmentVariableIsSet("SNAPTRAY_LONG_AUDIO_BENCHMARK")) QSKIP("Opt-in ten-minute 1080p audio benchmark");
+    const QSize size(1920, 1080);
+    const QString retained = qEnvironmentVariable("SNAPTRAY_AUDIO_BENCHMARK_INPUT");
+    const QString input = retained.isEmpty() ? m_dir.filePath("audio-benchmark.mp4") : retained;
+    if (retained.isEmpty()) {
+        std::unique_ptr<IVideoEncoder> encoder(IVideoEncoder::createNativeEncoder());
+        QVERIFY(encoder && encoder->start(input, size, 30));
+        QImage picture(size, QImage::Format_RGB32); picture.fill(Qt::white);
+        { QPainter p(&picture); for (int x = 0; x < size.width(); x += 40) p.fillRect(x, 0, 10, size.height(), Qt::blue); }
+        // A real 30 fps source is required: export never raises the input rate.
+        const QImage background = picture;
+        for (int i = 0; i < 18000; ++i) {
+            picture = background;
+            { QPainter p(&picture); p.fillRect((i * 7) % 1800, (i * 3) % 960, 120, 120, Qt::red); }
+            encoder->writeFrameNs(picture, qint64(i) * 1000000000LL / 30);
+            QCOMPARE(encoder->framesWritten(), i + 1);
+        }
+        QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
+        encoder->finishAtNs(600000000000LL);
+        if (finished.isEmpty()) QVERIFY(finished.wait(30000));
+        QVERIFY(finished.first().first().toBool());
+        QByteArray pcm(48000 * 4, Qt::Uninitialized);
+        for (int i = 0; i < 48000; ++i) {
+            const qint16 sample = qint16(6000 * std::sin(2.0 * M_PI * 440 * i / 48000));
+            qToLittleEndian<qint16>(sample, pcm.data() + i * 4);
+            qToLittleEndian<qint16>(sample, pcm.data() + i * 4 + 2);
+        }
+        SnapTray::AudioTrackWriter track(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::Microphone));
+        QVERIFY(track.open());
+        for (int second = 0; second < 600; ++second) track.write(pcm, qint64(second) * 48000);
+        track.close(); QVERIFY(!track.failed());
+        SnapTray::AudioTrackWriter systemTrack(SnapTray::AudioTracks::pathFor(input, SnapTray::AudioTracks::Track::SystemAudio));
+        QVERIFY(systemTrack.open()); systemTrack.close(); QVERIFY(!systemTrack.failed());
+    }
+    const auto source = m_transcoder->probe(input);
+    QVERIFY(source.valid && source.videoSize == size && qAbs(source.durationMs - 600000) <= 40);
+    QVERIFY(source.frameRate > 29.9 && source.frameRate < 30.1);
+    QVERIFY(SnapTray::AudioTracks::exist(input));
+    // Warm the codec/device initialization before comparing processing cost.
+    // Otherwise the first off export can hide audio overhead behind startup.
+    VideoTranscodeRequest warmup;
+    warmup.inputPath = input;
+    warmup.outputPath = m_dir.filePath("pitch-warmup.mp4");
+    warmup.frameRate = 30;
+    warmup.videoBitrate = 5000000;
+    warmup.audioTracksVideoPath = input;
+    warmup.segments = {{0, 4000, 2.0, true}};
+    const auto warmed = m_transcoder->transcode(warmup, {});
+    QVERIFY2(warmed.success, qPrintable(warmed.errorMessage));
+    double times[3]{};
+    for (int i = 0; i < 3; ++i) {
+        VideoTranscodeRequest request;
+        request.inputPath = input; request.outputPath = m_dir.filePath(QString("pitch-%1.mp4").arg(i));
+        request.frameRate = 30; request.videoBitrate = 5000000;
+        request.audioTracksVideoPath = input;
+        request.segments = {{0, 600000, 2.0, i == 1}};
+        QElapsedTimer timer; timer.start();
+        const auto result = m_transcoder->transcode(request, {});
+        times[i] = timer.nsecsElapsed() / 1e6;
+        QVERIFY2(result.success, qPrintable(result.errorMessage));
+        const auto probe = m_transcoder->probe(request.outputPath);
+        QVERIFY(qAbs(probe.durationMs - 300000) <= 40);
+        QCOMPARE(probe.hasAudio, i == 1);
+        qInfo("Ten-minute 1080p 2x export, Keep sound %s: %.1f ms", i == 1 ? "on" : "off", times[i]);
+    }
+    const double baseline = (times[0] + times[2]) / 2;
+    qInfo("Pitch-preserving export overhead: %.2f%% (bracketed baseline %.1f ms)", 100 * (times[1] / baseline - 1), baseline);
+    QVERIFY2(times[1] < baseline * 1.05, "Ten-minute audio export overhead must stay below 5%");
 }
 
 QTEST_MAIN(tst_VideoTranscoder)

@@ -1,5 +1,9 @@
 #include <QtTest/QtTest>
+#include <QJsonDocument>
+#include <QtEndian>
 #include <cmath>
+#include <cstring>
+#include <QQuickView>
 #include <QThread>
 #include <QAccessible>
 #include <QQuickItem>
@@ -19,6 +23,7 @@
 #include "recording/CursorTimeline.h"
 #include "settings/RecordingSettingsManager.h"
 #include "qml/RecordingCursorOverlay.h"
+#include "qml/VideoPlaybackItem.h"
 #include "qml/RecordingAppearanceOverlay.h"
 #include "qml/RecordingKeyOverlay.h"
 #include "qml/RecordingOverlayItem.h"
@@ -28,6 +33,7 @@
 #include "recording/RecordingAppearance.h"
 #include "recording/RecordingProject.h"
 #include "video/Mp4VideoSamples.h"
+#include "video/AudioFileDecoder.h"
 #include "video/IVideoFrameReader.h"
 #include <QPainter>
 #include "video/IVideoTranscoder.h"
@@ -397,9 +403,15 @@ class tst_RecordingPreviewExport : public QObject
     Q_OBJECT
 
 private slots:
+    void shapesMapThroughZoomAndRenderInPreview();
+    void shapesAndLoopReachEveryOutput_data();
+    void shapesAndLoopReachEveryOutput();
+    void legacyMixedAudioPreparesSpeedPreview();
+    void importedAudioSurvivesSourceRemovalAndProjectReopen();
     void closeOutcomes_data();
     void closeOutcomes();
     void previewWindowKeepsNativeCaption();
+    void animatedOptionsReachOutputAndStayIndependent();
     void saveAnimation_data();
     void saveAnimation();
     void saveCroppedAnimation_data();
@@ -467,6 +479,60 @@ private slots:
     void zoomMatchesAcrossPreviewAndOutputs_data();
     void zoomMatchesAcrossPreviewAndOutputs();
 };
+
+void tst_RecordingPreviewExport::animatedOptionsReachOutputAndStayIndependent()
+{
+    auto& settings = RecordingSettingsManager::instance();
+    const auto gif = settings.animatedExportOptions(false);
+    const auto webp = settings.animatedExportOptions(true);
+    auto restore = qScopeGuard([&] {
+        settings.setAnimatedExportOptions(false, gif);
+        settings.setAnimatedExportOptions(true, webp);
+    });
+    settings.setAnimatedExportOptions(false, {});
+    settings.setAnimatedExportOptions(true, {});
+    QTemporaryDir dir;
+    const QSize source(160, 120);
+    const QString input = dir.filePath("recording.mp4");
+    QVERIFY(createRecording(input, 0, source).isEmpty());
+    for (int format : {int(RecordingPreviewBackend::GIF), int(RecordingPreviewBackend::WebP)}) {
+        RecordingPreviewBackend backend(input);
+        backend.updateVideoSize(source);
+        backend.updateDuration(1200);
+        backend.setSelectedFormat(format);
+        backend.setAppearanceEnabled(false);
+        QCOMPARE(backend.animatedOptions().value("resolution").toInt(), 0);
+        backend.setAnimatedOption("resolution", 5);
+        backend.setAnimatedOption("width", 80);
+        backend.setAnimatedOption("fps", 15); // Source is 10; must not upsample.
+        backend.setAnimatedOption("quality", 1);
+        backend.setAnimatedOption("loop", false);
+        QCOMPARE(backend.exportSize(), QSize(80, 60));
+        RecordingPreviewBackend reopened(input);
+        reopened.setSelectedFormat(format);
+        QCOMPARE(reopened.animatedOptions(), backend.animatedOptions());
+        QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+        backend.save();
+        WAIT_FOR_EXPORT(backend, saved, 20000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        QCOMPARE(saved.count(), 1);
+        QCOMPARE(saved.first().at(1).toSize(), QSize(80, 60));
+        QImageReader reader(saved.first().at(0).toString());
+        QVERIFY(reader.canRead());
+        QCOMPARE(reader.size(), QSize(80, 60));
+        QCOMPARE(reader.loopCount(), 0);
+        QVERIFY(reader.imageCount() <= 12);
+        qint64 duration = 0;
+        for (int i = 0; i < reader.imageCount(); ++i) {
+            QVERIFY(!reader.read().isNull());
+            duration += reader.nextImageDelay();
+        }
+        QVERIFY(qAbs(duration - 1200) <= 100);
+        QVERIFY(backend.animatedSizeText().contains("Exported file:"));
+        backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+        QVERIFY(QFile::exists(input));
+    }
+}
 
 void tst_RecordingPreviewExport::saveAnimation_data()
 {
@@ -3387,13 +3453,22 @@ void tst_RecordingPreviewExport::projectsKeepTheRecordingAndItsEdits()
     project = projects.first();
     QVERIFY(QFileInfo::exists(project.videoPath()));
     QVERIFY(QFileInfo::exists(project.videoPath() + QLatin1String(SnapTray::KeyTimelineSidecar::kSuffix)));
-    // Saved for real: the new image is the project's own, the old one is gone.
+    // The current and previous manifests must both keep their owned images.
     const QString newOwned = SnapTray::RecordingRecipe::editState(project.recipe)->appearance.imagePath;
     QVERIFY(SnapTray::RecordingProjects::contains(newOwned));
     QVERIFY(newOwned != ownedBackground);
-    QVERIFY(!QFileInfo::exists(ownedBackground));
-    QCOMPARE(QDir(project.dir).entryList({QStringLiteral("background*")}, QDir::Files),
-             QStringList{QFileInfo(newOwned).fileName()});
+    QVERIFY(QFileInfo::exists(ownedBackground));
+    QStringList expectedImages{QFileInfo(newOwned).fileName(), QFileInfo(ownedBackground).fileName()};
+    expectedImages.sort();
+    QCOMPARE(QDir(project.dir).entryList({QStringLiteral("background*")}, QDir::Files), expectedImages);
+    QFile previousManifest(QDir(project.dir).filePath(QStringLiteral("manifest.prev.json")));
+    QVERIFY(previousManifest.open(QIODevice::ReadOnly));
+    const auto previousRecipe = QJsonDocument::fromJson(previousManifest.readAll()).object()
+        .value(QStringLiteral("recipe")).toObject();
+    const auto previousState = SnapTray::RecordingRecipe::editState(previousRecipe);
+    QVERIFY(previousState);
+    QCOMPARE(previousState->appearance.imagePath, ownedBackground);
+    QVERIFY(!QImage(previousState->appearance.imagePath).isNull());
     QCOMPARE(project.savedPath, directory.filePath(QStringLiteral("second.mp4")));
     const auto state = SnapTray::RecordingRecipe::editState(project.recipe);
     QCOMPARE(state->trimStart, qint64(0));
@@ -3762,4 +3837,285 @@ void tst_RecordingPreviewExport::closeOutcomes()
     QCOMPARE(closed.count(), 1);
     QCOMPARE(discarded.count(), action == 2 ? 0 : 1);
     QCOMPARE(saved.count(), action == 2 ? 1 : 0);
+}
+
+void tst_RecordingPreviewExport::importedAudioSurvivesSourceRemovalAndProjectReopen()
+{
+    QTemporaryDir dir;
+    const QString source = dir.filePath("recording.mp4");
+    QVERIFY(createRecording(source, 0, kFrameSize, true).isEmpty());
+    const QString wav = dir.filePath("music.wav");
+    // 44.1 kHz mono is intentionally different from the owned PCM format.
+    QByteArray pcm(44100 * 2, '\0');
+    for (int i = 0; i < 44100; ++i)
+        qToLittleEndian<qint16>(qint16(4000 * std::sin(i * 2 * 3.141592653589793 * 440 / 44100)), pcm.data() + i * 2);
+    QByteArray header(44, '\0');
+    std::memcpy(header.data(), "RIFF", 4); qToLittleEndian<quint32>(36 + pcm.size(), header.data() + 4);
+    std::memcpy(header.data() + 8, "WAVEfmt ", 8); qToLittleEndian<quint32>(16, header.data() + 16);
+    qToLittleEndian<quint16>(1, header.data() + 20); qToLittleEndian<quint16>(1, header.data() + 22);
+    qToLittleEndian<quint32>(44100, header.data() + 24); qToLittleEndian<quint32>(88200, header.data() + 28);
+    qToLittleEndian<quint16>(2, header.data() + 32); qToLittleEndian<quint16>(16, header.data() + 34);
+    std::memcpy(header.data() + 36, "data", 4); qToLittleEndian<quint32>(pcm.size(), header.data() + 40);
+    { QFile file(wav); QVERIFY(file.open(QIODevice::WriteOnly)); file.write(header); file.write(pcm); }
+    RecordingPreviewBackend backend(source);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.updateVideoSize(kFrameSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    QVERIFY(backend.audioClipsAvailable());
+    backend.addAudioClip(QUrl::fromLocalFile(wav));
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.importingAudio(), 20000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(backend.audioClips().size(), 1);
+    const auto& imported = backend.m_audioClips.clips[0];
+    // Media Foundation returns 47,999 samples and AVFoundation 47,983 for
+    // this source. Permit less than one millisecond of native conversion
+    // tail difference; the editor must still include every returned sample.
+    constexpr qint64 kResamplerTailTolerance = SnapTray::AudioTracks::kSampleRate / 1000;
+    QVERIFY2(qAbs(imported.assetFrames - 48000) < kResamplerTailTolerance,
+             qPrintable(QString::number(imported.assetFrames)));
+    QVERIFY(imported.durationMs() >= 1000 && imported.durationMs() <= 1001);
+    QCOMPARE(imported.endMs, qMin(backend.duration(), imported.durationMs()));
+    // A decoder/sink cancellation after writing some PCM must roll back the
+    // append, preserving every asset that existing edits reference.
+    QFile archive(source + QLatin1String(SnapTray::AudioClipTrack::kSuffix));
+    QVERIFY(archive.open(QIODevice::ReadOnly));
+    const auto beforeImport = archive.readAll(); archive.close();
+    int cancellationChecks = 0;
+    QString importError;
+    QVERIFY(!SnapTray::importAudioClip(wav, source, importError, [&] { return ++cancellationChecks >= 3; }));
+    QVERIFY(cancellationChecks >= 3);
+    QVERIFY(archive.open(QIODevice::ReadOnly));
+    QCOMPARE(archive.readAll(), beforeImport); archive.close();
+    QVERIFY(QFile::remove(wav));
+    QVERIFY(QFileInfo::exists(source + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix)));
+    backend.undo(); QVERIFY(backend.audioClips().isEmpty());
+    backend.redo(); QCOMPARE(backend.audioClips().size(), 1);
+    QVERIFY(backend.setAudioClipRange(0, 100, 800));
+    backend.setAudioClipOption(0, "gainDb", -6);
+    backend.setAudioClipOption(0, "loop", true);
+    backend.show();
+    QVERIFY(backend.m_view);
+    QVERIFY(backend.m_view->rootObject());
+    QVERIFY(backend.m_view->rootObject()->findChild<QObject*>("previewAudioClipPanel"));
+    QVERIFY(backend.m_view->rootObject()->findChild<QObject*>("previewAddAudioClip"));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    QVERIFY(!backend.audioClipsAvailable());
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    backend.splitAt(500); backend.setPartSpeed(1, 2.0);
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save(); WAIT_FOR_EXPORT(backend, saved, 60000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(saved.count(), 1);
+    const QString exported = saved[0][0].toString();
+    auto transcoder = IVideoTranscoder::create();
+    QVERIFY(transcoder->probe(exported).hasAudio);
+    int peak = 0;
+    QString decodeError;
+    QVERIFY(SnapTray::decodeAudioFile(exported, [&](const QByteArray& samples, std::optional<qint64>) {
+        for (int i = 0; i < samples.size() / 2; ++i) peak = qMax(peak, qAbs(int(qFromLittleEndian<qint16>(samples.constData() + i * 2))));
+        return true;
+    }, decodeError));
+    QVERIFY2(peak > 500, qPrintable(QString::number(peak)));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Cancelled);
+    const QString projectRoot = dir.filePath("projects");
+    SnapTray::RecordingProjects::setRootForTests(projectRoot);
+    const auto resetRoot = qScopeGuard([] { SnapTray::RecordingProjects::setRootForTests({}); });
+    const auto project = SnapTray::RecordingProjects::create(source, true, backend.currentRecipe(), {}, backend.duration(), {});
+    QVERIFY(project);
+    QVERIFY(QFileInfo::exists(project->videoPath() + QLatin1String(SnapTray::AudioClipTrack::kSuffix)));
+    const auto loaded = SnapTray::RecordingProjects::load(project->dir);
+    QVERIFY(loaded);
+    const auto edit = SnapTray::RecordingRecipe::editState(loaded->recipe);
+    QVERIFY(edit); QVERIFY(edit->audioClips == backend.m_audioClips);
+    SnapTray::AudioTrackMixer mixer(project->videoPath(), {});
+    QVERIFY(mixer.setClips(edit->audioClips));
+    QVERIFY(!mixer.read(500 * 48, 4800).isEmpty());
+    backend.removeAudioClip(0); QVERIFY(backend.audioClips().isEmpty());
+    backend.undo(); QCOMPARE(backend.audioClips().size(), 1);
+    RecordingPreviewBackend recovered(source);
+    QCOMPARE(recovered.audioClips().size(), 1);
+    // Reopening a missing or truncated import archive keeps the recipe and
+    // reports the unavailable asset instead of silently dropping the clip.
+    const QString archivePath = project->videoPath() + QLatin1String(SnapTray::AudioClipTrack::kSuffix);
+    for (const bool missing : {false, true}) {
+        if (missing) QVERIFY(QFile::remove(archivePath));
+        else { QFile damaged(archivePath); QVERIFY(damaged.open(QIODevice::ReadWrite)); QVERIFY(damaged.resize(20)); }
+        RecordingPreviewBackend broken(project->videoPath());
+        broken.updateVideoSize(kFrameSize);
+        broken.updateDuration(backend.duration());
+        broken.setProject(*project);
+        broken.show();
+        QTRY_VERIFY(!broken.projectLoading());
+        QCOMPARE(broken.audioClips().size(), 1);
+        QTRY_VERIFY(broken.errorMessage().contains("missing or damaged"));
+        SnapTray::AudioTrackMixer unavailable(project->videoPath(), {});
+        QVERIFY(!unavailable.setClips(edit->audioClips));
+        const auto stillSaved = SnapTray::RecordingProjects::load(project->dir);
+        QVERIFY(stillSaved);
+        QCOMPARE(stillSaved->recipe, project->recipe);
+    }
+    QVERIFY(SnapTray::RecordingProjects::remove(*project));
+}
+
+void tst_RecordingPreviewExport::shapesMapThroughZoomAndRenderInPreview()
+{
+    QTemporaryDir dir;
+    const QString source = dir.filePath("shapes.mp4");
+    QVERIFY(createRecording(source, 0, kFrameSize, false).isEmpty());
+    RecordingPreviewBackend backend(source);
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.updateVideoSize(kFrameSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.m_zoom.setSegments({{0, 1000, 2.0, QPointF(kFrameSize.width()/2, kFrameSize.height()/2), true}});
+    backend.updatePosition(500);
+    const QRectF picture(0, 0, 400, 300);
+    const QPointF from(100, 100), to(250, 200);
+    QCOMPARE(backend.addShapeFromView(ShapeParameters::Rectangle, from, to, picture), 0);
+    auto points = backend.shapePointsInView(0, picture);
+    QVERIFY(QLineF(points["from"].toPointF(), from).length() < 0.001);
+    QVERIFY(QLineF(points["to"].toPointF(), to).length() < 0.001);
+    backend.setShapeOption(0, "space", 1);
+    points = backend.shapePointsInView(0, picture);
+    QVERIFY(QLineF(points["from"].toPointF(), from).length() < 0.001);
+    backend.updatePosition(1100); // screen coordinates stay fixed after zoom out
+    points = backend.shapePointsInView(0, picture);
+    QVERIFY(QLineF(points["to"].toPointF(), to).length() < 0.001);
+    backend.undo();
+    QCOMPARE(backend.shapeTrack().segments[0].space, SnapTray::ShapeSegment::Content);
+    backend.redo();
+    QCOMPARE(backend.shapeTrack().segments[0].space, SnapTray::ShapeSegment::Screen);
+    backend.setShapeOption(0, "fadeInMs", 0);
+    backend.setShapeOption(0, "fadeOutMs", 0);
+    QVERIFY(backend.setShapeRange(0, 0, 1000));
+    backend.show(); QVERIFY(backend.m_view->rootObject());
+    auto* root = backend.m_view->rootObject();
+    QVERIFY(root->findChild<QObject*>("previewShapePanel"));
+    QVERIFY(root->findChild<QObject*>("previewShapeSpace"));
+    QVERIFY(root->findChild<QObject*>("previewShapeEditor"));
+    auto* player = root->findChild<VideoPlaybackItem*>("previewVideoPlayer");
+    QVERIFY(player);
+    QTRY_VERIFY_WITH_TIMEOUT(!player->contentRect().isEmpty(), 5000);
+    backend.setSelectedShape(-1);
+    root->setProperty("drawingShape", int(ShapeParameters::Arrow));
+    auto* draw = root->findChild<QQuickItem*>("previewShapeDrawArea");
+    QVERIFY(draw); QVERIFY(draw->isVisible());
+    const QPoint press = draw->mapToScene(QPointF(draw->width()*0.25, draw->height()*0.25)).toPoint();
+    const QPoint release = draw->mapToScene(QPointF(draw->width()*0.65, draw->height()*0.65)).toPoint();
+    QTest::mousePress(backend.m_view, Qt::LeftButton, Qt::NoModifier, press);
+    QTest::mouseMove(backend.m_view, release);
+    QTest::keyClick(backend.m_view, Qt::Key_Escape);
+    QTest::mouseRelease(backend.m_view, Qt::LeftButton, Qt::NoModifier, release);
+    QCOMPARE(backend.shapes().size(), 1); // cancelled drawing is never an undo step
+    root->setProperty("drawingShape", int(ShapeParameters::Arrow));
+    QTest::mousePress(backend.m_view, Qt::LeftButton, Qt::NoModifier, press);
+    QTest::mouseMove(backend.m_view, release);
+    QTest::mouseRelease(backend.m_view, Qt::LeftButton, Qt::NoModifier, release);
+    QTRY_COMPARE(backend.shapes().size(), 2);
+    backend.undo(); QCOMPARE(backend.shapes().size(), 1);
+    backend.redo(); QCOMPARE(backend.shapes().size(), 2);
+    backend.removeShape(1); QCOMPARE(backend.shapes().size(), 1);
+    backend.setSelectedShape(0);
+    backend.updatePosition(500);
+    std::function<QQuickItem*(QQuickItem*)> findFade = [&](QQuickItem* item) -> QQuickItem* {
+        if (item->objectName() == "previewShapefadeInMs") return item;
+        for (auto* child : item->childItems()) if (auto* found = findFade(child)) return found;
+        return nullptr;
+    };
+    auto* fade = findFade(root);
+    QVERIFY(fade);
+    fade->setProperty("text", "250"); fade->setProperty("edited", true);
+    QVariant accepted;
+    QVERIFY(QMetaObject::invokeMethod(root, "commitInspector", Q_RETURN_ARG(QVariant, accepted)));
+    QVERIFY(accepted.toBool());
+    QCOMPARE(backend.shapeTrack().segments[0].fadeInMs, 250);
+    fade->setProperty("text", "-1"); fade->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(root, "commitInspector", Q_RETURN_ARG(QVariant, accepted)));
+    QVERIFY(!accepted.toBool());
+    QCOMPARE(backend.shapeTrack().segments[0].fadeInMs, 250);
+    fade->setProperty("text", "0"); fade->setProperty("edited", true);
+    QVERIFY(QMetaObject::invokeMethod(root, "commitInspector", Q_RETURN_ARG(QVariant, accepted)));
+    QVERIFY(accepted.toBool());
+    if (!qEnvironmentVariable("SNAPTRAY_ROADMAP_UI_IMAGE").isEmpty()) {
+        QTest::qWait(150);
+        QVERIFY(backend.m_view->grabWindow().save(qEnvironmentVariable("SNAPTRAY_ROADMAP_UI_IMAGE")));
+    }
+    const auto saved = SnapTray::RecordingRecipe::editState(backend.currentRecipe());
+    QVERIFY(saved); QVERIFY(saved->shapes == backend.shapeTrack());
+}
+
+void tst_RecordingPreviewExport::legacyMixedAudioPreparesSpeedPreview()
+{
+    QTemporaryDir dir;
+    const QString source = dir.filePath("legacy.mp4");
+    QVERIFY(createRecording(source, 0, kFrameSize, true).isEmpty());
+    RecordingPreviewBackend backend(source);
+    backend.updateVideoSize(kFrameSize);
+    backend.updateDuration(kFrameCount * kFrameIntervalMs);
+    backend.setPartSpeed(0, 2.0);
+    backend.show();
+    const QString cache = source + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix);
+    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo(cache).size() > 1000, 15000);
+    QTRY_VERIFY_WITH_TIMEOUT(!backend.importingAudio(), 15000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QVERIFY(backend.m_previewAudio);
+}
+
+void tst_RecordingPreviewExport::shapesAndLoopReachEveryOutput_data()
+{
+    zoomMatchesAcrossPreviewAndOutputs_data();
+}
+
+void tst_RecordingPreviewExport::shapesAndLoopReachEveryOutput()
+{
+    const auto remembered = RecordingSettingsManager::instance().pointerEffects();
+    const auto restore = qScopeGuard([remembered] { RecordingSettingsManager::instance().setPointerEffects(remembered); });
+    QFETCH(int, format);
+    QTemporaryDir dir;
+    const QSize size(320, 240);
+    const QString source = dir.filePath("shapes-loop.mp4");
+    QVERIFY(createRecording(source, 0, size, false).isEmpty());
+    {
+        SnapTray::CursorTimelineWriter writer(SnapTray::CursorTimelineSidecar::pathFor(source));
+        SnapTray::CursorTimelineInfo info; info.frameSize = size; info.shapesAvailable = true;
+        QVERIFY(writer.open(info));
+        QImage pointer(10, 10, QImage::Format_ARGB32_Premultiplied); pointer.fill(Qt::magenta);
+        writer.addShape({1, QPoint(), pointer});
+        writer.addSample({0, {20, 20}, true, 1});
+        writer.addSample({400, {240, 180}, true, 1});
+        QVERIFY(writer.finish());
+    }
+    RecordingPreviewBackend backend(source);
+    backend.setSelectedFormat(format); backend.updateVideoSize(size); backend.updateDuration(1200);
+    backend.setShowCursor(true); backend.setCursorSmoothing(0); backend.setClickStyle(0); backend.setLoopBack(true);
+    const QRectF picture{QPointF(), QSizeF(size)};
+    QCOMPARE(backend.addShapeFromView(ShapeParameters::Rectangle, {80, 60}, {200, 140}, picture), 0);
+    backend.setShapeOption(0, "color", QColor(Qt::cyan)); backend.setShapeOption(0, "width", 16);
+    backend.setShapeOption(0, "fadeInMs", 0); backend.setShapeOption(0, "fadeOutMs", 0);
+    QVERIFY(backend.setShapeRange(0, 0, 1000));
+    QSignalSpy saved(&backend, &RecordingPreviewBackend::saveRequested);
+    backend.save(); WAIT_FOR_EXPORT(backend, saved, 30000);
+    QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+    QCOMPARE(saved.size(), 1);
+    const QString output = saved[0][0].toString();
+    auto reader = IVideoFrameReader::create();
+    if (format == RecordingPreviewBackend::MP4) { QVERIFY(reader); QVERIFY(reader->load(output)); }
+    const auto frameAt = [&](qint64 ms) { return format == RecordingPreviewBackend::MP4 ? reader->frameAt(ms) : animationFrameAt(output, ms); };
+    const auto cyanBox = [](const QImage& frame) {
+        QRect box;
+        for (int y = 0; y < frame.height(); ++y) for (int x = 0; x < frame.width(); ++x) {
+            const auto c = frame.pixelColor(x, y);
+            if (c.red() < 100 && c.green() > 160 && c.blue() > 160) box |= QRect(x, y, 1, 1);
+        }
+        return box;
+    };
+    const QRect box = cyanBox(frameAt(300));
+    QVERIFY2(!box.isEmpty(), qPrintable(output));
+    QVERIFY(qAbs(box.left() - 80) < 5 && qAbs(box.top() - 60) < 5);
+    QVERIFY(qAbs(box.right() - 200) < 5 && qAbs(box.bottom() - 140) < 5);
+    const QImage tail = frameAt(1100);
+    QVERIFY(cyanBox(tail).isEmpty());
+    const QPoint wanted = format == RecordingPreviewBackend::MP4 ? QPoint(240, 180) : QPoint(20, 20);
+    QVERIFY2((pointerTopLeft(tail) - wanted).manhattanLength() < 4,
+             qPrintable(QString("tail pointer %1,%2").arg(pointerTopLeft(tail).x()).arg(pointerTopLeft(tail).y())));
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved);
 }

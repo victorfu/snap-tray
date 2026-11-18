@@ -24,13 +24,15 @@ struct TimelineSegment {
     qint64 startMs = 0; // source time, inclusive
     qint64 endMs = 0;   // source time, exclusive
     double speed = 1.0; // 2.0 = twice as fast (half as long in the output)
+    bool keepSound = true;
+    bool isSilent() const { return !keepSound && !qFuzzyCompare(speed, 1.0); }
     qint64 lengthMs() const { return endMs - startMs; }
     // Header-only: the platform transcoders use it without linking the core.
     qint64 outputLengthMs() const { return speed > 0.0 ? qint64(std::llround(double(lengthMs()) / speed)) : lengthMs(); }
     bool contains(qint64 sourceMs) const { return sourceMs >= startMs && sourceMs < endMs; }
     bool operator==(const TimelineSegment& o) const
     {
-        return startMs == o.startMs && endMs == o.endMs && qFuzzyCompare(speed, o.speed);
+        return startMs == o.startMs && endMs == o.endMs && qFuzzyCompare(speed, o.speed) && keepSound == o.keepSound;
     }
 };
 
@@ -83,7 +85,8 @@ struct TimelineEdit {
     struct Part {
         bool deleted = false;
         double speed = 1.0;
-        bool operator==(const Part& o) const { return deleted == o.deleted && qFuzzyCompare(speed, o.speed); }
+        bool keepSound = true;
+        bool operator==(const Part& o) const { return deleted == o.deleted && qFuzzyCompare(speed, o.speed) && keepSound == o.keepSound; }
     };
 
     std::vector<qint64> splits;     // sorted, strictly increasing, > 0
@@ -111,6 +114,7 @@ struct TimelineEdit {
     bool moveSplit(int index, qint64 sourceMs, qint64 durationMs);
     bool setDeleted(int part, bool deleted);
     bool setSpeed(int part, double speed);
+    bool setKeepSound(int part, bool keep);
 
     // The kept parts inside the trim.
     TimelineMap map(qint64 trimStartMs, qint64 trimEndMs) const;

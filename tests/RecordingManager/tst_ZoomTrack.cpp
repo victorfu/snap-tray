@@ -62,7 +62,14 @@ class TestZoomTrack : public QObject
     Q_OBJECT
 
 private slots:
+    void cameraBlurIsDeterministicAndCutBounded();
+    void loopViewportMatchesTheFirstFrame();
     void autoZoomKeepsInteractionFocusWithoutFollowing();
+    void autoZoomCutsSpeedAndTyping();
+    void autoZoomResultReasons();
+    void interactionThresholds();
+    void autoZoomTenMinuteBudget();
+    void autoZoomFieldAndMenu();
     void followDeadZoneAndSeek();
     void followClicksEdgesAndCuts();
     void followCutResetWaitsForHiddenPointer();
@@ -85,6 +92,118 @@ private slots:
     void segmentsNormalizeAndRoundTrip();
     void demoContactSheet();
 };
+
+void TestZoomTrack::interactionThresholds()
+{
+    using Kind = AutoZoomInteractionKind;
+    AutoZoomInteractionMetrics m;
+    m.samples = 3; m.maxDistance = .02;
+    QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.maxDistance = .01999; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Field);
+    m.maxDistance = .02; m.samples = 2; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Field);
+    m.samples = 3; m.previousPressMs = 350; m.previousPressDistance = .04;
+    QCOMPARE(classifyAutoZoomInteraction(m), Kind::DoubleClick);
+    m.previousPressMs = 350.01; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.previousPressMs = 350; m.previousPressDistance = .04001;
+    QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.previousPressMs = -1; m.heldMs = 200; m.drag = QPointF(.03001, 0);
+    QCOMPARE(classifyAutoZoomInteraction(m), Kind::Selection);
+    m.heldMs = 199.99; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.heldMs = 200; m.drag = QPointF(.03, 0); QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.drag = {}; m.downDistance = .03001; m.pathY = .15; m.pathX = .09;
+    QCOMPARE(classifyAutoZoomInteraction(m), Kind::Menu);
+    m.downDistance = .03; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+    m.downDistance = .03001; m.pathX = .10001; QCOMPARE(classifyAutoZoomInteraction(m), Kind::Click);
+}
+
+void TestZoomTrack::autoZoomTenMinuteBudget()
+{
+    Script script;
+    for (int i = 0; i <= 72000; ++i) script.move(qint64(i) * 1000 / 120, QPoint(500 + (i / 240) % 800, 500));
+    for (int i = 0; i < 300; ++i) script.click(i * 2000 + 100, QPoint(500 + i % 800, 500));
+    script.sort();
+    QElapsedTimer timer; timer.start();
+    const auto result = generateAutoZoom(script.timeline, {kBounds, 600000, 2.0});
+    const double ms = timer.nsecsElapsed() / 1e6;
+    qInfo("300-click auto zoom: %.3f ms", ms);
+    QVERIFY(!result.empty());
+#ifdef NDEBUG
+    QVERIFY(ms < 50);
+#else
+    QVERIFY(ms < 1500);
+#endif
+}
+
+void TestZoomTrack::autoZoomResultReasons()
+{
+    Script script;
+    const AutoZoomOptions options{kBounds, 10000, 2.0};
+    using Reason = AutoZoomResult::Reason;
+    QCOMPARE(generateAutoZoomResult(script.timeline, options).reason, Reason::NoVisibleInteractions);
+    script.timeline.info.clicksAvailable = false;
+    QCOMPARE(generateAutoZoomResult(script.timeline, options).reason, Reason::NoClickData);
+    script.timeline.info.clicksAvailable = true;
+    script.click(1000, QPoint(300, 300));
+    QCOMPARE(generateAutoZoomResult(script.timeline, options).reason, Reason::Added);
+    auto small = options;
+    small.maxScale = 1.1;
+    QCOMPARE(generateAutoZoomResult(script.timeline, small).reason, Reason::InsufficientScale);
+}
+
+void TestZoomTrack::autoZoomCutsSpeedAndTyping()
+{
+    Script script;
+    script.click(1000, QPoint(300, 300));
+    script.click(5000, QPoint(300, 300)); // removed
+    script.click(10000, QPoint(300, 300));
+    script.move(12000, QPoint(800, 800));
+    script.sort();
+    AutoZoomOptions options{kBounds, 40000, 2.0};
+    options.timeline = TimelineMap({{0, 3000, 1.0}, {8000, 40000, 4.0}});
+    const auto segments = generateAutoZoom(script.timeline, options);
+    QCOMPARE(segments.size(), size_t(2));
+    QVERIFY(segments[0].endMs <= 3000);
+    QVERIFY(segments[1].startMs >= 8000);
+    QVERIFY((segments[1].endMs - segments[1].startMs) / 4 >= 1500);
+    QCOMPARE(generateAutoZoom(script.timeline, options), segments);
+
+    Script typing;
+    typing.click(1000, QPoint(300, 300));
+    typing.move(1200, QPoint(800, 800));
+    typing.sort();
+    options.timeline = {};
+    for (qint64 t = 1500; t <= 9000; t += 500) options.keyTimes.push_back(t);
+    const auto extended = generateAutoZoom(typing.timeline, options);
+    QCOMPARE(extended.size(), size_t(1));
+    QVERIFY(extended[0].endMs >= 10500);
+    for (qint64 t = 9500; t <= 30000; t += 500) options.keyTimes.push_back(t);
+    QVERIFY(generateAutoZoom(typing.timeline, options)[0].endMs <= 16000);
+}
+
+void TestZoomTrack::autoZoomFieldAndMenu()
+{
+    Script field;
+    field.click(1000, QPoint(300, 300));
+    field.move(7000, QPoint(300, 300));
+    auto segments = field.generate(10000);
+    QCOMPARE(segments.size(), size_t(1));
+    QVERIFY(segments[0].endMs >= 6000);
+    field.move(3000, QPoint(800, 800));
+    segments = field.generate(10000);
+    QVERIFY(segments[0].endMs <= 3100);
+
+    Script menu;
+    menu.click(1000, QPoint(300, 300));
+    menu.move(1200, QPoint(300, 400));
+    menu.move(1500, QPoint(300, 500));
+    menu.move(1800, QPoint(300, 600));
+    menu.click(4000, QPoint(300, 750));
+    segments = menu.generate(10000);
+    QCOMPARE(segments.size(), size_t(1));
+    auto track = trackOf(segments, &menu.timeline);
+    QVERIFY(track.viewportAt(1000, kBounds).contains(QPointF(300, 300)));
+    QVERIFY(track.viewportAt(4000, kBounds).contains(QPointF(300, 750)));
+}
 
 void TestZoomTrack::autoZoomKeepsInteractionFocusWithoutFollowing()
 {
@@ -304,6 +423,7 @@ void TestZoomTrack::cornerClicksStayInFrame()
 {
     Script s;
     s.click(2000, QPoint(5, 5));
+    s.move(4500, QPoint(600, 500)); // leave the field before the next corner click
     s.click(9000, QPoint(1915, 1075));
     const ZoomTrack track = trackOf(s.generate(), &s.timeline);
     QCOMPARE(int(track.segments().size()), 2);
@@ -631,6 +751,58 @@ void TestZoomTrack::demoContactSheet()
     }
     sheetPainter.end();
     QVERIFY(sheet.save(QDir(out).filePath(QStringLiteral("auto-zoom-demo.png"))));
+}
+
+void TestZoomTrack::cameraBlurIsDeterministicAndCutBounded()
+{
+    const QRectF bounds(0, 0, 320, 180);
+    QImage source(bounds.size().toSize(), QImage::Format_RGB32);
+    for (int y = 0; y < source.height(); ++y)
+        for (int x = 0; x < source.width(); ++x) source.setPixel(x, y, (x / 4 + y / 4) % 2 ? qRgb(255, 255, 255) : qRgb(0, 0, 0));
+    ZoomTrack zoom;
+    zoom.setSegments({{1000, 2000, 2, {100, 60}, true}, {2600, 4000, 3, {240, 130}, true}});
+    const TimelineMap map({{0, 5000, 1}});
+    const auto draw = [&](qint64 ms) { auto frame = source; zoom.resample(frame, ms, bounds, map, false, 15); return frame; };
+    const auto offMoving = draw(700), offStill = draw(1500);
+    zoom.motionBlur = ZoomTrack::MotionBlur::High;
+    QCOMPARE(draw(1500), offStill);
+    const auto moving = draw(700);
+    QVERIFY(moving != offMoving);
+    QCOMPARE(draw(700), moving);
+    draw(3000);
+    QCOMPARE(draw(700), moving);
+    QCOMPARE(ZoomTrack::fromJson(zoom.toJson()), zoom);
+    QCOMPARE(ZoomTrack::fromJson({}).motionBlur, ZoomTrack::MotionBlur::Off);
+    zoom.reduceMotion = true;
+    const auto reduced = draw(700);
+    zoom.motionBlur = ZoomTrack::MotionBlur::Off;
+    QCOMPARE(draw(700), reduced);
+    // A future pan in a deleted gap must not reach backwards through a cut.
+    zoom.reduceMotion = false;
+    zoom.motionBlur = ZoomTrack::MotionBlur::High;
+    const TimelineMap cut({{1000, 1800, 1}, {3000, 3500, 2}});
+    QImage last = source;
+    zoom.resample(last, 1799, bounds, cut, false, 10);
+    zoom.motionBlur = ZoomTrack::MotionBlur::Off;
+    QImage plain = source;
+    zoom.resample(plain, 1799, bounds, cut, false, 10);
+    QCOMPARE(last, plain);
+}
+
+void TestZoomTrack::loopViewportMatchesTheFirstFrame()
+{
+    ZoomTrack zoom;
+    zoom.setSegments({{500, 1800, 2, {100, 50}, true}, {2500, 5500, 3, {700, 400}, true}});
+    const QRectF bounds(0, 0, 1000, 600);
+    const TimelineMap map({{1000, 2000, 1}, {3000, 5000, 2}});
+    const auto first = zoom.viewportAt(1000, bounds);
+    QCOMPARE(zoom.loopViewportAt(4900, bounds, map, true), first);
+    QCOMPARE(zoom.loopViewportAt(3500, bounds, map, true), zoom.viewportAt(3500, bounds));
+    QCOMPARE(zoom.loopViewportAt(4900, bounds, map, false), zoom.viewportAt(4900, bounds));
+    const auto middle = zoom.loopViewportAt(4000, bounds, map, true);
+    zoom.loopViewportAt(4900, bounds, map, true);
+    QCOMPARE(zoom.loopViewportAt(4000, bounds, map, true), middle);
+    QVERIFY(bounds.contains(middle));
 }
 
 QTEST_MAIN(TestZoomTrack)

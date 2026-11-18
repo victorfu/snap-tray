@@ -34,6 +34,7 @@ public:
     struct Shape {
         QImage image; // premultiplied ARGB, native pixels
         QPoint hotspot;
+        QString kind; // Optional standard type; empty for a custom/unknown shape.
     };
 
     using QObject::QObject;

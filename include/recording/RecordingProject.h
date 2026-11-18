@@ -48,6 +48,10 @@ struct RecordingProject {
     qint64 durationMs = 0;
     QString savedPath;   // the last file exported from it
     QJsonObject recipe;
+    bool recoveredFromBackup = false;
+    bool unreadable = false;
+    bool sourceRecoverable = false; // corrupt metadata, readable owned media; never an I/O failure
+    QString recoveredFromProjectId; // original damaged folder; copied media stays independent
     QString thumbnailGeneration; // rotated only after a successful manifest commit
 
     QString videoPath() const;
@@ -82,6 +86,7 @@ QString root();
 void setRootForTests(const QString& path);
 // Tests: make the next create() or update() fail at its manifest write.
 void failNextManifestWriteForTests();
+void failNextManifestReadForTests();
 void beforeNextManifestWriteForTests(std::function<void()> callback);
 void failNextProjectCleanupForTests();
 
@@ -99,13 +104,19 @@ QStringList sidecarSuffixes();
 using RecipePreparer = std::function<std::optional<QJsonObject>(const QString& projectDir, const QJsonObject& recipe)>;
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
                                        const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
-                                       const RecipePreparer& prepareRecipe = {});
+                                       const RecipePreparer& prepareRecipe = {},
+                                       const QString& recoveredFromProjectId = {});
+// Reuses an earlier recovery copy; never edits or consumes the damaged folder.
+std::optional<RecordingProject> recoverSource(const RecordingProject& damaged, qint64 durationMs);
 std::optional<RecordingProject> load(const QString& dir);
 bool update(RecordingProject& project, const QJsonObject& recipe, const QString& savedPath);
+// Protect the project currently open in the editor from automatic cleanup.
+void setOpenProjectDir(const QString& dir);
 QList<RecordingProject> list(); // newest first
 bool remove(const RecordingProject& project);
 qint64 totalBytes();
-// Removes projects not changed for `days` (0 = never); returns how many.
+// Removes readable, closed projects not changed for `days` (0 = never).
+// Unreadable projects always require manual deletion; returns how many.
 int removeOlderThan(int days, const QDateTime& now = QDateTime::currentDateTime());
 // True when the path is inside the projects root (its files are a project's).
 bool contains(const QString& path);

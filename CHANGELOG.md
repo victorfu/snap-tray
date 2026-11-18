@@ -8,11 +8,22 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Added
 
+- Recording shapes and numbered steps, with editable timing, fades, and a choice of following the content or staying fixed on screen.
+- Imported music and narration clips with volume, looping, source offsets and fades, preserved in editable projects and recovery.
+- Crisp enlarged pointers, steady pointer shapes, path straightening, animated loop returns and camera motion blur.
+
 - Recordings on Windows now keep the pointer's real shape and mouse clicks for editing, so Auto Zoom, click highlights and the recorded pointer shape work there as they do on Linux.
 - macOS recordings now keep the real pointer shape and mouse clicks, so Auto Zoom and click highlights work on macOS without any extra permission.
 - Beautified screenshots copied or saved from a pin are now kept in the Library together with the exact Beautify settings used. Editing such an item and pinning it again opens Beautify with those settings, even after the defaults or saved styles have changed.
 
 ### Improved
+
+- Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
+- GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.
+- Windows recording defaults to WGC, preserves precise frame times and avoids repeatedly encoding still desktops. DXGI can recover from temporary capture loss; WASAPI starts asynchronously and reports audio gaps and timestamp repairs.
+
+- Auto Zoom respects cuts and playback speed, holds text-field and typing interactions longer, and can run once when a new recording opens (off by default).
+- Editable recording projects keep one previous manifest and remain visible in the Library when their metadata is damaged.
 
 - Screenshot history items are now written as a whole or not at all, so a full disk or an interrupted save can no longer leave a half-written item.
 

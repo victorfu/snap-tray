@@ -306,6 +306,7 @@ add_library(snaptray_core STATIC
     src/annotations/AnnotationZOrderCommands.cpp
     src/annotations/PolylineAnnotation.cpp
     src/annotations/ShapeAnnotation.cpp
+    src/annotations/ShapeParameters.cpp
     src/annotations/AnnotationStyle.cpp
     src/annotations/AnnotationGeometry.cpp
     src/annotation/AnnotationSnapEngine.cpp
@@ -365,6 +366,7 @@ add_library(snaptray_core STATIC
     src/recording/CursorTimeline.cpp
     src/recording/WindowsCursorSupport.cpp
     src/recording/CursorEffects.cpp
+    src/recording/CrispCursor.cpp
     src/recording/ZoomTrack.cpp
     src/recording/RedactionTrack.cpp
     src/recording/Mp4ExportOptions.cpp
@@ -375,6 +377,11 @@ add_library(snaptray_core STATIC
     src/recording/KeyOverlay.cpp
     src/recording/OverlayTrack.cpp
     src/recording/AudioTracks.cpp
+    src/recording/AudioClipTrack.cpp
+    src/recording/ShapeTrack.cpp
+    src/video/AudioFileDecoder.cpp
+    src/recording/AudioTimeStretch.cpp
+    src/recording/AudioSegmentReader.cpp
     src/recording/RecordingProject.cpp
     include/recording/RecordingProject.h
     src/recording/RecordingFrameFilter.cpp
@@ -418,6 +425,7 @@ target_include_directories(snaptray_core
 
 target_link_libraries(snaptray_core
     PUBLIC
+        Qt6::Svg
         Qt6::Core
         Qt6::Gui
         Qt6::Widgets
@@ -774,6 +782,7 @@ elseif(WIN32)
             uiautomationcore
             imm32
             winmm
+            avrt
             mfreadwrite
             mfplat
             mfuuid

@@ -54,8 +54,8 @@ public:
         // applied when the preview saves. See IntermediateQuality.h.
         bool intermediateQuality = false;
         QList<quintptr> excludedCaptureWindowIds; // Native capture IDs resolved on the GUI thread
-        // Windows: try Windows Graphics Capture first (experimental, #152);
-        // the default engine is used when it is unavailable or fails to start.
+        // Windows: use the captured WGC preference (enabled by default);
+        // fall back to DXGI/BitBlt when WGC is unavailable or fails to start.
         bool preferGraphicsCapture = false;
         // Hand GPU frames to the MP4 encoder when it can take them (#155).
         bool gpuEncoding = true;
@@ -78,6 +78,7 @@ public:
         bool fragmentedOutput = false;  // crash leaves a playable prefix
         bool audioEnabled = false;
         QString audioWarning;
+        QString captureFallbackReason;
 
         // Track started state for safe cleanup
         bool captureEngineStarted = false;
@@ -149,6 +150,9 @@ private:
     bool initializeAudioEngine();
     bool initializeEncoder();
 
+    // Factories allow deterministic fallback checks without live capture hardware.
+    std::function<ICaptureEngine*()> m_createGraphicsCapture;
+    std::function<ICaptureEngine*()> m_createFallbackCapture = [] { return ICaptureEngine::createBestEngine(nullptr); };
     Config m_config;
     Result m_result;
     QAtomicInt m_cancelled;

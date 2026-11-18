@@ -179,10 +179,22 @@ bool ScreenPickerViewModel::preselectArea() const
     return RecordingSettingsManager::instance().preselectArea();
 }
 
+bool ScreenPickerViewModel::autoZoomOnOpen() const
+{
+    return RecordingSettingsManager::instance().autoZoomOnOpen();
+}
+
 void ScreenPickerViewModel::setPreselectArea(bool value)
 {
     if (preselectArea() == value) return;
     RecordingSettingsManager::instance().setPreselectArea(value);
+    emit recordingModeChanged();
+}
+
+void ScreenPickerViewModel::setAutoZoomOnOpen(bool value)
+{
+    if (autoZoomOnOpen() == value) return;
+    RecordingSettingsManager::instance().setAutoZoomOnOpen(value);
     emit recordingModeChanged();
 }
 

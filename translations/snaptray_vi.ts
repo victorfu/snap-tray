@@ -1479,6 +1479,22 @@ Kích thước tệp: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Bản ghi có thể đang được sử dụng hoặc không còn khôi phục được. Mở lại «Khôi phục bản ghi» để làm mới danh sách.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Khôi phục dự án thất bại</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Không thể mở bản sao khôi phục. Hãy kiểm tra dung lượng đĩa trống và quyền truy cập tệp. Dự án gốc được giữ nguyên.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Đã khôi phục bản ghi</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Đã mở dự án khôi phục riêng. Không thể đọc các chỉnh sửa của dự án gốc; thư mục gốc được giữ nguyên.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3353,6 +3369,10 @@ Kích thước: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Không thể lưu gợi ý phím. Quá trình ghi sẽ tiếp tục mà không có chúng.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Chụp màn hình tạm thời dùng chế độ tương thích</translation>
     </message>
 </context>
 <context>
@@ -5422,6 +5442,262 @@ Kích thước: %2</translation>
         <source>Press bounce</source>
         <translation>Nảy khi nhấn</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Đã tự động thêm %1 lần thu phóng</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Hoàn tác</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Không tự động thêm nữa</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Đóng</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Mũi tên</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Hình chữ nhật</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Hình elip</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Đường</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Đánh dấu</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Số bước</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Hình dạng</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Đoạn âm thanh</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Tốc độ xem trước (gần đúng)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Xem trước giới hạn ở 0,25×–2×. Xuất dùng đúng tốc độ đoạn và giữ nguyên cao độ.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Kéo trên bản xem trước để vẽ hình này</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Thêm âm thanh…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Nhập nhạc hoặc lời dẫn (tối đa 30 phút và 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF và WebP không có âm thanh. Chọn MP4 để thêm âm thanh.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Hình vẽ</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Đoạn âm thanh %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Tốc độ phát đoạn này trong tệp đã xuất</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Giữ âm thanh</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Giữ nguyên cao độ khi thay đổi tốc độ đoạn này</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Kiểu con trỏ</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Sắc nét vẽ lại con trỏ chuẩn được nhận diện khi phóng to; con trỏ tùy chỉnh giữ hình đã ghi</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Đã ghi</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Sắc nét</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Làm thẳng đường đi</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Giảm các đoạn cong nhỏ trước khi làm mượt. Nhấp và kéo giữ vị trí đã ghi.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Trở về đầu</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Trở về đầu khả dụng khi xuất GIF và WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Đưa con trỏ và máy quay về đầu. Con trỏ chỉ trở về nếu cả hai đầu đều hiển thị trong vùng cắt.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Ổn định hình dạng con trỏ</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Ẩn thay đổi hình dạng ngắn, trừ gần lần nhấp</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF và WebP không có âm thanh. Chọn MP4 để chỉnh sửa đoạn âm thanh.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Âm lượng</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Lặp âm thanh</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Lặp tệp âm thanh để lấp đầy phạm vi đoạn này</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Độ lệch nguồn (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Tăng dần (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Giảm dần (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Bắt đầu âm thanh</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Kết thúc âm thanh</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Xóa đoạn âm thanh</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Không gian tọa độ</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Nội dung — theo thu phóng</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Màn hình — vị trí cố định</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Độ rộng nét</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Kiểu mũi tên</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Mũi tên tô kín</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Mũi tên viền</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Mũi tên mở</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Hai đầu</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Hai đầu, đường viền</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Bắt đầu hình</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Kết thúc hình</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Xóa hình</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Chiều rộng tùy chỉnh</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Giới hạn cạnh dài nhất hoặc đặt chiều rộng. Hình ảnh không bao giờ được phóng to.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Lặp vô hạn</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Tệp nhỏ hơn (chậm hơn)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Các tùy chọn này áp dụng trong trình chỉnh sửa. Chế độ nhanh dùng trực tiếp kích thước và tốc độ khung hình ghi.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Nhòe chuyển động máy quay</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Làm mềm chuyển động máy quay trong khi giữ con trỏ và lớp phủ sắc nét</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5621,6 +5897,78 @@ Kích thước: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Đã lưu vào %1 nhưng không thể giữ bản ghi thành dự án có thể chỉnh sửa. Bản ghi vẫn đang mở ở đây: hãy lưu lại hoặc đóng để bỏ.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Kích thước tệp thực tế hiển thị sau khi xuất.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Tệp đã xuất: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Trên 25 MB; giảm kích thước hoặc tốc độ khung hình để chia sẻ.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Trên 10 MB; giảm kích thước hoặc tốc độ khung hình để chia sẻ.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Đang chuẩn bị xem trước âm thanh…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Tệp phụ của âm thanh đã nhập bị thiếu hoặc hỏng.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Không có dữ liệu nhấp đã ghi.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Không còn lần nhấp hiển thị trong vùng cắt và các đoạn giữ lại.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Đã thêm thu phóng: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Tất cả thu phóng đề xuất chồng lên thu phóng bạn đã thêm hoặc sửa.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Mức phóng đại đề xuất quá nhỏ để thêm thu phóng.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Thêm âm thanh</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Tệp âm thanh (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Mọi tệp (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Một bản ghi có thể chứa tối đa 128 đoạn âm thanh.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Đang nhập âm thanh…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Không thể lưu chỉnh sửa âm thanh để khôi phục sau sự cố.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Không thể chuẩn bị xem trước âm thanh: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Không thể nhập âm thanh: %1</translation>
     </message>
 </context>
 <context>
@@ -6076,6 +6424,14 @@ Ghi GIF không hỗ trợ âm thanh.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Cách bắt đầu ghi màn hình, nội dung được ghi và điều gì xảy ra khi bạn dừng.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Tự động thêm thu phóng vào bản ghi mới</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Phóng to các lần nhấp đã ghi khi mở trình chỉnh sửa. Bạn có thể hoàn tác bằng một bước.</translation>
     </message>
 </context>
 <context>
@@ -6605,6 +6961,10 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Chỉ ghi vùng đó.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Tự động thêm thu phóng</translation>
     </message>
 </context>
 <context>
@@ -8048,6 +8408,40 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Đầu ra: %1 × %2 điểm ảnh</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Dự án không đọc được</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Mở bản ghi không có chỉnh sửa, hiện thư mục hoặc xóa.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Hiện thư mục dự án hoặc xóa dự án.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Đã khôi phục từ lần lưu trước</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Dự án không đọc được</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Đang mở trong bản xem trước</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Đã khôi phục từ lần lưu trước</translation>
     </message>
 </context>
 </TS>

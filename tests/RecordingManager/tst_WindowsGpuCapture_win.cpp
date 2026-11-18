@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "capture/D3D11Frame.h"
+#include "capture/CaptureFrameTiming.h"
 #include "capture/DXGICaptureEngine.h"
 #include "capture/WGCCaptureEngine.h"
 #include "recording/SessionClock.h"
@@ -9,6 +10,7 @@
 #include <QGuiApplication>
 #include <QMutex>
 #include <QScreen>
+#include <QScopeGuard>
 #include <QPainter>
 #include <QTimer>
 #include <QWidget>
@@ -71,7 +73,7 @@ class TestWindowsGpuCapture : public QObject
 
 private slots:
     void testGraphicsCaptureDeliversFramesOfTheRegion();
-    void testGraphicsCaptureRepeatsAStaticScreen();
+    void testGraphicsCaptureKeepsAStaticScreenAlive();
     void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
@@ -126,26 +128,49 @@ void TestWindowsGpuCapture::testGraphicsCaptureDeliversFramesOfTheRegion()
     }
 }
 
-void TestWindowsGpuCapture::testGraphicsCaptureRepeatsAStaticScreen()
+void TestWindowsGpuCapture::testGraphicsCaptureKeepsAStaticScreenAlive()
 {
-    // WGC only delivers on change. A still screen must keep the cadence
-    // instead of reading as a capture stall (#152).
+    // #337 replaces #152's nominal-rate repeats with a settling frame and
+    // sparse keep-alives. A static screen must remain live without converting
+    // every nominal interval. Cover the desktop with a non-animated fixture.
     if (!WGCCaptureEngine::isAvailable()) QSKIP("Windows Graphics Capture is not supported here");
+    auto* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    CapturePattern pattern;
+    pattern.setGeometry(screen->geometry());
+    pattern.showFullScreen();
+    QVERIFY(QTest::qWaitForWindowExposed(&pattern));
     WGCCaptureEngine engine;
     QVERIFY(configure(engine));
     FrameSink sink;
     sink.connectTo(engine);
     QVERIFY2(engine.start(), qPrintable(engine.lastStartError()));
+    const auto stopCapture = qScopeGuard([&] { engine.stop(); });
     QTRY_VERIFY_WITH_TIMEOUT(sink.count() >= 1, kFrameTimeoutMs);
-    sink.take();
-    QTest::qWait(1000);
+    const auto initial = sink.take();
+    const qint64 observedAt = SnapTray::captureClockNowNs();
+    constexpr qint64 kTimerSlackMs = 500;
+    constexpr qint64 kNsPerMs = 1000000;
+    QTest::qWait(int(SnapTray::kCaptureKeepAliveNs / kNsPerMs + kTimerSlackMs));
     engine.stop();
     const auto frames = sink.take();
-    // 10 fps for a second; allow for timer slack.
-    QVERIFY2(frames.size() >= kFrameRate / 2, qPrintable(QString::number(frames.size())));
-    for (int i = 1; i < frames.size(); ++i) {
-        QVERIFY(frames[i].sourceTimeNs > frames[i - 1].sourceTimeNs);
+    QVERIFY(!frames.isEmpty());
+    QVERIFY(frames.back().sourceTimeNs >= observedAt + SnapTray::kCaptureKeepAliveNs - kTimerSlackMs * kNsPerMs);
+    int newPictures = 0, repeats = 0;
+    auto previousSequence = initial.back().sequence;
+    qint64 previousTime = initial.back().sourceTimeNs;
+    for (const auto& frame : frames) {
+        QVERIFY(frame.sourceTimeNs > previousTime);
+        if (frame.sequence == previousSequence) ++repeats; else ++newPictures;
+        previousSequence = frame.sequence;
+        previousTime = frame.sourceTimeNs;
     }
+    // Desktop/system changes can still arrive. Allow one settling repeat for
+    // each new picture, plus the bounded idle keep-alives, not a full-rate loop.
+    const qint64 keepAliveAllowance = (SnapTray::captureClockNowNs() - observedAt)
+        / SnapTray::kCaptureKeepAliveNs + 2;
+    QVERIFY2(repeats <= newPictures + keepAliveAllowance,
+             qPrintable(QStringLiteral("%1 repeats for %2 new pictures").arg(repeats).arg(newPictures)));
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates()

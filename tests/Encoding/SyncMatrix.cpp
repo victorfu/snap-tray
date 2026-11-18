@@ -5,6 +5,7 @@
 #include "recording/FramePacer.h"
 #include "recording/SessionClock.h"
 #include "video/FFmpegMedia.h"
+#include "video/IVideoTranscoder.h"
 
 #include <deque>
 #include <QHash>
@@ -201,6 +202,8 @@ std::vector<VideoEvent> videoEvents(const Scenario& s)
         if (still && staticId < 0) staticId = i;
         if (!still) staticId = -1;
         const int id = still ? staticId : i;
+        constexpr int kKeepAliveSeconds = 2;
+        if (s.sparseDesktop && still && (i - staticId) % (s.fps * kKeepAliveSeconds) != 0) continue;
         // Sorted: a binary search keeps long rows linear (#178 review).
         const bool flash = !still && std::binary_search(flashFrames.begin(), flashFrames.end(), i);
         if (s.dropEvery && i % s.dropEvery == s.dropEvery - 1) continue;
@@ -269,7 +272,7 @@ constexpr qint64 kStallPeriodMs = 2000;
 struct EncoderQueueModel {
     const Scenario& s;
     const EncodingWorker::QueueBudget budget{};
-    struct Queued { qint64 ms; int id; bool flash; int motion; double enqueuedMs; };
+    struct Queued { qint64 ms; int id; bool flash; int motion; double enqueuedMs; qint64 ns = -1; };
     std::deque<Queued> queue;
     qint64 dropped = 0;
     int maxDepth = 0;
@@ -578,7 +581,7 @@ QJsonObject Scenario::toJson() const
             {"durationMs", durationMs}, {"audio", audioName(audio)}, {"sourceJitterMs", sourceJitterMs},
             {"arrivalDelayMs", arrivalDelayMs}, {"burstEvery", burstEvery}, {"dropEvery", dropEvery},
             {"duplicateEvery", duplicateEvery}, {"backwardEvery", backwardEvery},
-            {"staticFromMs", staticFromMs}, {"staticToMs", staticToMs}, {"pauses", pauseList},
+            {"sparseDesktop", sparseDesktop}, {"staticFromMs", staticFromMs}, {"staticToMs", staticToMs}, {"pauses", pauseList},
             {"audioGapFromMs", audioGapFromMs}, {"audioGapToMs", audioGapToMs},
             {"audioClockOffsetMs", audioClockOffsetMs}, {"audioDriftPpm", audioDriftPpm},
             {"slowEncoderMs", slowEncoderMs}, {"mutation", mutationName(mutation)}};
@@ -668,7 +671,8 @@ Result run(const Scenario& s, const QString& workDir)
         QElapsedTimer retry;
         retry.start();
         do {
-            encoder->writeFrame(image, q.ms);
+            if (s.sparseDesktop) encoder->writeFrameNs(image, q.ns);
+            else encoder->writeFrame(image, q.ms);
             if (encoder->framesWritten() != before) break;
             QThread::msleep(2); // backpressure: retry the same frame
         } while (retry.elapsed() < kWriteRetryMs);
@@ -680,7 +684,7 @@ Result run(const Scenario& s, const QString& workDir)
         runControlsUntil(e.arrivalMs);
         qint64 recNs = 0;
         if (clock.admit(qint64(e.sourceMs * kNsPerMs), &recNs) != SnapTray::SessionClock::Admission::Accepted) continue;
-        if (pacer.onFrame(recNs) != SnapTray::FramePacer::Decision::Emit) continue;
+        if (pacer.onFrame(recNs, s.sparseDesktop) != SnapTray::FramePacer::Decision::Emit) continue;
         qint64 ms = SnapTray::SessionClock::toEncoderMs(recNs);
         if (cutoffMs >= 0 && ms >= cutoffMs) continue;
         if (s.mutation == Mutation::ReorderTimestamps && ++written % 10 == 0) ms = std::max<qint64>(0, ms - qint64(2 * interval));
@@ -689,7 +693,7 @@ Result run(const Scenario& s, const QString& workDir)
         lastWrittenId = e.id;
         // A stalled encoder: frames wait in the worker's queue (or are
         // refused past its budget) while capture and audio carry on.
-        encoderQueue.offer(e.arrivalMs, {ms, e.id, e.flash, e.motion, e.arrivalMs}, write);
+        encoderQueue.offer(e.arrivalMs, {ms, e.id, e.flash, e.motion, e.arrivalMs, recNs}, write);
     }
     encoderQueue.drain(write);
     runAudioUntil(s.durationMs + kAudioChunkMs + kAudioLatencyMs);
@@ -697,7 +701,8 @@ Result run(const Scenario& s, const QString& workDir)
     clock.stop();
     if (withAudio) audio.flush(s.durationMs);
     QSignalSpy finished(encoder.get(), &IVideoEncoder::finished);
-    encoder->finish();
+    if (s.sparseDesktop) encoder->finishAtNs(recordingMs(s, s.durationMs) * kNsPerMs);
+    else encoder->finish();
     if (finished.isEmpty()) finished.wait(30000);
     const bool finishedOk = !finished.isEmpty() && finished.first().at(0).toBool();
     if (!finishedOk) result.failures << QStringLiteral("encoder did not finish: %1").arg(encoder->lastError());
@@ -724,6 +729,12 @@ Result run(const Scenario& s, const QString& workDir)
                        {"durationMs", recordingMs(s, s.durationMs)}};
     if (!finishedOk) return result;
 
+    if (s.sparseDesktop) {
+        auto probe = IVideoTranscoder::create();
+        const qint64 duration = probe ? probe->probe(output).durationMs : 0;
+        if (qAbs(duration - recordingMs(s, s.durationMs)) > interval)
+            result.failures << QStringLiteral("sparse final hold ended at %1 ms").arg(duration);
+    }
     // Decode what was actually written.
     QString videoError;
     const auto decoded = decodeVideo(output, &videoError);

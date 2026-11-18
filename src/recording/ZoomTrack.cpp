@@ -1,6 +1,8 @@
 #include "recording/ZoomTrack.h"
 
 #include <QJsonObject>
+#include <QPainter>
+#include <array>
 #include <QtMath>
 
 #include <algorithm>
@@ -121,6 +123,7 @@ struct Interaction {
     QRectF area; // points it touched (a drag's whole path)
     qint64 firstEventMs = 0; // the interactions themselves, without lead and tail
     qint64 lastEventMs = 0;
+    bool menu = false;
 };
 
 } // namespace
@@ -239,6 +242,96 @@ QPointF ZoomTrack::focusAt(const ZoomSegment& segment, qint64 ms) const
     const auto& previous = *(next - 1);
     const double t = double(ms - previous.ms) / double(next->ms - previous.ms);
     return previous.center + (next->center - previous.center) * t;
+}
+
+QRectF ZoomTrack::loopViewportAt(qint64 sourceMs, const QRectF& bounds, const TimelineMap& timeline,
+                                 bool loopBack, qint64 clipEndMs) const
+{
+    if (!loopBack) return viewportAt(sourceMs, bounds);
+    const auto time = LoopTransition::forTimeline(timeline, clipEndMs);
+    const auto output = timeline.isEmpty() ? std::optional<qint64>(sourceMs) : timeline.sourceToOutput(sourceMs);
+    if (!time || !output || *output < time->startOutputMs || *output >= time->endOutputMs)
+        return viewportAt(sourceMs, bounds);
+    const QRectF from = viewportAt(time->returnSourceMs, bounds);
+    const QRectF to = viewportAt(time->firstSourceMs, bounds);
+    const double progress = time->progress(*output);
+    return QRectF(from.topLeft() + (to.topLeft() - from.topLeft()) * progress,
+                  from.size() + (to.size() - from.size()) * progress);
+}
+
+void ZoomTrack::resample(QImage& frame, qint64 sourceMs, const QRectF& bounds, const TimelineMap& timeline,
+                         bool loopBack, double outputFps, qint64 clipEndMs) const
+{
+    if (frame.isNull() || bounds.isEmpty()) return;
+    const auto viewport = [&](qint64 ms) { return loopViewportAt(ms, bounds, timeline, loopBack, clipEndMs); };
+    const QRectF shown = viewport(sourceMs);
+    const double sx = frame.width() / bounds.width(), sy = frame.height() / bounds.height();
+    const auto sampleImage = [&](const QRectF& view) {
+        QImage image(frame.size(), QImage::Format_ARGB32_Premultiplied);
+        if (image.isNull()) return image;
+        image.fill(Qt::transparent);
+        QPainter painter(&image);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform);
+        painter.drawImage(QRectF(image.rect()), frame,
+            QRectF((view.x() - bounds.x()) * sx, (view.y() - bounds.y()) * sy, view.width() * sx, view.height() * sy));
+        return image;
+    };
+    constexpr int kSamples[] = {1, 4, 8};
+    int count = reduceMotion || !enabled ? 1 : kSamples[int(motionBlur)];
+    const double frameMs = std::isfinite(outputFps) && outputFps > 0 ? 1000.0 / outputFps : 1000.0 / 30.0;
+    const int part = timeline.segmentAt(sourceMs);
+    const auto output = timeline.isEmpty() ? std::optional<qint64>(sourceMs) : timeline.sourceToOutput(sourceMs);
+    const auto timeAt = [&](double delta) {
+        if (!output) return sourceMs;
+        if (timeline.isEmpty()) return std::max<qint64>(0, clipEndMs > 0
+            ? std::min(clipEndMs - 1, qRound64(*output + delta)) : qRound64(*output + delta));
+        if (part < 0) return sourceMs;
+        const qint64 begin = timeline.segmentOutputStartMs(part);
+        const qint64 end = begin + timeline.segments()[size_t(part)].outputLengthMs();
+        return timeline.outputToSource(std::clamp(qRound64(*output + delta), begin, std::max(begin, end - 1)));
+    };
+    if (count > 1) {
+        const QRectF before = viewport(timeAt(-frameMs / 2)), after = viewport(timeAt(frameMs / 2));
+        const auto distance = [&](QPointF a, QPointF b) {
+            const QPointF d = b - a;
+            return std::hypot(d.x() * frame.width() / shown.width(), d.y() * frame.height() / shown.height());
+        };
+        if (std::max(distance(before.topLeft(), after.topLeft()), distance(before.bottomRight(), after.bottomRight()))
+            < kBlurMinPixels) count = 1;
+    }
+    if (count == 1) {
+        if (shown != bounds) {
+            const auto format = frame.format();
+            frame = sampleImage(shown).convertToFormat(format);
+        }
+        return;
+    }
+    // Eight premultiplied samples fit in uint16_t, including alpha. This is
+    // one shared model for panning, scaling and simultaneous motion.
+    std::vector<std::array<quint16, 4>> sums(size_t(frame.width()) * frame.height());
+    for (int i = 0; i < count; ++i) {
+        const double offset = (double(i) / (count - 1) - 0.5) * frameMs * kShutterFraction;
+        const QImage sample = sampleImage(viewport(timeAt(offset)));
+        if (sample.isNull()) { frame = {}; return; }
+        for (int y = 0; y < sample.height(); ++y) {
+            const auto* pixels = reinterpret_cast<const QRgb*>(sample.constScanLine(y));
+            auto* row = sums.data() + size_t(y) * sample.width();
+            for (int x = 0; x < sample.width(); ++x) {
+                row[x][0] += qRed(pixels[x]); row[x][1] += qGreen(pixels[x]);
+                row[x][2] += qBlue(pixels[x]); row[x][3] += qAlpha(pixels[x]);
+            }
+        }
+    }
+    QImage result(frame.size(), QImage::Format_ARGB32_Premultiplied);
+    if (result.isNull()) { frame = {}; return; }
+    for (int y = 0; y < result.height(); ++y) {
+        auto* pixels = reinterpret_cast<QRgb*>(result.scanLine(y));
+        const auto* row = sums.data() + size_t(y) * result.width();
+        for (int x = 0; x < result.width(); ++x)
+            pixels[x] = qRgba((row[x][0] + count / 2) / count, (row[x][1] + count / 2) / count,
+                             (row[x][2] + count / 2) / count, (row[x][3] + count / 2) / count);
+    }
+    frame = result.convertToFormat(frame.format());
 }
 
 void ZoomTrack::prepareFollow(const CursorTimeline& cursor, const CursorEffectSettings& settings,
@@ -393,6 +486,7 @@ QJsonObject ZoomTrack::toJson() const
     }
     return {{QStringLiteral("enabled"), enabled},
             {QStringLiteral("reduceMotion"), reduceMotion},
+            {QStringLiteral("motionBlur"), int(motionBlur)},
             {QStringLiteral("segments"), segments}};
 }
 
@@ -400,6 +494,7 @@ ZoomTrack ZoomTrack::fromJson(const QJsonObject& json)
 {
     ZoomTrack track;
     track.enabled = json.value(QStringLiteral("enabled")).toBool(true);
+    track.motionBlur = MotionBlur(std::clamp(json.value(QStringLiteral("motionBlur")).toInt(), 0, 2));
     track.reduceMotion = json.value(QStringLiteral("reduceMotion")).toBool(false);
     std::vector<ZoomSegment> segments;
     for (const auto& value : json.value(QStringLiteral("segments")).toArray()) {
@@ -427,17 +522,67 @@ ZoomTrack ZoomTrack::fromJson(const QJsonObject& json)
 
 bool ZoomTrack::operator==(const ZoomTrack& o) const
 {
-    return enabled == o.enabled && reduceMotion == o.reduceMotion && m_segments == o.m_segments;
+    return enabled == o.enabled && reduceMotion == o.reduceMotion && motionBlur == o.motionBlur && m_segments == o.m_segments;
+}
+
+AutoZoomInteractionKind classifyAutoZoomInteraction(const AutoZoomInteractionMetrics& m)
+{
+    using Kind = AutoZoomInteractionKind;
+    constexpr double kDoubleClickMs = 350, kDoubleClickDistance = 0.04;
+    constexpr double kSelectionHoldMs = 200, kSelectionDistance = 0.03, kSelectionAspect = 1.8;
+    constexpr double kMenuDistance = 0.03, kMenuAspect = 1.5, kFieldDistance = 0.02;
+    const std::pair<bool, Kind> rules[] = {
+        {m.previousPressMs >= 0 && m.previousPressMs <= kDoubleClickMs && m.previousPressDistance <= kDoubleClickDistance, Kind::DoubleClick},
+        {m.heldMs >= kSelectionHoldMs && std::abs(m.drag.x()) > kSelectionDistance
+            && std::abs(m.drag.x()) > kSelectionAspect * std::abs(m.drag.y()), Kind::Selection},
+        {m.downDistance > kMenuDistance && m.pathY > kMenuAspect * m.pathX, Kind::Menu},
+        {m.samples < 3 || m.maxDistance < kFieldDistance, Kind::Field},
+        {true, Kind::Click}
+    };
+    return std::find_if(std::begin(rules), std::end(rules), [](const auto& rule) { return rule.first; })->second;
+}
+
+static std::vector<ZoomSegment> buildAutoZoom(const CursorTimeline& timeline,
+                                             const AutoZoomOptions& options, bool& insufficientScale);
+
+AutoZoomResult generateAutoZoomResult(const CursorTimeline& timeline, const AutoZoomOptions& options)
+{
+    if (!timeline.info.clicksAvailable) return {{}, AutoZoomResult::Reason::NoClickData};
+    if (!std::isfinite(options.maxScale) || options.maxScale < kMinUsefulScale)
+        return {{}, AutoZoomResult::Reason::InsufficientScale};
+    bool insufficientScale = false;
+    auto segments = buildAutoZoom(timeline, options, insufficientScale);
+    const auto reason = !segments.empty() ? AutoZoomResult::Reason::Added
+        : insufficientScale ? AutoZoomResult::Reason::InsufficientScale : AutoZoomResult::Reason::NoVisibleInteractions;
+    return {std::move(segments), reason};
 }
 
 std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const AutoZoomOptions& options)
 {
+    bool insufficientScale = false;
+    return buildAutoZoom(timeline, options, insufficientScale);
+}
+
+static std::vector<ZoomSegment> buildAutoZoom(const CursorTimeline& timeline,
+                                             const AutoZoomOptions& options, bool& insufficientScale)
+{
     const QRectF bounds = options.bounds;
-    if (bounds.isEmpty() || timeline.buttons.empty()) return {};
+    if (bounds.isEmpty() || timeline.buttons.empty() || !std::isfinite(options.maxScale)) return {};
     const double shortSide = std::min(bounds.width(), bounds.height());
     const auto usable = [&](qint64 t, const QPoint& p) {
         const CursorSample* sample = timeline.sampleAt(t);
         return (!sample || sample->visible) && bounds.contains(QPointF(p));
+    };
+
+    const auto partAt = [&](qint64 t) { return options.timeline.isEmpty() ? 0 : options.timeline.segmentAt(t); };
+    const auto speedAt = [&](qint64 t) { return options.timeline.isEmpty() ? 1.0 : options.timeline.speedAt(t); };
+    const auto sourceDelta = [&](qint64 t, qint64 outputMs) { return qint64(std::llround(outputMs * speedAt(t))); };
+    const auto samePart = [&](qint64 a, qint64 b) { return partAt(a) >= 0 && partAt(a) == partAt(b); };
+    const auto clampToPart = [&](qint64 anchor, qint64 t) {
+        if (options.timeline.isEmpty()) return options.durationMs > 0
+            ? std::clamp<qint64>(t, 0, options.durationMs) : std::max<qint64>(0, t);
+        const auto& part = options.timeline.segments()[size_t(partAt(anchor))];
+        return std::clamp(t, part.startMs, part.endMs);
     };
 
     // Presses (with a drag's whole path while held) on visible, on-frame positions.
@@ -445,18 +590,91 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
     const auto& buttons = timeline.buttons;
     for (size_t i = 0; i < buttons.size(); ++i) {
         const auto& press = buttons[i];
-        if (!press.down || press.synthetic || !usable(press.tMs, press.position)) continue;
+        if (!press.down || press.synthetic || !usable(press.tMs, press.position) || partAt(press.tMs) < 0) continue;
         Interaction interaction{press.tMs, press.tMs, QRectF(QPointF(press.position), QSizeF(1, 1))};
         for (size_t j = i + 1; j < buttons.size(); ++j) {
             if (buttons[j].button == press.button && !buttons[j].down) {
-                interaction.endMs = buttons[j].tMs;
+                interaction.endMs = clampToPart(press.tMs, buttons[j].tMs);
                 break;
             }
         }
-        for (const auto& sample : timeline.samples) {
-            if (sample.tMs < press.tMs || sample.tMs > interaction.endMs) continue;
-            if (usable(sample.tMs, sample.position)) interaction.area |= QRectF(QPointF(sample.position), QSizeF(1, 1));
+        auto heldSample = std::lower_bound(timeline.samples.begin(), timeline.samples.end(), press.tMs,
+            [](const CursorSample& sample, qint64 ms) { return sample.tMs < ms; });
+        for (; heldSample != timeline.samples.end() && heldSample->tMs <= interaction.endMs; ++heldSample) {
+            if (usable(heldSample->tMs, heldSample->position)) interaction.area |= QRectF(QPointF(heldSample->position), QSizeF(1, 1));
         }
+        // Classify on the visible path in this kept part. Distances are
+        // fractions of the crop's short side; all windows are output time.
+        constexpr qint64 kDoubleClickMs = 350;
+        constexpr qint64 kLookStartMs = 100;
+        constexpr qint64 kLookEndMs = 2000;
+        constexpr double kFieldLeaveDistance = 0.03;
+        constexpr qint64 kFieldHoldMaxMs = 6000;
+        constexpr qint64 kTypingJoinMs = 1500;
+        constexpr qint64 kTypingGapMs = 1200;
+        constexpr qint64 kTypingHoldMaxMs = 15000;
+        const QPointF origin(press.position);
+        const auto distance = [](QPointF p) { return std::hypot(p.x(), p.y()); };
+        AutoZoomInteractionMetrics metrics;
+        for (size_t j = i; j-- > 0;) {
+            const auto& prior = buttons[j];
+            if (press.tMs - prior.tMs > sourceDelta(press.tMs, kDoubleClickMs)) break;
+            if (prior.down && !prior.synthetic && prior.button == press.button && samePart(prior.tMs, press.tMs)
+                && usable(prior.tMs, prior.position)) {
+                metrics.previousPressMs = double(press.tMs - prior.tMs) / speedAt(press.tMs);
+                metrics.previousPressDistance = distance(QPointF(prior.position) - origin) / shortSide;
+                break;
+            }
+        }
+        const auto* release = timeline.sampleAt(interaction.endMs);
+        const QPointF drag = release ? QPointF(release->position) - origin : QPointF();
+        double dx = 0, dy = 0, maxDistance = 0;
+        QPointF last = origin;
+        int count = 0;
+        const qint64 lookStart = press.tMs + sourceDelta(press.tMs, kLookStartMs);
+        const qint64 lookEnd = clampToPart(press.tMs, press.tMs + sourceDelta(press.tMs, kLookEndMs));
+        auto sample = std::lower_bound(timeline.samples.begin(), timeline.samples.end(), lookStart,
+            [](const CursorSample& s, qint64 t) { return s.tMs < t; });
+        for (; sample != timeline.samples.end() && sample->tMs < lookEnd; ++sample) {
+            if (!usable(sample->tMs, sample->position)) continue;
+            const QPointF pos(sample->position);
+            dx += std::abs(pos.x() - last.x()); dy += std::abs(pos.y() - last.y());
+            maxDistance = std::max(maxDistance, distance(pos - origin));
+            last = pos; ++count;
+        }
+        metrics.heldMs = double(interaction.endMs - press.tMs) / speedAt(press.tMs);
+        metrics.drag = drag / shortSide;
+        metrics.downDistance = (last.y() - origin.y()) / shortSide;
+        metrics.pathX = dx / shortSide; metrics.pathY = dy / shortSide;
+        metrics.maxDistance = maxDistance / shortSide; metrics.samples = count;
+        using Kind = AutoZoomInteractionKind;
+        const Kind kind = classifyAutoZoomInteraction(metrics);
+        interaction.menu = kind == Kind::Menu;
+        if (kind == Kind::Field) {
+            const qint64 limit = clampToPart(press.tMs, press.tMs + sourceDelta(press.tMs, kFieldHoldMaxMs));
+            qint64 leave = limit;
+            auto it = std::lower_bound(timeline.samples.begin(), timeline.samples.end(), interaction.endMs,
+                [](const CursorSample& s, qint64 t) { return s.tMs < t; });
+            for (; it != timeline.samples.end() && it->tMs < limit; ++it) {
+                if (!it->visible || distance(QPointF(it->position) - origin) > kFieldLeaveDistance * shortSide) {
+                    leave = it->tMs; break;
+                }
+            }
+            // The ordinary tail is added below; a field extends only while
+            // the pointer actually remains there, never beyond its departure.
+            interaction.endMs = std::max(interaction.endMs, leave - sourceDelta(press.tMs, kTailMs));
+        }
+        qint64 lastKey = press.tMs;
+        bool typing = false;
+        for (const qint64 key : options.keyTimes) {
+            if (key < press.tMs) continue;
+            if (!samePart(press.tMs, key) || key - lastKey > sourceDelta(press.tMs, typing ? kTypingGapMs : kTypingJoinMs)) break;
+            const qint64 limit = press.tMs + sourceDelta(press.tMs, kTypingHoldMaxMs - kTailMs);
+            lastKey = std::min(key, limit);
+            typing = true;
+            if (key >= limit) break;
+        }
+        if (typing) interaction.endMs = std::max(interaction.endMs, lastKey);
         interactions.push_back(interaction);
     }
 
@@ -466,10 +684,14 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
         if (!groups.empty()) {
             auto& group = groups.back();
             const QPointF delta = interaction.area.center() - group.area.center();
-            if (interaction.startMs - group.endMs <= kClusterGapMs
-                && std::hypot(delta.x(), delta.y()) <= kClusterRadius * shortSide) {
+            constexpr qint64 kMenuFollowMs = 4000;
+            if (samePart(group.startMs, interaction.startMs)
+                && ((interaction.startMs - group.endMs <= sourceDelta(group.startMs, kClusterGapMs)
+                     && std::hypot(delta.x(), delta.y()) <= kClusterRadius * shortSide)
+                    || (group.menu && interaction.startMs - group.endMs <= sourceDelta(group.startMs, kMenuFollowMs)))) {
                 group.endMs = std::max(group.endMs, interaction.endMs);
                 group.area |= interaction.area;
+                group.menu = interaction.menu;
                 continue;
             }
         }
@@ -484,18 +706,17 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
         return std::clamp(std::min(bounds.width() / framed.width(), bounds.height() / framed.height()),
                           ZoomTrack::kMinScale, maxScale);
     };
-    const auto clampTime = [&](qint64 t) {
-        return options.durationMs > 0 ? std::clamp<qint64>(t, 0, options.durationMs) : std::max<qint64>(t, 0);
-    };
 
     // Follow through nearby bursts instead of pumping out and back in.
     std::vector<Interaction> merged;
     for (auto group : groups) {
         group.firstEventMs = group.startMs;
         group.lastEventMs = group.endMs;
-        group.startMs -= kLeadMs;
-        group.endMs = std::max(group.endMs + kTailMs, group.startMs + kLeadMs + kMinClusterMs);
-        if (!merged.empty() && group.startMs - merged.back().endMs < kCooldownMs) {
+        group.startMs = clampToPart(group.firstEventMs, group.startMs - sourceDelta(group.firstEventMs, kLeadMs));
+        group.endMs = clampToPart(group.firstEventMs, std::max(group.endMs + sourceDelta(group.firstEventMs, kTailMs),
+            group.firstEventMs + sourceDelta(group.firstEventMs, kMinClusterMs)));
+        if (!merged.empty() && samePart(group.firstEventMs, merged.back().firstEventMs)
+            && group.startMs - merged.back().endMs < sourceDelta(group.firstEventMs, kCooldownMs)) {
             merged.back().endMs = std::max(merged.back().endMs, group.endMs);
             merged.back().area |= group.area;
             merged.back().lastEventMs = std::max(merged.back().lastEventMs, group.lastEventMs);
@@ -510,8 +731,8 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
             const double scale = maxScale;
             if (scale < kMinUsefulScale) continue; // the requested magnification is not useful
             ZoomSegment segment;
-            segment.startMs = clampTime(group.startMs);
-            segment.endMs = clampTime(group.endMs);
+            segment.startMs = group.startMs;
+            segment.endMs = group.endMs;
             segment.scale = scale;
             segment.follow = true;
             const auto* initial = timeline.sampleAt(segment.startMs);
@@ -525,7 +746,7 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
         }
         ZoomTrack normalized;
         normalized.setSegments(std::move(segments));
-        normalized.prepareFollow(timeline, {}, {}, bounds);
+        normalized.prepareFollow(timeline, {}, options.timeline, bounds);
         return normalized;
     };
 
@@ -536,20 +757,21 @@ std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const 
         const ZoomTrack track = build(merged);
         const auto hidden = std::find_if(interactions.cbegin(), interactions.cend(), [&](const Interaction& i) {
             for (const auto& event : timeline.buttons) {
-                if (event.synthetic || event.tMs < i.startMs || event.tMs > i.endMs
+                if (event.synthetic || !samePart(event.tMs, i.startMs) || event.tMs < i.startMs || event.tMs > i.endMs
                     || !usable(event.tMs, event.position)) continue;
                 if (!track.viewportAt(event.tMs, bounds).contains(QPointF(event.position))) return true;
             }
             return false;
         });
         if (hidden == interactions.cend()) return track.segments();
-        if (merged.size() <= 1) return {};
+        if (merged.size() <= 1) { insufficientScale = true; return {}; }
         auto owner = std::find_if(merged.begin(), merged.end(), [&](const Interaction& group) {
             return hidden->startMs >= group.firstEventMs && hidden->startMs <= group.lastEventMs;
         });
-        if (owner == merged.end()) return {};
-        const auto first = owner == merged.begin() ? owner : owner - 1;
-        const auto last = owner + 1 == merged.end() ? owner : owner + 1;
+        if (owner == merged.end()) { insufficientScale = true; return {}; }
+        const auto first = owner == merged.begin() || !samePart((owner - 1)->firstEventMs, owner->firstEventMs) ? owner : owner - 1;
+        const auto last = owner + 1 == merged.end() || !samePart((owner + 1)->firstEventMs, owner->firstEventMs) ? owner : owner + 1;
+        if (first == last) return track.segments(); // never merge through a cut
         Interaction wide = *first;
         for (auto it = first + 1; it <= last; ++it) {
             wide.endMs = std::max(wide.endMs, it->endMs);

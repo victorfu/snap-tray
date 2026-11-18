@@ -1,4 +1,5 @@
 #include "video/NativeEditExport.h"
+#include "recording/AudioSegmentReader.h"
 #include "video/IVideoFrameReader.h"
 #include "encoding/VideoBitrate.h"
 
@@ -20,7 +21,7 @@ bool needsNativeEditExport(const VideoTranscodeRequest& r)
 {
     return r.frameFilter || !r.outputSize.isEmpty() || r.frameRate > 0
         || r.videoCodec == QLatin1String(kVideoCodecHevc) || !r.segments.empty()
-        || !r.audioTracksVideoPath.isEmpty();
+        || !r.audioTracksVideoPath.isEmpty() || !r.audioClips.isEmpty();
 }
 
 QByteArray NativePcmReader::read(qint64 frame, int count)
@@ -100,12 +101,16 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     format.hevc = request.videoCodec == QLatin1String(kVideoCodecHevc);
     format.durationMs = map.outputDurationMs();
     std::unique_ptr<AudioTrackMixer> tracks;
-    if (!request.audioTracksVideoPath.isEmpty()) {
-        tracks = std::make_unique<AudioTrackMixer>(request.audioTracksVideoPath, request.audioMix);
-        if (!tracks->isValid()) return fail(QStringLiteral("Cannot read the separate audio tracks."));
+    if (!request.audioTracksVideoPath.isEmpty() || !request.audioClips.isEmpty()) {
+        tracks = std::make_unique<AudioTrackMixer>(request.audioTracksVideoPath.isEmpty() ? request.inputPath : request.audioTracksVideoPath, request.audioMix);
+        if (!request.audioTracksVideoPath.isEmpty() && !tracks->hasSeparateTracks())
+            return fail(QStringLiteral("Cannot read the separate audio tracks."));
+        if (!tracks->setClips(request.audioClips)) return fail(QStringLiteral("Cannot read the imported audio clips."));
+        if (!tracks->hasSeparateTracks() && source.hasAudio)
+            tracks->setFallback([&media](qint64 start, int count) { return media.audioAt(start, count); });
     }
     for (const auto& s : segments) {
-        format.audio |= qFuzzyCompare(s.speed, 1.0) && (tracks || (source.hasAudio
+        format.audio |= !s.isSilent() && (tracks || (source.hasAudio
             && qMin(s.endMs, source.audioEndMs) > qMax(s.startMs, source.audioStartMs)));
     }
     QTemporaryDir staging(QFileInfo(request.outputPath).absolutePath() + QStringLiteral("/.snaptray-export-XXXXXX"));
@@ -114,11 +119,15 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
     const QString staged = staging.filePath(QStringLiteral("output.mp4"));
     auto reader = IVideoFrameReader::create();
     if (!reader || !reader->load(request.inputPath)) return fail(reader ? reader->lastError() : QStringLiteral("Video decoder unavailable."));
-    if (!media.open(request.inputPath, staged, format, format.audio && !tracks)) return fail(media.error());
+    if (!media.open(request.inputPath, staged, format, format.audio && source.hasAudio && (!tracks || !tracks->hasSeparateTracks()))) return fail(media.error());
     constexpr int rate = AudioTracks::kSampleRate;
     constexpr int chunk = 4800;
     qint64 audioFrame = 0;
     int audioPart = 0;
+    int readerPart = -1;
+    AudioSegmentReader audioReader([&](qint64 start, int count) {
+        return tracks ? tracks->read(start, count) : media.audioAt(start, count);
+    });
     std::atomic_bool cancelled{false};
     auto writeAudioUntil = [&](qint64 timeUs) {
         const qint64 until = timeUs * rate / 1000000;
@@ -131,11 +140,8 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
             const qint64 partEnd = partStart + part.outputLengthMs() * rate / 1000;
             const int count = int(qMin<qint64>(chunk, qMin(until, partEnd) - audioFrame));
             if (count <= 0) return false;
-            QByteArray pcm(count * AudioTracks::kBytesPerFrame, '\0');
-            if (qFuzzyCompare(part.speed, 1.0)) {
-                const qint64 sourceFrame = part.startMs * rate / 1000 + audioFrame - partStart;
-                pcm = tracks ? tracks->read(sourceFrame, count) : media.audioAt(sourceFrame, count);
-            }
+            if (readerPart != audioPart) { audioReader.begin(part); readerPart = audioPart; }
+            const QByteArray pcm = audioReader.read(count);
             if (pcm.size() != count * AudioTracks::kBytesPerFrame || !media.writeAudio(pcm, audioFrame)) return false;
             audioFrame += count;
         }

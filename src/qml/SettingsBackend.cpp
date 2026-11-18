@@ -163,6 +163,7 @@ const ResettableSetting kResettableSettings[] = {
     {"recordingShowSetup", [] { return QVariant(RecordingSettingsManager::kDefaultShowSetupBeforeRecording); }},
     {"recordingShowPreview", [] { return QVariant(RecordingSettingsManager::kDefaultShowPreview); }},
     {"recordingPreselectArea", [] { return QVariant(RecordingSettingsManager::kDefaultPreselectArea); }},
+    {"recordingAutoZoomOnOpen", [] { return QVariant(RecordingSettingsManager::kDefaultAutoZoomOnOpen); }},
     {"recordingKeepProjects", [] { return QVariant(RecordingSettingsManager::kDefaultKeepProjects); }},
     {"recordingProjectCleanupDays", [] { return QVariant(RecordingSettingsManager::kDefaultProjectCleanupDays); }},
     {"countdownEnabled", [] { return QVariant(RecordingSettingsManager::kDefaultCountdownEnabled); }},
@@ -897,11 +898,23 @@ bool SettingsBackend::recordingPreselectArea() const
     return RecordingSettingsManager::instance().preselectArea();
 }
 
+bool SettingsBackend::recordingAutoZoomOnOpen() const
+{
+    return RecordingSettingsManager::instance().autoZoomOnOpen();
+}
+
 void SettingsBackend::setRecordingPreselectArea(bool value)
 {
     if (recordingPreselectArea() == value) return;
     RecordingSettingsManager::instance().setPreselectArea(value);
     emit recordingPreselectAreaChanged();
+}
+
+void SettingsBackend::setRecordingAutoZoomOnOpen(bool value)
+{
+    if (recordingAutoZoomOnOpen() == value) return;
+    RecordingSettingsManager::instance().setAutoZoomOnOpen(value);
+    emit recordingAutoZoomOnOpenChanged();
 }
 
 int SettingsBackend::recordingQuickSaveAction() const
@@ -936,6 +949,7 @@ void SettingsBackend::refreshRecordingMode()
     refresh(m_recordingShowSetup, settings.showSetupBeforeRecording(), [this] { emit recordingShowSetupChanged(); });
     emit recordingQuickSaveActionChanged();
     emit recordingPreselectAreaChanged();
+    emit recordingAutoZoomOnOpenChanged();
     emit recordingKeyModeChanged();
 }
 

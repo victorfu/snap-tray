@@ -1481,6 +1481,22 @@ Failo dydis: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Įrašas gali būti naudojamas arba jo nebegalima atkurti. Iš naujo atidarykite „Atkurti įrašus“, kad atnaujintumėte sąrašą.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projekto atkurti nepavyko</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Nepavyko atverti atkūrimo kopijos. Patikrinkite laisvą vietą diske ir failų leidimus. Pradinis projektas išsaugotas.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Įrašas atkurtas</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Atvertas atskiras atkūrimo projektas. Nepavyko perskaityti pradinio projekto pakeitimų; pradinis aplankas išsaugotas.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3355,6 +3371,10 @@ Dydis: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Nepavyko išsaugoti klavišų užuominų. Įrašymas bus tęsiamas be jų.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Ekrano fiksavimas laikinai naudoja suderinamumo režimą</translation>
     </message>
 </context>
 <context>
@@ -5430,6 +5450,262 @@ Dydis: %2</translation>
         <source>Press bounce</source>
         <translation>Atšokimas paspaudus</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Automatiškai pridėta priartinimų: %1</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Daugiau nepridėti automatiškai</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Užverti</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Rodyklė</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Stačiakampis</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Elipsė</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Linija</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Paryškinimas</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Žingsnio numeris</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Figūra</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Garso klipas</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Peržiūros greitis (apytikslis)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Peržiūra ribojama iki 0,25×–2×. Eksportuojant naudojamas tikslus klipo greitis ir išlaikomas garso aukštis.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Vilkite peržiūroje, kad nupieštumėte šią figūrą</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Pridėti garsą…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Importuoti muziką ar pasakojimą (iki 30 minučių ir 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF ir WebP neturi garso. Norėdami pridėti garsą, rinkitės MP4.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Figūros</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Garso klipas %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Šio klipo atkūrimo greitis eksportuotame faile</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Išlaikyti garsą</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Keičiant klipo greitį išlaikyti pradinį garso aukštį</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Žymeklio stilius</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Ryškus režimas padidinus perpiešia atpažintus standartinius žymeklius; pasirinktiniai žymekliai išlaiko įrašytą vaizdą</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Įrašytas</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Ryškus</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Ištiesinti trajektoriją</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Prieš glodinimą sumažina nedidelius vingius. Spustelėjimai ir vilkimas išlaiko įrašytas padėtis.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Grįžti į pradžią</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Grįžimas į pradžią galimas eksportuojant GIF ir WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Grąžinti žymeklį ir kamerą į pradžią. Žymeklis grįžta tik jei abu galai matomi apkirptoje srityje.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Stabilizuoti žymeklio formą</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Slėpti trumpus formos pokyčius, išskyrus šalia spustelėjimo</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF ir WebP neturi garso. Garso klipams redaguoti rinkitės MP4.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Garsumas</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Kartoti garsą</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Kartoti garso failą, kad užpildytų šio klipo intervalą</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Šaltinio poslinkis (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Garso stiprėjimas (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Garso silpnėjimas (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Garso pradžia</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Garso pabaiga</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Ištrinti garso klipą</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Koordinačių erdvė</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Turinys — seka mastelį</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Ekranas — fiksuota padėtis</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Linijos plotis</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Rodyklės stilius</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Užpildyta rodyklė</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Kontūrinė rodyklė</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Atvira rodyklė</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Abu galai</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Abu galai, kontūras</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Figūros pradžia</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Figūros pabaiga</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Ištrinti figūrą</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Pasirinktinis plotis</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Apribokite ilgiausią kraštinę arba nustatykite plotį. Vaizdas niekada nedidinamas.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Kartoti be galo</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Mažesnis failas (lėčiau)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Šios parinktys taikomos redaktoriuje. Greitasis režimas tiesiogiai naudoja įrašymo dydį ir kadrų dažnį.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Kameros judesio suliejimas</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Sušvelninti kameros judesį išlaikant ryškius žymeklius ir perdangas</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5629,6 +5905,78 @@ Dydis: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Išsaugota į %1, bet įrašo nepavyko išsaugoti kaip redaguojamo projekto. Jis vis dar atidarytas čia: išsaugokite dar kartą arba uždarykite, kad atmestumėte.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Tikrasis failo dydis rodomas po eksporto.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Eksportuotas failas: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Virš 25 MB; bendrinimui sumažinkite dydį arba kadrų dažnį.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Virš 10 MB; bendrinimui sumažinkite dydį arba kadrų dažnį.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Ruošiama garso peržiūra…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Trūksta importuoto garso pagalbinio failo arba jis sugadintas.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Nėra įrašytų spustelėjimų duomenų.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Apkirptoje srityje ir paliktuose klipuose nėra matomų spustelėjimų.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Pridėta priartinimų: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Visi siūlomi priartinimai persidengia su pridėtais ar pakeistais priartinimais.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Siūlomas padidinimas per mažas priartinimui pridėti.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Pridėti garsą</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Garso failai (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Visi failai (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Įraše gali būti iki 128 garso klipų.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Importuojamas garsas…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Nepavyko išsaugoti garso pakeitimų atkūrimui po strigties.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Nepavyksta paruošti garso peržiūros: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Nepavyksta importuoti garso: %1</translation>
     </message>
 </context>
 <context>
@@ -6084,6 +6432,14 @@ GIF įrašuose garsas nepalaikomas.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Kaip pradedami ekrano įrašai, ką jie fiksuoja ir kas vyksta juos sustabdžius.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Automatiškai pridėti priartinimus naujiems įrašams</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Atvėrus redaktorių priartinti įrašytus spustelėjimus. Galite atšaukti vienu veiksmu.</translation>
     </message>
 </context>
 <context>
@@ -6613,6 +6969,10 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Įrašoma tik sritis.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Automatiškai pridėti priartinimus</translation>
     </message>
 </context>
 <context>
@@ -8056,6 +8416,40 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Išvestis: %1 × %2 pikselių</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Neįskaitomas projektas</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Atverti įrašą be pakeitimų, rodyti aplanką arba jį ištrinti.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Rodyti projekto aplanką arba jį ištrinti.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Atkurta iš ankstesnio išsaugojimo</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Neįskaitomas projektas</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Atidaryta peržiūroje</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Atkurta iš ankstesnio išsaugojimo</translation>
     </message>
 </context>
 </TS>

@@ -72,6 +72,7 @@ public:
     std::shared_ptr<SnapTray::D3D11FrameDevice> nativeDevice;
     std::unique_ptr<SnapTray::D3D11Nv12Converter> converter;  // set while GPU input is in use
     ComPtr<IMFDXGIDeviceManager> deviceManager;
+    UINT deviceResetToken = 0;
     bool gpuProbe = false;  // this encoder is the capability probe itself
     QString gpuUnavailableReason;  // why start() chose CPU input despite a device
     bool warnedAboutGpuFailure = false;
@@ -91,6 +92,27 @@ public:
     int frameRate = 30;
     qint64 framesWritten = 0;
     qint64 frameNumber = 0;
+    ComPtr<IMFSample> pendingVideo;
+    LONGLONG pendingTime = -1;
+    qint64 endTimestampNs = -1;
+    HRESULT videoWriteError = S_OK;
+    HRESULT flushVideo(LONGLONG end) {
+        if (FAILED(videoWriteError)) return videoWriteError;
+        if (!pendingVideo) return S_OK;
+        HRESULT hr = pendingVideo->SetSampleDuration(qMax<LONGLONG>(1, end - pendingTime));
+        if (SUCCEEDED(hr)) hr = sinkWriter->WriteSample(videoStreamIndex, pendingVideo.Get());
+        pendingVideo.Reset();
+        if (FAILED(hr)) videoWriteError = hr;
+        return hr;
+    }
+    HRESULT queueVideo(IMFSample* sample, LONGLONG time) {
+        if (FAILED(videoWriteError)) return videoWriteError;
+        if (pendingVideo && time <= pendingTime) return E_INVALIDARG;
+        HRESULT hr = flushVideo(time);
+        if (SUCCEEDED(hr)) hr = sample->SetSampleTime(time);
+        if (SUCCEEDED(hr)) { pendingVideo = sample; pendingTime = time; }
+        return hr;
+    }
     bool running = false;
     int quality = 55;  // 0-100
     SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
@@ -170,10 +192,8 @@ public:
         hr = MFSetAttributeRatio(outputType, MF_MT_PIXEL_ASPECT_RATIO, 1, 1);
         if (FAILED(hr)) goto done;
 
-        if (gpuInput()) {
-            hr = setBt709LimitedRange(outputType);
-            if (FAILED(hr)) goto done;
-        }
+        hr = setBt709LimitedRange(outputType);
+        if (FAILED(hr)) goto done;
 
         hr = sinkWriter->AddStream(outputType, &videoStreamIndex);
         if (FAILED(hr)) goto done;
@@ -188,10 +208,10 @@ public:
         hr = inputType->SetGUID(MF_MT_SUBTYPE, gpuInput() ? MFVideoFormat_NV12 : MFVideoFormat_RGB32);
         if (FAILED(hr)) goto done;
 
-        if (gpuInput()) {
-            hr = setBt709LimitedRange(inputType);
-            if (FAILED(hr)) goto done;
-        }
+        hr = setBt709LimitedRange(inputType);
+        if (SUCCEEDED(hr) && !gpuInput())
+            hr = inputType->SetUINT32(MF_MT_VIDEO_NOMINAL_RANGE, MFNominalRange_0_255); // RGB pixels are full range
+        if (FAILED(hr)) goto done;
 
         hr = inputType->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive);
         if (FAILED(hr)) goto done;
@@ -376,6 +396,8 @@ public:
     }
 
     void cleanup() {
+        pendingVideo.Reset();
+        pendingTime = -1;
         if (sinkWriter) {
             sinkWriter->Release();
             sinkWriter = nullptr;
@@ -438,10 +460,9 @@ public:
         if (!gpuConverter->initialize(nativeDevice, frameSize, frameRate, &error)) {
             return error;
         }
-        UINT resetToken = 0;
-        HRESULT hr = MFCreateDXGIDeviceManager(&resetToken, &deviceManager);
+        HRESULT hr = MFCreateDXGIDeviceManager(&deviceResetToken, &deviceManager);
         if (SUCCEEDED(hr)) {
-            hr = deviceManager->ResetDevice(nativeDevice->device.Get(), resetToken);
+            hr = deviceManager->ResetDevice(nativeDevice->device.Get(), deviceResetToken);
         }
         if (FAILED(hr)) {
             deviceManager.Reset();
@@ -449,6 +470,36 @@ public:
         }
         converter = std::move(gpuConverter);
         return {};
+    }
+
+    // Reset the existing manager so the MFT invalidates its old device handles.
+    // The writer/streams stay open; replacing them would restart the MP4 timeline.
+    bool recoverGpuDevice(std::shared_ptr<SnapTray::D3D11FrameDevice> replacement = {}) {
+        if (!gpuInput() || !nativeDevice->isLost()) return true;
+        if (!replacement || replacement->isLost()) replacement = SnapTray::D3D11FrameDevice::create();
+        auto nextConverter = std::make_unique<SnapTray::D3D11Nv12Converter>();
+        QString reason;
+        if (!replacement || replacement->isLost()
+            || !nextConverter->initialize(replacement, frameSize, frameRate, &reason)) {
+            lastError = QStringLiteral("Cannot restore the recording GPU: %1").arg(reason);
+            return false;
+        }
+        const HRESULT hr = deviceManager->ResetDevice(replacement->device.Get(), deviceResetToken);
+        if (FAILED(hr)) {
+            lastError = QStringLiteral("Cannot reset the recording device manager: %1").arg(hrText(hr));
+            return false;
+        }
+        // A pending surface on the removed device cannot be submitted. The
+        // preceding sample remains displayed until the first recovered sample.
+        pendingVideo.Reset();
+        pendingTime = -1;
+        videoWriteError = S_OK;
+        lastError.clear();
+        converter = std::move(nextConverter);
+        nativeDevice = std::move(replacement);
+        warnedAboutGpuFailure = false;
+        qWarning() << "MediaFoundationEncoder: restored recording GPU device";
+        return true;
     }
 
     void disableGpuInput() {
@@ -482,18 +533,15 @@ public:
     }
 
     // Converted (or failed) GPU sample to the sink writer; true when written.
-    bool writeGpuSample(HRESULT convertHr, IMFSample *sample, qint64 timestampMs) {
+    bool writeGpuSample(HRESULT convertHr, IMFSample *sample, qint64 timestampNs) {
         HRESULT hr = convertHr;
         if (SUCCEEDED(hr)) {
-            const LONGLONG timestamp = timestampMs >= 0 ? timestampMs * 10000LL
+            const LONGLONG timestamp = timestampNs >= 0 ? timestampNs / 100
                                                         : frameNumber * frameDuration100ns();
-            hr = sample->SetSampleTime(timestamp);
-            if (SUCCEEDED(hr)) hr = sample->SetSampleDuration(frameDuration100ns());
-            if (SUCCEEDED(hr)) hr = sinkWriter->WriteSample(videoStreamIndex, sample);
+            hr = queueVideo(sample, timestamp);
         }
         if (FAILED(hr)) {
-            // The stream keeps its configuration: a lost device rejects the
-            // remaining frames instead of switching encoders mid-stream.
+            lastError = QStringLiteral("Failed to encode a GPU frame: %1").arg(hrText(hr));
             if (!warnedAboutGpuFailure) {
                 const HRESULT removed = nativeDevice->device->GetDeviceRemovedReason();
                 qWarning() << "MediaFoundationEncoder: GPU frame rejected:" << hrText(hr)
@@ -694,6 +742,8 @@ bool MediaFoundationEncoder::start(const QString &outputPath, const QSize &frame
     d->frameRate = qBound(1, frameRate, 240);
     d->framesWritten = 0;
     d->frameNumber = 0;
+    d->endTimestampNs = -1;
+    d->videoWriteError = S_OK;
     d->warnedAboutFrameResize = false;
     d->warnedAboutGpuFailure = false;
     d->gpuUnavailableReason.clear();
@@ -764,7 +814,11 @@ bool MediaFoundationEncoder::acceptsNativeFrames() const
     return d->running && d->gpuInput();
 }
 
-bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativeBuffer, qint64 timestampMs)
+bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void>& nativeBuffer, qint64 timestampMs)
+{
+    return writeNativeFrameNs(nativeBuffer, timestampMs < 0 ? -1 : timestampMs * 1000000);
+}
+bool MediaFoundationEncoder::writeNativeFrameNs(const std::shared_ptr<void> &nativeBuffer, qint64 timestampNs)
 {
     if (!d->running || !d->sinkWriter) {
         return false;
@@ -773,6 +827,7 @@ bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativ
     if (!frame || !frame->texture) {
         return false;
     }
+    if (!d->recoverGpuDevice(frame->device)) return false;
     if (!d->gpuInput() || frame->device != d->converter->device()) {
         // CPU input, or a frame from another device (the capture device was
         // recreated): the same stream continues through a CPU copy.
@@ -780,30 +835,35 @@ bool MediaFoundationEncoder::writeNativeFrame(const std::shared_ptr<void> &nativ
         if (image.isNull()) {
             return false;
         }
-        writeFrame(image, timestampMs);
+        writeFrameNs(image, timestampNs);
         return true;
     }
     ComPtr<IMFSample> sample;
     const HRESULT hr = d->converter->convert(frame->texture.Get(), frame->size, &sample);
     // A failed GPU write is rejected like a failed WriteSample on the CPU
     // path: retrying it as an image would not succeed on a lost device.
-    if (d->writeGpuSample(hr, sample.Get(), timestampMs)) {
+    if (d->writeGpuSample(hr, sample.Get(), timestampNs)) {
         emit progress(d->framesWritten);
     }
     return true;
 }
 
-void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
+void MediaFoundationEncoder::writeFrame(const QImage& frame, qint64 timestampMs)
+{
+    writeFrameNs(frame, timestampMs < 0 ? -1 : timestampMs * 1000000);
+}
+void MediaFoundationEncoder::writeFrameNs(const QImage &frame, qint64 timestampNs)
 {
     if (!d->running || !d->sinkWriter) {
         return;
     }
 
+    if (!d->recoverGpuDevice()) return;
     if (d->gpuInput()) {
         // The stream takes NV12 surfaces: upload and convert on the GPU.
         ComPtr<IMFSample> gpuSample;
         const HRESULT hr = d->converter->convertImage(frame, &gpuSample);
-        if (d->writeGpuSample(hr, gpuSample.Get(), timestampMs)) {
+        if (d->writeGpuSample(hr, gpuSample.Get(), timestampNs)) {
             emit progress(d->framesWritten);
         }
         return;
@@ -861,22 +921,17 @@ void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
 
     {
         LONGLONG timestamp;
-        if (timestampMs >= 0) {
-            // Convert ms to 100-nanosecond units
-            timestamp = timestampMs * 10000LL;
+        if (timestampNs >= 0) {
+            // Direct ns to Media Foundation 100 ns units.
+            timestamp = timestampNs / 100;
         } else {
             // Calculate from frame number
             timestamp = d->frameNumber * d->frameDuration100ns();
         }
 
-        hr = sample->SetSampleTime(timestamp);
-        if (FAILED(hr)) goto done;
-
-        hr = sample->SetSampleDuration(d->frameDuration100ns());
-        if (FAILED(hr)) goto done;
+        hr = d->queueVideo(sample, timestamp);
     }
 
-    hr = d->sinkWriter->WriteSample(d->videoStreamIndex, sample);
     if (SUCCEEDED(hr)) {
         d->framesWritten++;
         d->frameNumber++;
@@ -886,10 +941,16 @@ void MediaFoundationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 
 done:
+    if (FAILED(hr)) d->lastError = QStringLiteral("Failed to encode a video frame: %1").arg(hrText(hr));
     if (sample) sample->Release();
     if (buffer) buffer->Release();
 }
 
+void MediaFoundationEncoder::finishAtNs(qint64 endTimestampNs)
+{
+    d->endTimestampNs = endTimestampNs;
+    finish();
+}
 void MediaFoundationEncoder::finish()
 {
     if (!d->running) {
@@ -904,7 +965,11 @@ void MediaFoundationEncoder::finish()
     QString outputPath = d->outputPath;
     qint64 framesWritten = d->framesWritten;
 
-    HRESULT hr = d->sinkWriter->Finalize();
+    const LONGLONG end = d->endTimestampNs >= 0 ? d->endTimestampNs / 100
+        : d->pendingTime + d->frameDuration100ns();
+    HRESULT hr = d->flushVideo(end);
+    const HRESULT finalized = d->sinkWriter->Finalize();
+    if (SUCCEEDED(hr)) hr = finalized;
     d->cleanup();
 
     if (SUCCEEDED(hr)) {

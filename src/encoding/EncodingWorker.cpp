@@ -137,6 +137,7 @@ bool EncodingWorker::startOnWorkerThread()
     m_acceptingFrames = true;
     m_finishRequested = false;
     m_finishCalled = false;
+    m_endTimestampNs = -1;
     m_isProcessing = false;
     m_framesWritten = 0;
     m_wasNearFull = false;
@@ -510,7 +511,7 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
             }
 
             if (m_encoderType == EncoderType::Video && m_videoEncoder) {
-                m_videoEncoder->writeFrame(frame, frameData.timestampMs);
+                m_videoEncoder->writeFrameNs(frame, frameData.timestampNs >= 0 ? frameData.timestampNs : frameData.timestampMs * 1000000);
             } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
                 m_gifEncoder->writeFrame(frame, frameData.timestampMs);
                 if (!m_gifEncoder->isRunning()) {
@@ -520,6 +521,11 @@ void EncodingWorker::doProcessFrame(const FrameData& frameData)
             } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
                 m_webpEncoder->writeFrame(frame, frameData.timestampMs);
             }
+        }
+        if (m_encoderType == EncoderType::Video && m_videoEncoder
+            && encoderFramesWritten() == writtenBefore && !m_videoEncoder->lastError().isEmpty()) {
+            handleProcessingFailure(QStringLiteral("Video encoding"), m_videoEncoder->lastError());
+            return;
         }
         if (m_health) {
             const qint64 nowNs = SnapTray::captureClockNowNs();
@@ -562,7 +568,7 @@ bool EncodingWorker::writeNativeFrame(const FrameData& frameData)
         imagePath = Path::Watermark;
     } else if (!m_nativeFramesEnabled.load()) {
         imagePath = Path::Disabled;
-    } else if (!m_videoEncoder->writeNativeFrame(frameData.nativeBuffer, frameData.timestampMs)) {
+    } else if (!m_videoEncoder->writeNativeFrameNs(frameData.nativeBuffer, frameData.timestampNs >= 0 ? frameData.timestampNs : frameData.timestampMs * 1000000)) {
         imagePath = Path::Incompatible;
     }
     if (m_health) {
@@ -651,7 +657,7 @@ void EncodingWorker::finishEncoder()
             emit finished(s, path);
         });
 
-        m_videoEncoder->finish();
+        m_videoEncoder->finishAtNs(m_endTimestampNs.load());
 
     } else if (m_encoderType == EncoderType::Gif && m_gifEncoder) {
         // Connect to encoder's finished signal before calling finish()
@@ -663,7 +669,7 @@ void EncodingWorker::finishEncoder()
             emit finished(s, path);
         });
 
-        m_gifEncoder->finish();
+        m_gifEncoder->finish(m_endTimestampNs >= 0 ? m_endTimestampNs.load() / 1000000 : -1);
 
     } else if (m_encoderType == EncoderType::WebP && m_webpEncoder) {
         // Connect to encoder's finished signal before calling finish()
@@ -675,7 +681,7 @@ void EncodingWorker::finishEncoder()
             emit finished(s, path);
         });
 
-        m_webpEncoder->finish();
+        m_webpEncoder->finish(m_endTimestampNs >= 0 ? m_endTimestampNs.load() / 1000000 : -1);
     } else {
         // No encoder, emit failure
         m_running = false;

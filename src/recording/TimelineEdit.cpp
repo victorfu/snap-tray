@@ -183,6 +183,16 @@ bool TimelineEdit::setSpeed(int part, double speed)
     if (part < 0 || part >= int(parts.size()) || !isAllowedSpeed(speed)) return false;
     if (qFuzzyCompare(parts[size_t(part)].speed, speed)) return false;
     parts[size_t(part)].speed = speed;
+    if (qFuzzyCompare(speed, 1.0)) parts[size_t(part)].keepSound = true;
+    return true;
+}
+
+bool TimelineEdit::setKeepSound(int part, bool keep)
+{
+    if (part < 0 || part >= int(parts.size())) return false;
+    if (qFuzzyCompare(parts[size_t(part)].speed, 1.0)) keep = true;
+    if (parts[size_t(part)].keepSound == keep) return false;
+    parts[size_t(part)].keepSound = keep;
     return true;
 }
 
@@ -195,10 +205,11 @@ TimelineMap TimelineEdit::map(qint64 trimStartMs, qint64 trimEndMs) const
         const qint64 end = std::min(trimEndMs, partEndMs(i, trimEndMs));
         if (end <= start) continue;
         // Neighbours at the same speed are one part (a split nobody used).
-        if (!kept.empty() && kept.back().endMs == start && qFuzzyCompare(kept.back().speed, parts[size_t(i)].speed)) {
+        if (!kept.empty() && kept.back().endMs == start && qFuzzyCompare(kept.back().speed, parts[size_t(i)].speed)
+            && kept.back().keepSound == parts[size_t(i)].keepSound) {
             kept.back().endMs = end;
         } else {
-            kept.push_back({start, end, parts[size_t(i)].speed});
+            kept.push_back({start, end, parts[size_t(i)].speed, parts[size_t(i)].keepSound});
         }
     }
     return TimelineMap(std::move(kept));
@@ -210,7 +221,7 @@ QJsonObject TimelineEdit::toJson() const
     for (const qint64 split : splits) splitArray.append(double(split));
     QJsonArray partArray;
     for (const auto& part : parts) {
-        partArray.append(QJsonObject{{QStringLiteral("deleted"), part.deleted}, {QStringLiteral("speed"), part.speed}});
+        partArray.append(QJsonObject{{QStringLiteral("deleted"), part.deleted}, {QStringLiteral("speed"), part.speed}, {QStringLiteral("keepSound"), part.keepSound}});
     }
     return {{QStringLiteral("splits"), splitArray}, {QStringLiteral("parts"), partArray}};
 }
@@ -226,6 +237,9 @@ TimelineEdit TimelineEdit::fromJson(const QJsonObject& json)
         Part part;
         part.deleted = object.value(QStringLiteral("deleted")).toBool(false);
         part.speed = object.value(QStringLiteral("speed")).toDouble(1.0);
+        // Before Keep sound existed, speed-edited parts exported silence.
+        part.keepSound = qFuzzyCompare(part.speed, 1.0)
+            || object.value(QStringLiteral("keepSound")).toBool(false);
         if (!isAllowedSpeed(part.speed)) return edit;
         parts.push_back(part);
     }

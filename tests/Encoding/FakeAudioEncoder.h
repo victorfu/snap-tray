@@ -9,6 +9,7 @@ struct AudioEncoderTestState {
     bool supportsAudio = true;
     bool acceptsAudio = true;
     bool starts = true;
+    bool acceptsFrames = false;
     std::atomic<int> created{0};
     std::atomic<int> destroyed{0};
     std::atomic<int> audioWrites{0};
@@ -30,12 +31,12 @@ public:
     bool start(const QString& path, const QSize&, int) override {
         m_path = path; m_running = m_state->starts; return m_running;
     }
-    void writeFrame(const QImage&, qint64) override {}
+    void writeFrame(const QImage&, qint64) override { if (m_state->acceptsFrames) ++m_frames; }
     void finish() override { m_running = false; emit finished(true, m_path); }
     void abort() override { m_running = false; }
     bool isRunning() const override { return m_running; }
     QString lastError() const override { return "injected startup failure"; }
-    qint64 framesWritten() const override { return 0; }
+    qint64 framesWritten() const override { return m_frames; }
     QString outputPath() const override { return m_path; }
     void setAudioFormat(int, int, int) override { m_audioRequested = true; }
     bool isAudioSupported() const override { return m_state->supportsAudio; }
@@ -49,6 +50,7 @@ public:
     ByteCounter writtenBytesCounter() const override { return m_state->written; }
 private:
     std::shared_ptr<AudioEncoderTestState> m_state;
+    qint64 m_frames = 0;
     bool m_running = false;
     bool m_audioRequested = false;
     QString m_path;

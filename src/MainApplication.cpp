@@ -1,3 +1,4 @@
+#include "video/IVideoTranscoder.h"
 #include "MainApplication.h"
 
 #include "CaptureManager.h"
@@ -530,6 +531,7 @@ void MainApplication::initialize()
         this, &MainApplication::onRecordingDurationChanged);
     connect(m_recordingManager, &RecordingManager::audioStatusChanged,
         this, &MainApplication::updateTrayToolTip);
+    connect(m_recordingManager, &RecordingManager::captureStatusChanged, this, &MainApplication::updateTrayRecordingIndicator);
     connect(m_recordingManager, &RecordingManager::droppingFramesChanged,
         this, &MainApplication::updateTrayToolTip);
     connect(m_recordingManager, &RecordingManager::lowDiskSpaceChanged,
@@ -1348,6 +1350,7 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
     // The area chosen before recording (#194), also for a recovered recording.
     m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
+    if (m_recordingManager->previewIsNewRecording()) m_previewBackend->autoZoomNewRecording();
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
     // handler stack so preview deleteLater() cannot run during a nested dialog
@@ -1532,7 +1535,32 @@ void MainApplication::showRecordingLibrary()
 
 void MainApplication::openRecordingProject(const QString& projectDir)
 {
-    const auto project = SnapTray::RecordingProjects::load(projectDir);
+    if (m_previewBackend || m_recordingManager->state() != RecordingManager::State::Idle) {
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recording Busy"),
+            tr("Finish or close the current recording first."));
+        return;
+    }
+    auto project = SnapTray::RecordingProjects::load(projectDir);
+    bool recoveredSource = false;
+    if (!project && !m_previewBackend) {
+        // Recovery owns an independent copy and remembers it for later opens.
+        for (const auto& item : SnapTray::RecordingProjects::list()) {
+            if (item.dir != projectDir || !item.sourceRecoverable) continue;
+            const auto transcoder = IVideoTranscoder::create();
+            const auto probe = transcoder ? transcoder->probe(item.videoPath()) : VideoFileProbe{};
+            if (probe.valid) project = SnapTray::RecordingProjects::recoverSource(item, probe.durationMs);
+            if (!project) {
+                qWarning() << "MainApplication: could not recover a recording project";
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Warning, tr("Project Recovery Failed"),
+                    tr("The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept."));
+                return;
+            }
+            recoveredSource = true;
+            break;
+        }
+    }
     if (!project) {
         SnapTray::QmlToast::screenToast().showToast(
             SnapTray::QmlToast::Level::Warning, tr("Project Unavailable"),
@@ -1548,6 +1576,12 @@ void MainApplication::openRecordingProject(const QString& projectDir)
     // A project is always the full-quality recording: Save re-encodes as needed.
     showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
     if (m_previewBackend) m_previewBackend->setProject(*project);
+    if (m_previewBackend && recoveredSource) {
+        qWarning() << "MainApplication: opened a separate recovery project without the original edits";
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recovered Recording"),
+            tr("Opened the separate recovery project. The original project's edits could not be read; the original folder is kept."));
+    }
     if (m_historyWindow) m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
 }
 
@@ -1767,6 +1801,7 @@ QString MainApplication::trayRecordingStatusLine() const
         && (m_trayRecordingStatus == Status::Recording || m_trayRecordingStatus == Status::Paused)) {
         parts.append(tr("recording keys"));
     }
+    if (m_recordingManager && !m_recordingManager->captureStatus().isEmpty()) parts.append(m_recordingManager->captureStatus());
     QString line = parts.join(QStringLiteral(" \u00B7 "));
     // Audio stays visible for the whole recording, including fallbacks that
     // were announced once in a notification.

@@ -12,6 +12,7 @@
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>
+#include <avrt.h>
 #include <functiondiscoverykeys_devpkey.h>
 #include <propvarutil.h>
 #include <ks.h>
@@ -20,8 +21,9 @@
 
 using Microsoft::WRL::ComPtr;
 
-// WASAPI buffer size in 100-nanosecond units (10ms)
-static const REFERENCE_TIME BUFFER_DURATION = 100000;  // 10ms
+// Shared-mode buffering absorbs short encoder/mixer scheduling delays.
+static constexpr REFERENCE_TIME kBufferDuration100ns = 1500000; // 150 ms
+static constexpr DWORD kAudioEventTimeoutMs = 20; // silent loopback still advances the timeline
 static constexpr qint64 HUNDRED_NS_PER_SECOND = 10000000;
 static constexpr qint64 NS_PER_HUNDRED_NS = 100;
 static constexpr qint64 NANOSECONDS_PER_SECOND = 1000000000;
@@ -69,21 +71,28 @@ protected:
             qWarning() << "CaptureThread: Failed to initialize COM:" << hr;
             m_engine->m_initSuccess = false;
             m_engine->m_initDone = true;
+            m_engine->m_running = false;
+            emit m_engine->startCompleted(false);
             return;
         }
 
+        DWORD taskIndex = 0;
+        HANDLE mmcss = AvSetMmThreadCharacteristicsW(L"Pro Audio", &taskIndex);
+        const auto restorePriority = qScopeGuard([&] { if (mmcss) AvRevertMmThreadCharacteristics(mmcss); });
         // ALL COM initialization happens here in the thread
-        bool initOk = m_engine->initializeInThread();
+        bool initOk = m_engine->m_initializeOverride ? m_engine->m_initializeOverride() : m_engine->initializeInThread();
         m_engine->m_initSuccess = initOk;
         m_engine->m_initDone = true;
 
-        if (initOk) {
+        if (!m_engine->m_stopRequested) emit m_engine->startCompleted(initOk);
+        if (initOk && !m_engine->m_stopRequested) {
             m_engine->captureLoop();
         }
 
         // Cleanup ALL COM objects in the same thread they were created
         m_engine->cleanupInThread();
-        CoUninitialize();
+        m_engine->m_running = false;
+        if (SUCCEEDED(hr)) CoUninitialize();
     }
 
 private:
@@ -203,10 +212,11 @@ QList<IAudioCaptureEngine::AudioDevice> WASAPIAudioCaptureEngine::availableInput
             if (SUCCEEDED(device->OpenPropertyStore(STGM_READ, &props))) {
                 PROPVARIANT varName;
                 PropVariantInit(&varName);
-                if (SUCCEEDED(props->GetValue(PKEY_Device_FriendlyName, &varName))) {
+                if (SUCCEEDED(props->GetValue(PKEY_Device_FriendlyName, &varName))
+                    && varName.vt == VT_LPWSTR && varName.pwszVal) {
                     info.name = QString::fromWCharArray(varName.pwszVal);
-                    PropVariantClear(&varName);
                 }
+                PropVariantClear(&varName);
             }
 
             info.isDefault = (info.id == defaultId);
@@ -313,11 +323,15 @@ bool WASAPIAudioCaptureEngine::setupAudioClient(IMMDevice *device, bool forLoopb
         return false;
     }
 
-    DWORD streamFlags = forLoopback ? AUDCLNT_STREAMFLAGS_LOOPBACK : 0;
+    HANDLE event = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+    if (!event) { CoTaskMemFree(mixFormat); audioClient->Release(); return false; }
+    bool keepEvent = false;
+    const auto closeEvent = qScopeGuard([&] { if (!keepEvent) CloseHandle(event); });
+    DWORD streamFlags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK | (forLoopback ? AUDCLNT_STREAMFLAGS_LOOPBACK : 0);
     hr = audioClient->Initialize(
         AUDCLNT_SHAREMODE_SHARED,
         streamFlags,
-        BUFFER_DURATION,
+        kBufferDuration100ns,
         0,
         mixFormat,
         nullptr
@@ -330,6 +344,8 @@ bool WASAPIAudioCaptureEngine::setupAudioClient(IMMDevice *device, bool forLoopb
         return false;
     }
 
+    hr = audioClient->SetEventHandle(event);
+    if (FAILED(hr)) { CoTaskMemFree(mixFormat); audioClient->Release(); return false; }
     IAudioCaptureClient *captureClient = nullptr;
     hr = audioClient->GetService(
         __uuidof(IAudioCaptureClient),
@@ -354,11 +370,14 @@ bool WASAPIAudioCaptureEngine::setupAudioClient(IMMDevice *device, bool forLoopb
     }
     CoTaskMemFree(mixFormat);
 
+    keepEvent = true;
     if (forLoopback) {
+        m_loopbackEvent = event;
         m_loopbackAudioClient = audioClient;
         m_loopbackCaptureClient = captureClient;
         m_loopbackNativeFormat = parsedNativeFormat;
     } else {
+        m_micEvent = event;
         m_micAudioClient = audioClient;
         m_micCaptureClient = captureClient;
         m_micNativeFormat = parsedNativeFormat;
@@ -369,6 +388,8 @@ bool WASAPIAudioCaptureEngine::setupAudioClient(IMMDevice *device, bool forLoopb
 
 void WASAPIAudioCaptureEngine::cleanupAudioClient()
 {
+    if (m_micEvent) { CloseHandle(m_micEvent); m_micEvent = nullptr; }
+    if (m_loopbackEvent) { CloseHandle(m_loopbackEvent); m_loopbackEvent = nullptr; }
     safeRelease(m_micCaptureClient);
     safeRelease(m_micAudioClient);
     safeRelease(m_micDevice);
@@ -387,6 +408,7 @@ void WASAPIAudioCaptureEngine::cleanupSource(SnapTray::Audio::Source source)
         safeRelease(m_micCaptureClient);
         safeRelease(m_micAudioClient);
         safeRelease(m_micDevice);
+        if (m_micEvent) { CloseHandle(m_micEvent); m_micEvent = nullptr; }
     } else {
         if (m_loopbackAudioClient) {
             m_loopbackAudioClient->Stop();
@@ -394,6 +416,7 @@ void WASAPIAudioCaptureEngine::cleanupSource(SnapTray::Audio::Source source)
         safeRelease(m_loopbackCaptureClient);
         safeRelease(m_loopbackAudioClient);
         safeRelease(m_loopbackDevice);
+        if (m_loopbackEvent) { CloseHandle(m_loopbackEvent); m_loopbackEvent = nullptr; }
     }
 }
 
@@ -457,16 +480,17 @@ qint64 WASAPIAudioCaptureEngine::packetTimestampNs(
         }
     }
 
-    const qint64 durationNs = nativeFormat.sampleRate > 0
-        ? static_cast<qint64>(numFrames) * NANOSECONDS_PER_SECOND
-            / nativeFormat.sampleRate
-        : 0;
-    return qMax<qint64>(qint64(0), currentActiveTimeNs() - durationNs);
+    Q_UNUSED(numFrames);
+    Q_UNUSED(nativeFormat);
+    // The mixer appends invalid timestamps contiguously per source, with a
+    // bounded fallback period and explicit diagnostic counters.
+    return -1;
 }
 
 void WASAPIAudioCaptureEngine::deliverMixerOutput(
     const SnapTray::Audio::TimestampedPcmMixer::ProcessResult& result)
 {
+    if (m_mixer) emit diagnosticsReady(m_mixer->stats().perSource);
     for (const auto& output : result.output) {
         if (!output.pcm.isEmpty()) {
             deliverAudioData(output.pcm, output.startFrame, output.microphonePcm, output.systemAudioPcm);
@@ -532,7 +556,7 @@ void WASAPIAudioCaptureEngine::processAudioPacketWhileGateHeld(
     format.interleaved = true;
     deliverMixerOutput(m_mixer->push(
         source,
-        {pcm, qMax<qint64>(qint64(0), timestampNs), format},
+        {pcm, timestampNs, format, timestampNs >= 0},
         activeTimeNs));
 }
 
@@ -780,6 +804,7 @@ bool WASAPIAudioCaptureEngine::start()
     SnapTray::Audio::TimestampedPcmMixer::Config mixerConfig;
     mixerConfig.microphoneEnabled = wantsMicrophone;
     mixerConfig.splitSources = m_separateTracks;
+    mixerConfig.fadeAfterGaps = true;
     mixerConfig.systemAudioEnabled = wantsSystemAudio;
     m_mixer = std::make_unique<SnapTray::Audio::TimestampedPcmMixer>(mixerConfig);
     m_microphoneActive = false;
@@ -805,26 +830,8 @@ bool WASAPIAudioCaptureEngine::start()
             Qt::QueuedConnection);
     m_captureThread->start();
 
-    // Wait for thread to initialize (with timeout)
-    int waitCount = 0;
-    while (!m_initDone && waitCount < 100) {  // Max 1 second wait
-        QThread::msleep(10);
-        waitCount++;
-    }
-
-    if (!m_initDone || !m_initSuccess) {
-        qWarning() << "WASAPIAudioCaptureEngine: Thread initialization failed";
-        m_stopRequested = true;
-        if (m_captureThread) {
-            if (!m_captureThread->wait(500)) {
-                qWarning() << "WASAPIAudioCaptureEngine: Initialization is still unwinding; retaining thread ownership";
-            }
-            releaseCaptureThreadIfFinished();
-        }
-        m_running = false;
-        drainDataCallbacks(false);
-        return false;
-    }
+    // Initialization completes on the capture thread. The GUI can admit
+    // video immediately; the mixer fills the initial audio coverage gap.
 
     return true;
 }
@@ -1218,9 +1225,12 @@ void WASAPIAudioCaptureEngine::captureLoop()
             advanceMixerTimeline(currentActiveTimeNs());
         }
 
-        if (!gotData) {
-            QThread::msleep(5);
-        }
+        Q_UNUSED(gotData);
+        HANDLE events[2]; DWORD count = 0;
+        if (m_micEvent) events[count++] = m_micEvent;
+        if (m_loopbackEvent) events[count++] = m_loopbackEvent;
+        if (count) WaitForMultipleObjects(count, events, FALSE, kAudioEventTimeoutMs);
+        else QThread::msleep(kAudioEventTimeoutMs);
     }
 
     bool deliverFinalTail = false;

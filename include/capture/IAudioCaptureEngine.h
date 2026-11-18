@@ -1,5 +1,6 @@
 #ifndef IAUDIOCAPTUREENGINE_H
 #define IAUDIOCAPTUREENGINE_H
+#include "capture/AudioCaptureDiagnostics.h"
 
 #include <QObject>
 #include <QByteArray>
@@ -110,6 +111,7 @@ public:
      * @return true if capture started successfully
      */
     virtual bool start() = 0;
+    virtual bool startsAsynchronously() const { return false; }
 
     /**
      * @brief Stop audio capture
@@ -191,6 +193,8 @@ public:
     static void requestMicrophonePermission(std::function<void(bool granted)> callback);
 
 signals:
+    void startCompleted(bool success);
+    void diagnosticsReady(const SnapTray::AudioCaptureDiagnostics& diagnostics);
     /**
      * @brief Emitted when audio data is available
      * @param data Raw PCM audio data

@@ -62,6 +62,7 @@ bool NativeGifEncoder::start(const QString &outputPath, const QSize &frameSize, 
     m_finishEmitted = false;
     m_pendingFrame = QImage();
     m_pendingTimestampMs = -1;
+    m_lastInputTimestampMs = -1;
     m_delayRemainderUnits = 0;
     m_lastError.clear();
     m_aborted = false;
@@ -144,31 +145,52 @@ void NativeGifEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     if (m_pendingFrame.isNull()) {
         m_pendingFrame = processed.copy();
         m_pendingTimestampMs = timestampMs;
+        m_lastInputTimestampMs = timestampMs;
         m_framesWritten = 1;
         return;
     }
 
+    // Keep at most five seconds in one GIF delay for viewer compatibility.
+    // framesWritten counts accepted input frames, including coalesced ones.
+    constexpr qint64 kMaxHoldMs = 5000;
+    if (m_coalesceFrames && timestampMs >= 0 && m_lastInputTimestampMs >= 0
+        && timestampMs > m_lastInputTimestampMs && timestampMs - m_pendingTimestampMs < kMaxHoldMs
+        && processed == m_pendingFrame) {
+        m_lastInputTimestampMs = timestampMs;
+        ++m_framesWritten;
+        if (m_framesWritten % 30 == 0) emit progress(m_framesWritten);
+        return;
+    }
     const bool hasComparableTimestamps = timestampMs >= 0 && m_pendingTimestampMs >= 0;
     const bool timestampRegressed = hasComparableTimestamps
-        && timestampMs <= m_pendingTimestampMs;
+        && timestampMs <= m_lastInputTimestampMs;
     const qint64 durationMs = hasComparableTimestamps && !timestampRegressed
         ? timestampMs - m_pendingTimestampMs
         : -1;
     const qint64 nextPendingTimestampMs = timestampRegressed ? -1 : timestampMs;
-    const int centiSeconds = calculateCentiseconds(durationMs);
-
-    if (!encodePendingFrame(centiSeconds)) {
+    if (!encodePendingDuration(durationMs)) {
         return;
     }
 
     m_pendingFrame = processed.copy();
     m_pendingTimestampMs = nextPendingTimestampMs;
+    m_lastInputTimestampMs = nextPendingTimestampMs;
     m_framesWritten++;
 
     // Emit progress every 30 frames
     if (m_framesWritten % 30 == 0) {
         emit progress(m_framesWritten);
     }
+}
+
+bool NativeGifEncoder::encodePendingDuration(qint64 durationMs)
+{
+    constexpr qint64 kMaxHoldMs = 5000;
+    while (durationMs > kMaxHoldMs) {
+        if (!encodePendingFrame(calculateCentiseconds(kMaxHoldMs))) return false;
+        durationMs -= kMaxHoldMs;
+    }
+    return encodePendingFrame(calculateCentiseconds(durationMs));
 }
 
 bool NativeGifEncoder::encodePendingFrame(int centiSeconds)
@@ -204,7 +226,12 @@ size_t NativeGifEncoder::writeToFile(const void *buffer, size_t size, size_t cou
         encoder->m_lastError = "GIF encoder produced invalid output";
         return 0;
     }
-    const qint64 bytes = static_cast<qint64>(size * count);
+    qint64 bytes = static_cast<qint64>(size * count);
+    if (!encoder->m_looping && encoder->m_writtenBytes->load() == 0 && bytes == 32
+        && QByteArray(static_cast<const char*>(buffer), 6) == QByteArrayLiteral("GIF89a")) {
+        constexpr qint64 kGifLogicalScreenHeaderBytes = 13;
+        bytes = kGifLogicalScreenHeaderBytes;
+    }
     const qint64 written = encoder->m_file->write(static_cast<const char *>(buffer), bytes);
     if (written > 0) {
         encoder->m_writtenBytes->fetch_add(written);
@@ -260,7 +287,7 @@ int NativeGifEncoder::calculateCentiseconds(qint64 durationMs)
     return static_cast<int>(centiSeconds);
 }
 
-void NativeGifEncoder::finish()
+void NativeGifEncoder::finish(qint64 endTimestampMs)
 {
     if (m_finishEmitted) {
         return;
@@ -277,7 +304,11 @@ void NativeGifEncoder::finish()
     }
 
     // No later timestamp exists: preserve the fractional base interval.
-    if (!encodePendingFrame(calculateCentiseconds(-1))) {
+    const qint64 heldMs = m_pendingTimestampMs >= 0 && m_lastInputTimestampMs >= m_pendingTimestampMs
+        ? m_lastInputTimestampMs - m_pendingTimestampMs : 0;
+    const qint64 tailMs = endTimestampMs > m_pendingTimestampMs && m_pendingTimestampMs >= 0
+        ? endTimestampMs - m_pendingTimestampMs : heldMs > 0 ? heldMs + qRound64(1000.0 / m_frameRate) : -1;
+    if (!encodePendingDuration(tailMs)) {
         emit finished(false, m_outputPath);
         return;
     }
@@ -321,6 +352,7 @@ void NativeGifEncoder::cleanup()
     m_bufferedBytes->store(0);
     m_pendingFrame = QImage();
     m_pendingTimestampMs = -1;
+    m_lastInputTimestampMs = -1;
     m_delayRemainderUnits = 0;
     m_running = false;
 }

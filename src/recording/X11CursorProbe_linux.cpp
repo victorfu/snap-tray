@@ -114,6 +114,22 @@ public:
         if (!cursor) return std::nullopt;
         Shape shape;
         shape.hotspot = QPoint(cursor->xhot, cursor->yhot);
+        struct NamedCursor { const char* name; const char* kind; };
+        static constexpr NamedCursor kinds[] = {
+            {"left_ptr", "arrow"}, {"default", "arrow"}, {"arrow", "arrow"},
+            {"xterm", "text"}, {"text", "text"}, {"hand2", "pointer"}, {"pointer", "pointer"},
+            {"openhand", "openHand"}, {"grab", "openHand"}, {"closedhand", "closedHand"}, {"grabbing", "closedHand"},
+            {"crosshair", "crosshair"}, {"cross", "crosshair"},
+            {"sb_h_double_arrow", "resizeEW"}, {"h_double_arrow", "resizeEW"}, {"ew-resize", "resizeEW"}, {"col-resize", "resizeEW"},
+            {"sb_v_double_arrow", "resizeNS"}, {"v_double_arrow", "resizeNS"}, {"ns-resize", "resizeNS"}, {"row-resize", "resizeNS"},
+            {"size_fdiag", "resizeNWSE"}, {"nwse-resize", "resizeNWSE"}, {"top_left_corner", "resizeNWSE"}, {"bottom_right_corner", "resizeNWSE"},
+            {"size_bdiag", "resizeNESW"}, {"nesw-resize", "resizeNESW"}, {"top_right_corner", "resizeNESW"}, {"bottom_left_corner", "resizeNESW"},
+            {"fleur", "move"}, {"move", "move"}, {"all-scroll", "move"},
+            {"watch", "wait"}, {"wait", "wait"}, {"progress", "wait"},
+            {"not-allowed", "notAllowed"}, {"forbidden", "notAllowed"}, {"crossed_circle", "notAllowed"}
+        };
+        const QByteArray name(cursor->name);
+        for (const auto& entry : kinds) if (name == entry.name) { shape.kind = QLatin1String(entry.kind); break; }
         shape.image = QImage(cursor->width, cursor->height, QImage::Format_ARGB32_Premultiplied);
         // XFixes pixels are premultiplied ARGB in the low 32 bits of each long.
         for (int y = 0; y < cursor->height; ++y) {

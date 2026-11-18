@@ -211,8 +211,8 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
     }
 
     // Configure for good quality/speed balance
+    m_data->encOptions.minimize_size = m_minimizeSize;
     m_data->encOptions.anim_params.loop_count = m_looping ? 0 : 1;  // 0 = infinite loop
-    m_data->encOptions.minimize_size = 0;  // Faster encoding
     m_data->encOptions.allow_mixed = 1;    // Allow lossy and lossless frames
 
     // Initialize WebP config
@@ -386,7 +386,7 @@ void WebPAnimationEncoder::writeFrame(const QImage &frame, qint64 timestampMs)
     }
 }
 
-void WebPAnimationEncoder::finish()
+void WebPAnimationEncoder::finish(qint64 endTimestampMs)
 {
     if (!m_running || !m_data || !m_data->encoder) {
         emit finished(false, QString());
@@ -397,7 +397,13 @@ void WebPAnimationEncoder::finish()
 
     // Add final frame to close the animation
     // (WebP needs a null frame at the end timestamp to set duration of last frame)
-    WebPAnimEncoderAdd(m_data->encoder, nullptr, m_data->timestampMs, nullptr);
+    const qint64 end = endTimestampMs > m_lastTimestampMs ? endTimestampMs : m_data->timestampMs;
+    if (!WebPAnimEncoderAdd(m_data->encoder, nullptr, int(qMin<qint64>(end, INT_MAX)), nullptr)) {
+        m_lastError = QStringLiteral("Failed to close WebP animation");
+        cleanup();
+        emit finished(false, m_outputPath);
+        return;
+    }
 
     // Assemble the animation
     WebPData webpData;

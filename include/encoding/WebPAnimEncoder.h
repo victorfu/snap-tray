@@ -50,7 +50,7 @@ public:
     /**
      * @brief Finish encoding and write to file
      */
-    void finish();
+    void finish(qint64 endTimestampMs = -1);
 
     /**
      * @brief Abort encoding and clean up
@@ -93,6 +93,7 @@ public:
      * @param loop true for infinite loop, false for play once
      */
     void setLooping(bool loop);
+    void setMinimizeSize(bool value) { m_minimizeSize = value; }
     bool isLooping() const { return m_looping; }
 
 signals:
@@ -111,6 +112,7 @@ private:
     int m_frameRate;
     int m_quality;
     bool m_looping;
+    bool m_minimizeSize = false;
     qint64 m_framesWritten;
     qint64 m_lastTimestampMs;
     QString m_lastError;

@@ -21,7 +21,7 @@ std::unique_ptr<PreviewPcmOutput> createPreviewPcmOutput();
 
 // The video player supplies its source clock. This worker reads the sidecars
 // off the GUI thread and drops all queued audio on seeks/pause/source changes.
-// Non-unit playback rates are silent, matching edited export's speed policy.
+// Playback rate changes use the same pitch-preserving WSOLA as edited export.
 class RemixedAudioPreview final : private QThread {
 public:
     RemixedAudioPreview();

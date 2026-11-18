@@ -1,6 +1,7 @@
 #pragma once
 
 #include "capture/IAudioCaptureEngine.h"
+#include "capture/AudioCaptureDiagnostics.h"
 
 #include <QByteArray>
 #include <QVector>
@@ -49,6 +50,7 @@ struct InputChunk {
     // Timestamp of the first PCM frame on the shared recording-active timeline.
     qint64 startTimeNs = 0;
     Pcm16Format format;
+    bool timestampValid = true;
 };
 
 struct OutputChunk {
@@ -77,6 +79,9 @@ struct OutputChunk {
 class TimestampedPcmMixer final
 {
 public:
+    static constexpr int kGapFadeInMs = 5;
+    static constexpr int kGapFadeMinGapMs = 5;
+    static constexpr int kMaxContiguousFallbackMs = 2000;
     static constexpr int kOutputSampleRate = 48000;
     static constexpr int kOutputChannels = 2;
     static constexpr int kOutputBitsPerSample = 16;
@@ -92,6 +97,7 @@ public:
         int outputChunkFrames = 480;              // 10 ms at 48 kHz
         // Also hand out each source on its own (#189: separate tracks).
         bool splitSources = false;
+        bool fadeAfterGaps = false; // enabled by WASAPI; other backends retain their current policy
     };
 
     enum class ResultCode {
@@ -114,6 +120,7 @@ public:
     };
 
     struct Stats {
+        AudioCaptureDiagnostics perSource;
         qint64 lateFrames = 0;
         qint64 overlapFrames = 0;
         qint64 overflowFrames = 0;

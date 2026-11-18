@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QBuffer>
 #include <QImageReader>
+#include <QJsonDocument>
 #include <QStandardPaths>
 #include <QScopeGuard>
 #include <QTemporaryDir>
@@ -272,8 +273,16 @@ void tst_RecordingProjectSave::failedSave()
     for (const QString& suffix : RecordingProjects::sidecarSuffixes()) {
         QCOMPARE(readFile(project.videoPath() + suffix), suffix.toUtf8());
     }
-    if (existing) QVERIFY(!QFile::exists(oldBackground));
-    else QVERIFY(!QFile::exists(source));
+    if (existing) {
+        // The previous manifest must remain renderable after a successful
+        // update, including the image it owned before the failed save.
+        QVERIFY(QFile::exists(oldBackground));
+        const auto previousManifest = QJsonDocument::fromJson(
+            readFile(QDir(project.dir).filePath(QStringLiteral("manifest.prev.json")))).object();
+        const auto previousRecipe = previousManifest.value(QStringLiteral("recipe")).toObject();
+        QCOMPARE(backgroundPath(previousRecipe), oldBackground);
+        QVERIFY(!QImage(backgroundPath(previousRecipe)).isNull());
+    } else QVERIFY(!QFile::exists(source));
     QVERIFY(QFile::remove(image));
     QCOMPARE(QImage(backgroundPath(project.recipe)), background());
     QThreadPool::globalInstance()->waitForDone();

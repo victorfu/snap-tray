@@ -1480,6 +1480,22 @@ Filstorlek: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Inspelningen kanske används eller kan inte längre återställas. Öppna «Återställ inspelningar» igen för att uppdatera listan.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projektåterställningen misslyckades</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Återställningskopian kunde inte öppnas. Kontrollera ledigt diskutrymme och filbehörigheter. Originalprojektet bevaras.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Inspelning återställd</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Det separata återställningsprojektet har öppnats. Originalprojektets redigeringar kunde inte läsas; originalmappen bevaras.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3354,6 +3370,10 @@ Storlek: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Tangenttipsen kunde inte sparas. Inspelningen fortsätter utan dem.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Skärminspelning använder tillfälligt kompatibilitetsläge</translation>
     </message>
 </context>
 <context>
@@ -5426,6 +5446,262 @@ Storlek: %2</translation>
         <source>Press bounce</source>
         <translation>Fjädring vid tryck</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>%1 zoomningar lades till automatiskt</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Ångra</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Lägg inte till automatiskt igen</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Stäng</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Pil</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Rektangel</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Ellips</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Linje</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Markering</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Stegnummer</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Form</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Ljudklipp</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Förhandsvisningshastighet (ungefärlig)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Förhandsvisningen är begränsad till 0,25×–2×. Export använder exakt klipphastighet och bevarar tonhöjden.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Dra på förhandsvisningen för att rita formen</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Lägg till ljud…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Importera musik eller berättarröst (högst 30 minuter och 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF och WebP innehåller inget ljud. Välj MP4 för att lägga till ljud.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Former</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Ljudklipp %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Klippets uppspelningshastighet i den exporterade filen</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Behåll ljud</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Behåll ursprunglig tonhöjd när klippets hastighet ändras</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Pekarstil</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Skarp ritar om identifierade standardpekare vid förstoring; egna pekare behåller den inspelade bilden</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Inspelad</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Skarp</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Räta ut bana</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Minska små böjar före utjämning. Klick och dragningar behåller sina inspelade positioner.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Återgå till början</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Återgång till början är tillgänglig vid GIF- och WebP-export</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>För tillbaka pekaren och kameran till början. Pekaren återgår bara om båda ändpunkterna är synliga inom beskärningen.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Stabilisera pekarform</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Dölj korta formändringar utom nära ett klick</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF och WebP innehåller inget ljud. Välj MP4 för att redigera ljudklipp.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Volym</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Upprepa ljud</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Upprepa ljudfilen för att fylla klippets intervall</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Källförskjutning (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Intoning (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Uttoning (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Ljudstart</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Ljudslut</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Radera ljudklipp</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Koordinatrymd</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Innehåll — följer zoom</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Skärm — fast position</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Linjebredd</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Pilstil</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Fylld pil</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Konturpil</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Öppen pil</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Båda ändar</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Båda ändar, kontur</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Formens start</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Formens slut</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Radera form</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Anpassad bredd</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Begränsa längsta sidan eller ange en bredd. Bilden förstoras aldrig.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Upprepa oändligt</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Mindre fil (långsammare)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Alternativen gäller i redigeraren. Snabbläget använder inspelningens storlek och bildfrekvens direkt.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Rörelseoskärpa för kamera</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Mjuka upp kamerarörelser medan pekare och överlägg hålls skarpa</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5625,6 +5901,78 @@ Storlek: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Sparad i %1, men inspelningen kunde inte behållas som ett redigerbart projekt. Den är fortfarande öppen här: spara igen eller stäng den för att kasta den.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Den faktiska filstorleken visas efter export.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Exporterad fil: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Över 25 MB; minska storlek eller bildfrekvens för delning.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Över 10 MB; minska storlek eller bildfrekvens för delning.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Förbereder ljudförhandsvisning…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Den importerade ljudsidofilen saknas eller är skadad.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Inga inspelade klickdata finns tillgängliga.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Inga synliga klick finns kvar i beskärningen och de behållna klippen.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Tillagda zoomningar: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Alla föreslagna zoomningar överlappar zoomningar som du lagt till eller ändrat.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Den föreslagna förstoringen är för liten för en zoomning.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Lägg till ljud</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Ljudfiler (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Alla filer (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>En inspelning kan innehålla upp till 128 ljudklipp.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Importerar ljud…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Ljudändringarna kunde inte sparas för kraschåterställning.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Kan inte förbereda ljudförhandsvisning: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Kan inte importera ljud: %1</translation>
     </message>
 </context>
 <context>
@@ -6080,6 +6428,14 @@ Ljud stöds inte för GIF-inspelningar.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Hur skärminspelningar startar, vad de spelar in och vad som händer när du stoppar.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Lägg automatiskt till zoomningar i nya inspelningar</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Zooma in på inspelade klick när redigeraren öppnas. Du kan ångra detta i ett steg.</translation>
     </message>
 </context>
 <context>
@@ -6609,6 +6965,10 @@ Datumtoken: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} eller {date}</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Bara området spelas in.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Lägg till zoomningar automatiskt</translation>
     </message>
 </context>
 <context>
@@ -8052,6 +8412,40 @@ Den kan användas av ett annat program.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Utdata: %1 × %2 pixlar</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Oläsbart projekt</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Öppna inspelningen utan ändringar, visa mappen eller radera den.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Visa projektmappen eller radera projektet.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Återställd från föregående sparning</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Oläsbart projekt</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Öppet i förhandsvisningen</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Återställd från föregående sparning</translation>
     </message>
 </context>
 </TS>

@@ -3,6 +3,8 @@
 
 #include <QMutex>
 #include <QString>
+#include <QStringList>
+#include "capture/AudioCaptureDiagnostics.h"
 #include <QVector>
 #include <QtGlobal>
 
@@ -44,6 +46,10 @@ public:
 
     struct Snapshot {
         QString backend;
+        QStringList captureEvents;
+        quint64 sourceDroppedFrames = 0;
+        quint64 captureCopies = 0;
+        AudioCaptureDiagnostics audioSources;
         quint64 generation = 0;
         qint64 offered = 0;
         qint64 queued = 0;
@@ -80,12 +86,15 @@ public:
 
     void reset(const QString& backend, quint64 generation);
 
+    void captureEvent(const QString& event);
+    void captureSourceStats(quint64 dropped, quint64 copies);
     void frameOffered();
     void frameQueued(int depth, qint64 queuedBytes);
     void frameDropped(FrameDrop reason);
     // A frame left the queue and the encoder took it.
     void frameEncoded(qint64 queueAgeNs, qint64 encodeNs, qint64 nowNs);
     void framePath(FramePath path);
+    void setAudioSourceDiagnostics(const AudioCaptureDiagnostics& diagnostics);
     void audioQueued();
     void audioDropped(qint64 bytes);
     void setClockCounters(const ClockCounters& counters);

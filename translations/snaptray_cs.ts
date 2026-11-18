@@ -1481,6 +1481,22 @@ Velikost souboru: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Nahrávka se možná používá nebo ji již nelze obnovit. Znovu otevřete „Obnovit nahrávky“ pro aktualizaci seznamu.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Obnovení projektu selhalo</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Kopii pro obnovení nelze otevřít. Zkontrolujte volné místo na disku a oprávnění souborů. Původní projekt zůstává zachován.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Záznam obnoven</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Byl otevřen samostatný obnovený projekt. Úpravy původního projektu nelze přečíst; původní složka zůstává zachována.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3355,6 +3371,10 @@ Velikost: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Nápovědy kláves se nepodařilo uložit. Nahrávání bude pokračovat bez nich.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Snímání obrazovky dočasně používá režim kompatibility</translation>
     </message>
 </context>
 <context>
@@ -5430,6 +5450,262 @@ Velikost: %2</translation>
         <source>Press bounce</source>
         <translation>Odpružení při stisku</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Automaticky přidáno %1 přiblížení</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Zpět</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Příště nepřidávat automaticky</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Zavřít</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Šipka</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Obdélník</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Elipsa</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Čára</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Zvýraznění</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Číslo kroku</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Tvar</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Zvukový klip</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Rychlost náhledu (přibližná)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Náhled je omezen na 0,25×–2×. Export používá přesnou rychlost klipu a zachovává výšku tónu.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Přetažením v náhledu nakreslíte tento tvar</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Přidat zvuk…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Importovat hudbu nebo komentář (nejvýše 30 minut a 512 MB)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF a WebP neobsahují zvuk. Pro přidání zvuku zvolte MP4.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Tvary</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Zvukový klip %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Rychlost přehrávání tohoto klipu v exportovaném souboru</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Zachovat zvuk</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Při změně rychlosti klipu zachovat původní výšku tónu</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Styl ukazatele</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Ostrý režim při zvětšení překreslí rozpoznané standardní ukazatele; vlastní ukazatele si ponechají zaznamenaný obrázek</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Zaznamenaný</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Ostrý</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Narovnat dráhu</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Omezí malé ohyby před vyhlazením. Kliknutí a tažení zachovají zaznamenané pozice.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Návrat na začátek</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Návrat na začátek je dostupný pro export GIF a WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Vrátí ukazatel a kameru na začátek. Ukazatel se vrátí pouze tehdy, jsou-li oba koncové body viditelné v ořezu.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Stabilizovat tvar ukazatele</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Skrýt krátké změny tvaru kromě okolí kliknutí</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF a WebP neobsahují zvuk. Pro úpravu zvukových klipů zvolte MP4.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Hlasitost</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Opakovat zvuk</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Opakovat zvukový soubor po celou dobu tohoto klipu</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Posun zdroje (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Zesílení na začátku (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Zeslabení na konci (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Začátek zvuku</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Konec zvuku</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Smazat zvukový klip</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Souřadnicový prostor</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Obsah — sleduje přiblížení</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Obrazovka — pevná pozice</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Šířka čáry</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Styl šipky</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Vyplněná šipka</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Obrysová šipka</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Otevřená šipka</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Oba konce</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Oba konce, obrys</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Začátek tvaru</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Konec tvaru</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Smazat tvar</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Vlastní šířka</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Omezte delší stranu nebo nastavte vlastní šířku. Obrázek se nikdy nezvětšuje.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Opakovat donekonečna</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Menší soubor (pomalejší)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Tyto volby platí v editoru. Rychlý režim přímo používá velikost a snímkovou frekvenci záznamu.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Pohybové rozmazání kamery</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Zjemnit pohyb kamery a zachovat ostré ukazatele a překryvy</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5629,6 +5905,78 @@ Velikost: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Uloženo do %1, ale záznam se nepodařilo uchovat jako upravitelný projekt. Je stále otevřený zde: uložte znovu, nebo ho zavřením zahoďte.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Skutečná velikost souboru se zobrazí po exportu.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Exportovaný soubor: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Přes 25 MB; pro sdílení snižte velikost nebo snímkovou frekvenci.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Přes 10 MB; pro sdílení snižte velikost nebo snímkovou frekvenci.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Příprava zvukového náhledu…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Doprovodný soubor importovaného zvuku chybí nebo je poškozen.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Nejsou k dispozici zaznamenaná kliknutí.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>V ořezu a ponechaných klipech nejsou viditelná kliknutí.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Přidaná přiblížení: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Všechna navržená přiblížení se překrývají s přidanými nebo upravenými přiblíženími.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Navržené zvětšení je příliš malé pro přidání přiblížení.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Přidat zvuk</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Zvukové soubory (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Všechny soubory (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Záznam může obsahovat nejvýše 128 zvukových klipů.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Import zvuku…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Úpravy zvuku se nepodařilo uložit pro obnovu po pádu.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Nelze připravit zvukový náhled: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Nelze importovat zvuk: %1</translation>
     </message>
 </context>
 <context>
@@ -6084,6 +6432,14 @@ Zvuk není podporován pro nahrávky ve formátu GIF.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Jak se spouští nahrávání obrazovky, co zachycuje a co se stane po zastavení.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Automaticky přidávat přiblížení do nových záznamů</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Při otevření editoru přiblížit zaznamenaná kliknutí. Akci lze vrátit jedním krokem.</translation>
     </message>
 </context>
 <context>
@@ -6613,6 +6969,10 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Nahrává se jen oblast.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Automaticky přidávat přiblížení</translation>
     </message>
 </context>
 <context>
@@ -8056,6 +8416,40 @@ Může být používána jinou aplikací.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Výstup: %1 × %2 pixelů</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Nečitelný projekt</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Otevřít záznam bez úprav, zobrazit složku nebo jej smazat.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Zobrazit složku projektu nebo jej smazat.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Obnoveno z předchozího uložení</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Nečitelný projekt</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Otevřeno v náhledu</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Obnoveno z předchozího uložení</translation>
     </message>
 </context>
 </TS>

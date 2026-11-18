@@ -13,6 +13,34 @@
 class TestLinuxMedia : public QObject {
     Q_OBJECT
 private slots:
+    void silentVideoPlaysImportedAudio() {
+        if (qEnvironmentVariable("SNAPTRAY_TEST_ISOLATED_AUDIO") != "1") QSKIP("Requires private audio server");
+        QTemporaryDir dir;
+        const QString path = dir.filePath("silent.mp4");
+        FFmpegEncoder encoder;
+        QVERIFY(encoder.start(path, QSize(160,120), 30));
+        for (int i = 0; i < 30; ++i) {
+            QImage image(160,120,QImage::Format_RGB32); image.fill(Qt::red);
+            encoder.writeFrame(image, qRound(i*1000.0/30));
+        }
+        encoder.finish();
+        auto player = std::unique_ptr<IVideoPlayer>(IVideoPlayer::create());
+        QVERIFY(player->load(path));
+        QVERIFY(!player->hasAudio());
+        QVERIFY(!player->supportsAudioPlayback());
+        std::atomic<qint64> readFrames{0};
+        QVERIFY(player->setAudioSource([&](qint64, int frames) {
+            readFrames += frames;
+            return QByteArray(frames * 4, '\1');
+        }));
+        QVERIFY(player->supportsAudioPlayback());
+        player->play();
+        QTRY_VERIFY_WITH_TIMEOUT(readFrames.load() >= 4800, 3000);
+        player->pause();
+        QVERIFY(player->setAudioSource({}));
+        QVERIFY(!player->supportsAudioPlayback());
+        player.reset(); // Join the decoder before destroying its callback state.
+    }
     void captureAudio_data() {
         QTest::addColumn<int>("source");
         QTest::newRow("microphone") << int(IAudioCaptureEngine::AudioSource::Microphone);

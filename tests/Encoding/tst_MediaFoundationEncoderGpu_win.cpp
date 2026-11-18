@@ -45,6 +45,7 @@ QImage solidImage(const QColor &color)
 
 struct Decoded {
     QSize size;
+    QList<qint64> times100ns;
     QList<QColor> centers;  // center pixel of every decoded frame
     QString error;
 };
@@ -86,6 +87,9 @@ Decoded decodeCenters(const QString &path)
         }
         if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
         if (!sample) continue;
+        LONGLONG sampleTime = 0;
+        sample->GetSampleTime(&sampleTime);
+        result.times100ns.append(sampleTime);
         ComPtr<IMFMediaBuffer> buffer;
         sample->ConvertToContiguousBuffer(&buffer);
         BYTE *data = nullptr;
@@ -132,6 +136,7 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
     void testNativeFramesEncodeOnTheGpu();
+    void testSparseGpuFramesKeepNanoseconds();
     void testCpuFramesJoinTheGpuStream();
     void testFramesFromAnotherDeviceAreReadBack();
     void testWithoutDeviceFramesStayOnTheCpu();
@@ -174,6 +179,31 @@ QString TestMediaFoundationEncoderGpu::startGpuEncoder(MediaFoundationEncoder &e
         return QStringLiteral("GPU input unavailable on %1").arg(device->adapterName);
     }
     return {};
+}
+
+void TestMediaFoundationEncoderGpu::testSparseGpuFramesKeepNanoseconds()
+{
+    MediaFoundationEncoder encoder;
+    std::shared_ptr<D3D11FrameDevice> device;
+    const QString path = m_dir.filePath(QStringLiteral("sparse-gpu.mp4"));
+    const QString reason = startGpuEncoder(encoder, device, path);
+    if (!reason.isEmpty()) QSKIP(qPrintable(reason));
+    auto pool = D3D11TexturePool::create(device, kFrameSize);
+    const auto frame = solidFrame(*pool, Qt::green);
+    QVERIFY(frame);
+    const QList<qint64> times{0, 16666667, 33333333, 2000000000, 4000000000};
+    for (qint64 time : times) QVERIFY(encoder.writeNativeFrameNs(frame, time));
+    QSignalSpy done(&encoder, &IVideoEncoder::finished);
+    encoder.finishAtNs(6000000000);
+    QVERIFY(!done.isEmpty());
+    QVERIFY2(done.first().first().toBool(), qPrintable(encoder.lastError()));
+    const auto decoded = decodeCenters(path);
+    QVERIFY2(decoded.error.isEmpty(), qPrintable(decoded.error));
+    QCOMPARE(decoded.times100ns.size(), times.size());
+    for (int i = 0; i < times.size(); ++i) {
+        QVERIFY(qAbs(decoded.times100ns[i] - times[i] / 100) <= 1000);
+        QVERIFY(colorNear(decoded.centers[i], Qt::green));
+    }
 }
 
 void TestMediaFoundationEncoderGpu::testNativeFramesEncodeOnTheGpu()

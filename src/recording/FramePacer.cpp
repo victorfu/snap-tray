@@ -24,7 +24,7 @@ void FramePacer::reset(int framesPerSecond)
     m_stats = {};
 }
 
-FramePacer::Decision FramePacer::onFrame(qint64 recordingTimeNs)
+FramePacer::Decision FramePacer::onFrame(qint64 recordingTimeNs, bool sparseSource)
 {
     if (m_lastEmittedNs >= 0) {
         const qint64 gap = recordingTimeNs - m_lastEmittedNs;
@@ -32,7 +32,7 @@ FramePacer::Decision FramePacer::onFrame(qint64 recordingTimeNs)
             ++m_stats.dropped;
             return Decision::DropTooSoon;
         }
-        if (!m_pauseBoundary) {
+        if (!m_pauseBoundary && !sparseSource) {
             m_stats.longestGapNs = qMax(m_stats.longestGapNs, gap);
             // Over half an interval past the expected time counts as late.
             if (gap >= kStallIntervals * m_intervalNs) {

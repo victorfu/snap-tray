@@ -1,6 +1,7 @@
 #include "video/IVideoTranscoder.h"
 #include "video/IVideoFrameReader.h"
 #include "video/NativeEditExport.h"
+#include "video/AudioFileDecoder.h"
 
 #include "VideoTranscoderFaultInjection.h"
 #include "MediaFoundationFrameCopy_win.h"
@@ -1467,3 +1468,40 @@ bool nativeHevcExportAvailable()
     return false;
 }
 } // namespace SnapTray
+
+namespace SnapTray {
+bool decodeAudioFile(const QString& path, const AudioPcmSink& sink, QString& error)
+{
+    ComApartment com;
+    MfSession mf;
+    HRESULT hr = com.usable() ? mf.result() : com.result();
+    ComPtr<IMFSourceReader> reader;
+    ComPtr<IMFMediaType> pcmType;
+    if (SUCCEEDED(hr)) hr = openReader(path, false, reader);
+    if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_ALL_STREAMS, FALSE);
+    if (SUCCEEDED(hr)) hr = reader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, TRUE);
+    if (SUCCEEDED(hr)) hr = pcmMediaType(pcmType);
+    if (SUCCEEDED(hr)) hr = reader->SetCurrentMediaType(MF_SOURCE_READER_FIRST_AUDIO_STREAM, nullptr, pcmType.Get());
+    while (SUCCEEDED(hr)) {
+        DWORD flags = 0;
+        LONGLONG timestamp = 0;
+        ComPtr<IMFSample> sample;
+        hr = reader->ReadSample(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 0, nullptr, &flags, &timestamp, &sample);
+        if (FAILED(hr) || (flags & MF_SOURCE_READERF_ERROR)) { if (SUCCEEDED(hr)) hr = E_FAIL; break; }
+        if (sample) {
+            ComPtr<IMFMediaBuffer> buffer;
+            hr = sample->ConvertToContiguousBuffer(&buffer);
+            BYTE* bytes = nullptr; DWORD size = 0;
+            if (SUCCEEDED(hr)) hr = buffer->Lock(&bytes, nullptr, &size);
+            if (SUCCEEDED(hr)) {
+                const QByteArray pcm(reinterpret_cast<const char*>(bytes), size);
+                hr = buffer->Unlock();
+                if (SUCCEEDED(hr) && !sink(pcm, qRound64(double(timestamp) * 48000.0 / 10000000.0))) return false;
+            }
+        }
+        if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
+    }
+    if (FAILED(hr)) { error = hrText("Media Foundation cannot decode this audio format", hr); return false; }
+    return true;
+}
+}

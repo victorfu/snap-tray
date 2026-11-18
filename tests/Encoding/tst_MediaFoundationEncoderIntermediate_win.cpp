@@ -190,6 +190,7 @@ private slots:
     void intermediateAverageBitrateConverges();
     void framesKeepTheirTimestamps_data();
     void framesKeepTheirTimestamps();
+    void sparseFramesKeepNanosecondsAndFinalHold();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -294,6 +295,30 @@ void tst_MediaFoundationEncoderIntermediate::framesKeepTheirTimestamps()
     }
     QVERIFY2(worst <= 1.0, qPrintable(QStringLiteral("frame %1 written at %2 ms is presented at %3 ms")
                                           .arg(worstIndex).arg(written[worstIndex]).arg(read[worstIndex])));
+}
+
+void tst_MediaFoundationEncoderIntermediate::sparseFramesKeepNanosecondsAndFinalHold()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("sparse.mp4"));
+    MediaFoundationEncoder encoder(false, nullptr);
+    QVERIFY2(encoder.start(path, QSize(320, 180), 60), qPrintable(encoder.lastError()));
+    const QList<qint64> times{0, 16666667, 33333333, 2000000000, 4000000000, 6000000000,
+        8000000000, 10000000000, 12000000000, 14000000000, 16000000000, 18000000000};
+    QImage frame(320, 180, QImage::Format_RGB32); frame.fill(Qt::green);
+    for (qint64 time : times) encoder.writeFrameNs(frame, time);
+    QCOMPARE(encoder.framesWritten(), times.size());
+    QSignalSpy finished(&encoder, &IVideoEncoder::finished);
+    encoder.finishAtNs(20000000000);
+    QVERIFY(!finished.isEmpty());
+    QVERIFY2(finished.first().first().toBool(), qPrintable(encoder.lastError()));
+    const auto actual = videoTimestampsMs(path);
+    QCOMPARE(actual.size(), times.size());
+    for (int i = 0; i < times.size(); ++i)
+        QVERIFY2(std::abs(actual[i] - times[i] / 1e6) < 0.1, qPrintable(QString::number(actual[i], 'f', 6)));
+    const auto probe = IVideoTranscoder::create()->probe(path);
+    QVERIFY(probe.valid);
+    QVERIFY(qAbs(probe.durationMs - 20000) <= 17);
 }
 
 QTEST_MAIN(tst_MediaFoundationEncoderIntermediate)

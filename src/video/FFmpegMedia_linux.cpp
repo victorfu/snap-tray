@@ -1,4 +1,6 @@
 #include "FFmpegMedia.h"
+#include "video/AudioFileDecoder.h"
+#include <QScopeGuard>
 #include <QFile>
 #include <QThread>
 #include <cmath>
@@ -193,3 +195,50 @@ QByteArray AudioReader::read(qint64 start, int count) {
 }
 }
 std::unique_ptr<IVideoFrameReader> createFFmpegFrameReader() { return std::make_unique<SnapTray::FFmpeg::FrameReader>(); }
+
+namespace SnapTray {
+bool decodeAudioFile(const QString& path, const AudioPcmSink& sink, QString& error)
+{
+    FFmpeg::Decoder decoder;
+    if (!decoder.open(path, AVMEDIA_TYPE_AUDIO)) { error = decoder.error; return false; }
+    SwrContext* resampler = nullptr;
+    const auto cleanup = qScopeGuard([&] { swr_free(&resampler); });
+#if LIBAVUTIL_VERSION_MAJOR >= 57
+    AVChannelLayout layout = AV_CHANNEL_LAYOUT_STEREO;
+    if (swr_alloc_set_opts2(&resampler, &layout, AV_SAMPLE_FMT_S16, 48000,
+        &decoder.codec->ch_layout, decoder.codec->sample_fmt, decoder.codec->sample_rate, 0, nullptr) < 0) {
+        error = QStringLiteral("Cannot configure audio resampling."); return false;
+    }
+#else
+    resampler = swr_alloc_set_opts(nullptr, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 48000,
+        decoder.codec->channel_layout ? decoder.codec->channel_layout : av_get_default_channel_layout(decoder.codec->channels),
+        decoder.codec->sample_fmt, decoder.codec->sample_rate, 0, nullptr);
+#endif
+    if (!resampler || swr_init(resampler) < 0) { error = QStringLiteral("Cannot resample this audio format."); return false; }
+    std::optional<qint64> position;
+    auto convert = [&](const uint8_t** data, int samples) {
+        const int capacity = qMax(4096, swr_get_out_samples(resampler, samples));
+        QByteArray pcm(capacity * 4, Qt::Uninitialized);
+        uint8_t* out[] = {reinterpret_cast<uint8_t*>(pcm.data())};
+        const int count = swr_convert(resampler, out, capacity, data, samples);
+        if (count < 0) { error = FFmpeg::errorString(count); return -1; }
+        pcm.resize(count * 4);
+        if (count && !sink(pcm, position)) return -1;
+        if (position) *position += count;
+        return count;
+    };
+    while (decoder.next()) {
+        if (decoder.frame->best_effort_timestamp != AV_NOPTS_VALUE) {
+            const qint64 first = av_rescale_q(decoder.frame->best_effort_timestamp, decoder.stream->time_base, AVRational{1,48000});
+            const qint64 delay = av_rescale_rnd(swr_get_delay(resampler, decoder.codec->sample_rate),
+                48000, decoder.codec->sample_rate, AV_ROUND_NEAR_INF);
+            position = first - delay;
+        }
+        if (convert(const_cast<const uint8_t**>(decoder.frame->extended_data), decoder.frame->nb_samples) < 0) return false;
+    }
+    if (!decoder.error.isEmpty()) { error = decoder.error; return false; }
+    int count;
+    do { count = convert(nullptr, 0); } while (count > 0);
+    return count == 0;
+}
+}

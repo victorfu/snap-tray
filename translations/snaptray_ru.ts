@@ -1481,6 +1481,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Запись может использоваться или быть недоступной для восстановления. Снова откройте «Восстановить записи», чтобы обновить список.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Не удалось восстановить проект</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Не удалось открыть восстановленную копию. Проверьте свободное место на диске и права доступа к файлам. Исходный проект сохранён.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Запись восстановлена</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Открыт отдельный восстановленный проект. Не удалось прочитать правки исходного проекта; исходная папка сохранена.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3355,6 +3371,10 @@ Size: %2</source>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Не удалось сохранить подсказки клавиш. Запись продолжится без них.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Захват экрана временно использует режим совместимости</translation>
     </message>
 </context>
 <context>
@@ -5430,6 +5450,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>Отскок при нажатии</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>Автоматически добавлено приближений: %1</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Отменить</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Больше не добавлять автоматически</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Закрыть</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Стрелка</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Прямоугольник</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Эллипс</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Линия</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Выделение</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Номер шага</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Фигура</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Аудиоклип</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Скорость предпросмотра (приблизительная)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Предпросмотр ограничен диапазоном 0,25×–2×. Экспорт использует точную скорость клипа и сохраняет высоту тона.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Проведите по предпросмотру, чтобы нарисовать фигуру</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Добавить аудио…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Импорт музыки или озвучки (до 30 минут и 512 МБ)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF и WebP не содержат аудио. Выберите MP4, чтобы добавить звук.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Фигуры</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Аудиоклип %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Скорость воспроизведения клипа в экспортированном файле</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Сохранить звук</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Сохранять исходную высоту тона при изменении скорости клипа</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Стиль указателя</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Режим «Чёткий» перерисовывает распознанные стандартные указатели при увеличении; пользовательские указатели сохраняют записанное изображение</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Записанный</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Чёткий</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Выпрямить траекторию</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Уменьшает мелкие изгибы перед сглаживанием. Щелчки и перетаскивания сохраняют записанные позиции.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Возврат к началу</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Возврат к началу доступен при экспорте GIF и WebP</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Возвращает указатель и камеру к началу. Указатель возвращается, только если обе конечные точки видны в области обрезки.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Стабилизировать форму указателя</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Скрывать краткие изменения формы, кроме моментов рядом со щелчком</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF и WebP не содержат аудио. Выберите MP4 для редактирования аудиоклипов.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Громкость</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Повторять аудио</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Повторять аудиофайл, заполняя диапазон клипа</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Смещение источника (мс)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Нарастание (мс)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Затухание (мс)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Начало аудио</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Конец аудио</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Удалить аудиоклип</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Система координат</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Содержимое — следует за масштабом</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Экран — фиксированная позиция</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Толщина линии</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Стиль стрелки</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Залитая стрелка</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Контурная стрелка</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Открытая стрелка</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Оба конца</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Оба конца, контур</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Начало фигуры</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Конец фигуры</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Удалить фигуру</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Своя ширина</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Ограничьте длинную сторону или задайте ширину. Изображение никогда не увеличивается.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Повторять бесконечно</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Меньший файл (медленнее)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Эти параметры применяются в редакторе. Быстрый режим напрямую использует размер и частоту кадров записи.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Размытие движения камеры</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Смягчить движение камеры, сохраняя чёткость указателей и наложений</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5629,6 +5905,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Сохранено в %1, но запись не удалось сохранить как редактируемый проект. Она всё ещё открыта здесь: сохраните ещё раз или закройте, чтобы отказаться от неё.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Фактический размер файла отображается после экспорта.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Экспортированный файл: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Более 25 МБ; уменьшите размер или частоту кадров для отправки.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Более 10 МБ; уменьшите размер или частоту кадров для отправки.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Подготовка предпросмотра аудио…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Сопутствующий файл импортированного аудио отсутствует или повреждён.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Нет записанных данных о щелчках.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>В области обрезки и сохранённых клипах нет видимых щелчков.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Добавлено приближений: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Все предложенные приближения пересекаются с добавленными или изменёнными вами.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Предложенное увеличение слишком мало для добавления приближения.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Добавить аудио</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Аудиофайлы (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Все файлы (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Запись может содержать до 128 аудиоклипов.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Импорт аудио…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Не удалось сохранить правки аудио для восстановления после сбоя.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Не удалось подготовить предпросмотр аудио: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Не удалось импортировать аудио: %1</translation>
     </message>
 </context>
 <context>
@@ -6084,6 +6432,14 @@ Audio is not supported for GIF recordings.</source>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Как начинается запись экрана, что записывается и что происходит после остановки.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Автоматически добавлять приближения к новым записям</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Приближать записанные щелчки при открытии редактора. Это можно отменить одним действием.</translation>
     </message>
 </context>
 <context>
@@ -6613,6 +6969,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Записывается только область.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Автоматически добавлять приближения</translation>
     </message>
 </context>
 <context>
@@ -8056,6 +8416,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Вывод: %1 × %2 пикселей</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Проект не читается</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Открыть запись без правок, показать папку или удалить её.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Показать папку проекта или удалить его.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Восстановлено из предыдущего сохранения</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Проект не читается</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Открыт в предпросмотре</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Восстановлено из предыдущего сохранения</translation>
     </message>
 </context>
 </TS>

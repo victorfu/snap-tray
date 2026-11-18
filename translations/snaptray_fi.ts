@@ -1480,6 +1480,22 @@ Tiedoston koko: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Tallenne saattaa olla käytössä tai sitä ei voi enää palauttaa. Avaa ”Palauta tallenteet” uudelleen päivittääksesi luettelon.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projektin palautus epäonnistui</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Palautuskopiota ei voitu avata. Tarkista vapaa levytila ja tiedostojen käyttöoikeudet. Alkuperäinen projekti säilytetään.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Tallenne palautettu</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Erillinen palautusprojekti avattiin. Alkuperäisen projektin muokkauksia ei voitu lukea; alkuperäinen kansio säilytetään.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3354,6 +3370,10 @@ Koko: %2</translation>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>Näppäinvihjeitä ei voitu tallentaa. Tallennus jatkuu ilman niitä.</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>Näytön kaappaus käyttää tilapäisesti yhteensopivuustilaa</translation>
     </message>
 </context>
 <context>
@@ -5426,6 +5446,262 @@ Koko: %2</translation>
         <source>Press bounce</source>
         <translation>Jousto painettaessa</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>%1 zoomausta lisättiin automaattisesti</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>Kumoa</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>Älä lisää automaattisesti uudelleen</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>Sulje</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>Nuoli</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>Suorakulmio</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>Ellipsi</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>Viiva</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>Korostus</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>Vaiheen numero</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>Muoto</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>Äänileike</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>Esikatselunopeus (likimääräinen)</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>Esikatselu rajoittuu välille 0,25×–2×. Vienti käyttää leikkeen tarkkaa nopeutta ja säilyttää äänenkorkeuden.</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>Piirrä muoto vetämällä esikatselussa</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>Lisää ääntä…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>Tuo musiikkia tai selostusta (enintään 30 minuuttia ja 512 Mt)</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF ja WebP eivät sisällä ääntä. Lisää ääntä valitsemalla MP4.</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>Muodot</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>Äänileike %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>Leikkeen toistonopeus viedyssä tiedostossa</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>Säilytä ääni</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>Säilytä alkuperäinen äänenkorkeus leikkeen nopeutta muutettaessa</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>Osoittimen tyyli</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>Terävä piirtää tunnistetut vakio-osoittimet uudelleen suurennettaessa; mukautetut osoittimet säilyttävät tallennetun kuvansa</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>Tallennettu</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>Terävä</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>Suorista reitti</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>Vähennä pieniä mutkia ennen tasoitusta. Napsautukset ja vedot säilyttävät tallennetut sijaintinsa.</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>Palaa alkuun</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>Alkuun palaaminen on käytettävissä GIF- ja WebP-viennissä</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>Palauta osoitin ja kamera alkuun. Osoitin palaa vain, jos molemmat päätepisteet näkyvät rajauksessa.</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>Vakauta osoittimen muoto</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>Piilota lyhyet muodonmuutokset paitsi napsautuksen lähellä</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF ja WebP eivät sisällä ääntä. Muokkaa äänileikkeitä valitsemalla MP4.</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>Äänenvoimakkuus</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>Toista ääni silmukkana</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>Toista äänitiedostoa leikkeen koko aikavälin ajan</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>Lähteen siirtymä (ms)</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>Häivytys sisään (ms)</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>Häivytys ulos (ms)</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>Äänen alku</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>Äänen loppu</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>Poista äänileike</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>Koordinaatisto</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>Sisältö — seuraa zoomausta</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>Näyttö — kiinteä sijainti</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>Viivan leveys</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>Nuolen tyyli</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>Täytetty nuoli</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>Ääriviivanuoli</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>Avoin nuoli</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>Molemmat päät</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>Molemmat päät, ääriviiva</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>Muodon alku</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>Muodon loppu</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>Poista muoto</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>Mukautettu leveys</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>Rajoita pisintä sivua tai määritä leveys. Kuvaa ei koskaan suurenneta.</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>Toista loputtomasti</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>Pienempi tiedosto (hitaampi)</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>Nämä asetukset koskevat editoria. Pikatila käyttää suoraan tallennuskokoa ja kuvataajuutta.</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>Kameran liike-epäterävyys</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>Pehmennä kameran liikettä ja pidä osoittimet sekä peittokuvat terävinä</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5625,6 +5901,78 @@ Koko: %2</translation>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>Tallennettu kohteeseen %1, mutta tallennetta ei voitu säilyttää muokattavana projektina. Se on yhä auki tässä: tallenna uudelleen tai hylkää se sulkemalla.</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>Todellinen tiedostokoko näytetään viennin jälkeen.</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>Viety tiedosto: %1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Yli 25 Mt; pienennä kokoa tai kuvataajuutta jakamista varten.</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — Yli 10 Mt; pienennä kokoa tai kuvataajuutta jakamista varten.</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>Valmistellaan äänen esikatselua…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>Tuodun äänen oheistiedosto puuttuu tai on vioittunut.</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>Tallennettuja napsautustietoja ei ole saatavilla.</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>Rajauksessa ja säilytetyissä leikkeissä ei ole näkyviä napsautuksia.</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>Lisätyt zoomaukset: %1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>Kaikki ehdotetut zoomaukset ovat päällekkäisiä lisättyjen tai muutettujen zoomausten kanssa.</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>Ehdotettu suurennus on liian pieni zoomauksen lisäämiseen.</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>Lisää ääntä</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>Äänitiedostot (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;Kaikki tiedostot (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>Tallenne voi sisältää enintään 128 äänileikettä.</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>Tuodaan ääntä…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>Äänimuokkauksia ei voitu tallentaa kaatumisesta palautumista varten.</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>Äänen esikatselua ei voi valmistella: %1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>Ääntä ei voi tuoda: %1</translation>
     </message>
 </context>
 <context>
@@ -6080,6 +6428,14 @@ GIF-tallennuksissa ääntä ei tueta.</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>Miten näytön tallennus alkaa, mitä tallennetaan ja mitä tapahtuu, kun lopetat.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>Lisää zoomaukset automaattisesti uusiin tallenteisiin</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>Zoomaa tallennettuihin napsautuksiin editorin avautuessa. Voit kumota tämän yhdellä toiminnolla.</translation>
     </message>
 </context>
 <context>
@@ -6609,6 +6965,10 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>Vain alue tallennetaan.</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>Lisää zoomaukset automaattisesti</translation>
     </message>
 </context>
 <context>
@@ -8052,6 +8412,40 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>Tuloste: %1 × %2 pikseliä</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Projekti ei ole luettavissa</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>Avaa tallenne ilman muokkauksia, näytä kansio tai poista se.</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>Näytä projektikansio tai poista projekti.</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Palautettu edellisestä tallennuksesta</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>Projekti ei ole luettavissa</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>Auki esikatselussa</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>Palautettu edellisestä tallennuksesta</translation>
     </message>
 </context>
 </TS>

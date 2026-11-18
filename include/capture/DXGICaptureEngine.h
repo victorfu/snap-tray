@@ -37,6 +37,10 @@ public:
     bool start() override;
     void stop() override;
     bool isRunning() const override;
+    bool deliversFrames() const override { return true; }
+    bool allowsSparseFrames() const override { return true; }
+    bool usesCompatibilityMode() const override;
+    void requestFrame() override;
     QImage captureFrame() override;
     SnapTray::CapturedFrame captureNativeFrame() override;
     std::shared_ptr<void> nativeFrameDevice() const override;

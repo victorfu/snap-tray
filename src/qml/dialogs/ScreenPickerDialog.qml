@@ -158,6 +158,14 @@ DialogBase {
                     }
 
                     SettingsToggle {
+                        width: parent.width
+                        visible: root.viewModel && root.viewModel.editMode
+                        label: qsTr("Automatically add zooms")
+                        checked: root.viewModel ? root.viewModel.autoZoomOnOpen : false
+                        onToggled: function(checked) { root.viewModel.autoZoomOnOpen = checked }
+                    }
+
+                    SettingsToggle {
                         objectName: "setupPreselectAreaToggle"
                         width: parent.width
                         label: qsTr("Choose an area first")

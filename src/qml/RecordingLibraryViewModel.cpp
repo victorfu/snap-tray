@@ -44,7 +44,7 @@ void RecordingLibraryViewModel::refresh()
 {
     m_items = RecordingProjects::list();
     rebuildRows();
-    for (const auto& project : m_items) requestProjectThumbnail(project);
+    for (const auto& project : m_items) if (!project.unreadable) requestProjectThumbnail(project);
 }
 
 QString RecordingLibraryViewModel::totalSizeText() const
@@ -66,6 +66,7 @@ void RecordingLibraryViewModel::setOpenProjectDir(const QString& dir)
 {
     if (m_openProjectDir == dir) return;
     m_openProjectDir = dir;
+    RecordingProjects::setOpenProjectDir(dir);
     rebuildRows();
 }
 
@@ -78,13 +79,14 @@ void RecordingLibraryViewModel::rebuildRows()
         m_totalBytes += bytes;
         QVariantMap row;
         row[QStringLiteral("bytes")] = bytes;
-        row[QStringLiteral("title")] = project.title();
+        row[QStringLiteral("title")] = project.unreadable ? tr("Unreadable project") : project.title();
         const QString details = tr("%1, %2, created %3")
                                     .arg(RecordingRecoveryViewModel::durationText(project.durationMs),
                                          QLocale().formattedDataSize(bytes),
                                          QLocale().toString(project.created, QLocale::ShortFormat));
         const bool open = !m_openProjectDir.isEmpty() && project.dir == m_openProjectDir;
-        row[QStringLiteral("details")] = open ? tr("Open in the preview") : details;
+        row[QStringLiteral("details")] = open ? tr("Open in the preview") : details
+            + (project.recoveredFromBackup ? QStringLiteral(" — ") + tr("Recovered from the previous save") : QString());
         row[QStringLiteral("open")] = open;
         row[QStringLiteral("thumbnail")] = project.thumbnailUrl();
         m_rows.append(row);

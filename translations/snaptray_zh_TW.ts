@@ -1479,6 +1479,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>此錄製可能正在使用或已無法復原。請重新開啟「復原錄製」以重新整理清單。</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>專案復原失敗</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>無法開啟復原副本。請檢查可用磁碟空間及檔案權限。原始專案已保留。</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>已復原錄影</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>已開啟獨立的復原專案。無法讀取原始專案的編輯內容；原始資料夾已保留。</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>
@@ -3353,6 +3369,10 @@ Size: %2</source>
         <location filename="../src/RecordingManager.cpp" line="2737" />
         <source>Key hints could not be saved. The recording will continue without them.</source>
         <translation>無法儲存按鍵提示。錄影將繼續，但不包含按鍵提示。</translation>
+    </message>
+    <message>
+        <source>Screen capture temporarily uses compatibility mode</source>
+        <translation>畫面擷取暫時改用相容模式</translation>
     </message>
 </context>
 <context>
@@ -5422,6 +5442,262 @@ Size: %2</source>
         <source>Press bounce</source>
         <translation>按壓回彈</translation>
     </message>
+    <message>
+        <source>Automatically added %1 zooms</source>
+        <translation>已自動加入 %1 個縮放</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation>復原</translation>
+    </message>
+    <message>
+        <source>Don't add automatically again</source>
+        <translation>不要再自動加入</translation>
+    </message>
+    <message>
+        <source>Dismiss</source>
+        <translation>關閉提示</translation>
+    </message>
+    <message>
+        <source>Arrow</source>
+        <translation>箭頭</translation>
+    </message>
+    <message>
+        <source>Rectangle</source>
+        <translation>矩形</translation>
+    </message>
+    <message>
+        <source>Ellipse</source>
+        <translation>橢圓</translation>
+    </message>
+    <message>
+        <source>Line</source>
+        <translation>線條</translation>
+    </message>
+    <message>
+        <source>Highlight</source>
+        <translation>螢光標記</translation>
+    </message>
+    <message>
+        <source>Step number</source>
+        <translation>步驟編號</translation>
+    </message>
+    <message>
+        <source>Shape</source>
+        <translation>形狀</translation>
+    </message>
+    <message>
+        <source>Audio clip</source>
+        <translation>音訊片段</translation>
+    </message>
+    <message>
+        <source>Preview speed (approximate)</source>
+        <translation>預覽速度（近似）</translation>
+    </message>
+    <message>
+        <source>Preview is limited to 0.25×–2×. Export uses the exact clip speed and preserves pitch.</source>
+        <translation>預覽限於 0.25×–2×。匯出會使用精確的片段速度並保留音高。</translation>
+    </message>
+    <message>
+        <source>Drag on the preview to draw this shape</source>
+        <translation>在預覽上拖曳以繪製此圖形</translation>
+    </message>
+    <message>
+        <source>Add Audio…</source>
+        <translation>加入音訊…</translation>
+    </message>
+    <message>
+        <source>Import music or narration (up to 30 minutes and 512 MB)</source>
+        <translation>匯入音樂或旁白（最長 30 分鐘、最大 512 MB）</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to add audio.</source>
+        <translation>GIF 和 WebP 不含音訊。請選擇 MP4 以加入音訊。</translation>
+    </message>
+    <message>
+        <source>Shapes</source>
+        <translation>圖形</translation>
+    </message>
+    <message>
+        <source>Audio clip %1</source>
+        <translation>音訊片段 %1</translation>
+    </message>
+    <message>
+        <source>How fast this clip plays in the exported file</source>
+        <translation>此片段在匯出檔案中的播放速度</translation>
+    </message>
+    <message>
+        <source>Keep sound</source>
+        <translation>保留聲音</translation>
+    </message>
+    <message>
+        <source>Keep the original pitch when changing this clip's speed</source>
+        <translation>變更此片段速度時保留原始音高</translation>
+    </message>
+    <message>
+        <source>Pointer style</source>
+        <translation>游標樣式</translation>
+    </message>
+    <message>
+        <source>Crisp redraws recognized standard pointers when enlarged; custom pointers keep their recorded image</source>
+        <translation>清晰模式會在放大時重繪辨識到的標準游標；自訂游標保留錄下的影像</translation>
+    </message>
+    <message>
+        <source>Recorded</source>
+        <translation>錄製原貌</translation>
+    </message>
+    <message>
+        <source>Crisp</source>
+        <translation>清晰</translation>
+    </message>
+    <message>
+        <source>Straighten path</source>
+        <translation>拉直路徑</translation>
+    </message>
+    <message>
+        <source>Reduce small bends before smoothing. Clicks and dragging keep their recorded positions.</source>
+        <translation>平滑前減少細微彎曲。點擊和拖曳保留錄製的位置。</translation>
+    </message>
+    <message>
+        <source>Loop back</source>
+        <translation>循環回起點</translation>
+    </message>
+    <message>
+        <source>Loop back is available for GIF and WebP exports</source>
+        <translation>循環回起點適用於 GIF 和 WebP 匯出</translation>
+    </message>
+    <message>
+        <source>Return the pointer and camera to the start. The pointer returns only when both endpoints are visible inside the crop.</source>
+        <translation>將游標與鏡頭返回起點。只有兩端都在裁切範圍內可見時，游標才會返回。</translation>
+    </message>
+    <message>
+        <source>Steady pointer shape</source>
+        <translation>穩定游標形狀</translation>
+    </message>
+    <message>
+        <source>Hide brief shape changes except near a click</source>
+        <translation>隱藏短暫的形狀變化，但點擊附近除外</translation>
+    </message>
+    <message>
+        <source>GIF and WebP do not contain audio. Choose MP4 to edit audio clips.</source>
+        <translation>GIF 和 WebP 不含音訊。請選擇 MP4 以編輯音訊片段。</translation>
+    </message>
+    <message>
+        <source>Volume</source>
+        <translation>音量</translation>
+    </message>
+    <message>
+        <source>Loop audio</source>
+        <translation>循環音訊</translation>
+    </message>
+    <message>
+        <source>Repeat the audio file to fill this clip's range</source>
+        <translation>重複音訊檔案以填滿此片段的範圍</translation>
+    </message>
+    <message>
+        <source>Source offset (ms)</source>
+        <translation>來源偏移（毫秒）</translation>
+    </message>
+    <message>
+        <source>Fade in (ms)</source>
+        <translation>淡入（毫秒）</translation>
+    </message>
+    <message>
+        <source>Fade out (ms)</source>
+        <translation>淡出（毫秒）</translation>
+    </message>
+    <message>
+        <source>Audio start</source>
+        <translation>音訊起點</translation>
+    </message>
+    <message>
+        <source>Audio end</source>
+        <translation>音訊終點</translation>
+    </message>
+    <message>
+        <source>Delete audio clip</source>
+        <translation>刪除音訊片段</translation>
+    </message>
+    <message>
+        <source>Coordinate space</source>
+        <translation>座標空間</translation>
+    </message>
+    <message>
+        <source>Content — follows zoom</source>
+        <translation>內容 — 隨縮放變化</translation>
+    </message>
+    <message>
+        <source>Screen — fixed position</source>
+        <translation>畫面 — 固定位置</translation>
+    </message>
+    <message>
+        <source>Line width</source>
+        <translation>線條寬度</translation>
+    </message>
+    <message>
+        <source>Arrow style</source>
+        <translation>箭頭樣式</translation>
+    </message>
+    <message>
+        <source>Filled arrow</source>
+        <translation>實心箭頭</translation>
+    </message>
+    <message>
+        <source>Outline arrow</source>
+        <translation>外框箭頭</translation>
+    </message>
+    <message>
+        <source>Open arrow</source>
+        <translation>開放式箭頭</translation>
+    </message>
+    <message>
+        <source>Both ends</source>
+        <translation>雙端箭頭</translation>
+    </message>
+    <message>
+        <source>Both ends, outline</source>
+        <translation>雙端外框箭頭</translation>
+    </message>
+    <message>
+        <source>Shape start</source>
+        <translation>圖形起點</translation>
+    </message>
+    <message>
+        <source>Shape end</source>
+        <translation>圖形終點</translation>
+    </message>
+    <message>
+        <source>Delete shape</source>
+        <translation>刪除圖形</translation>
+    </message>
+    <message>
+        <source>Custom width</source>
+        <translation>自訂寬度</translation>
+    </message>
+    <message>
+        <source>Limit the longest edge, or set a custom width. The image is never enlarged.</source>
+        <translation>限制最長邊，或設定自訂寬度。影像不會被放大。</translation>
+    </message>
+    <message>
+        <source>Loop forever</source>
+        <translation>無限循環</translation>
+    </message>
+    <message>
+        <source>Smaller file (slower)</source>
+        <translation>較小檔案（較慢）</translation>
+    </message>
+    <message>
+        <source>These options apply in the editor. Quick mode records directly using the recording size and frame rate.</source>
+        <translation>這些選項適用於編輯器。快速模式會直接使用錄影尺寸和影格率錄製。</translation>
+    </message>
+    <message>
+        <source>Camera motion blur</source>
+        <translation>鏡頭動態模糊</translation>
+    </message>
+    <message>
+        <source>Soften camera movement while keeping pointers and overlays sharp</source>
+        <translation>柔化鏡頭移動，同時保持游標和疊加內容清晰</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreviewBackend</name>
@@ -5621,6 +5897,78 @@ Size: %2</source>
         <location filename="../src/qml/RecordingPreviewBackend.mm" line="2340" />
         <source>Saved to %1, but the recording could not be kept as an editable project. It is still open here: save again, or close it to discard it.</source>
         <translation>已儲存至 %1，但無法將錄影保留為可編輯專案。它仍在此處開啟：請再次儲存，或關閉以捨棄。</translation>
+    </message>
+    <message>
+        <source>The actual file size is shown after export.</source>
+        <translation>匯出後會顯示實際檔案大小。</translation>
+    </message>
+    <message>
+        <source>Exported file: %1</source>
+        <translation>匯出檔案：%1</translation>
+    </message>
+    <message>
+        <source> — Over 25 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 超過 25 MB；可降低尺寸或影格率以利分享。</translation>
+    </message>
+    <message>
+        <source> — Over 10 MB; reduce size or frame rate for sharing.</source>
+        <translation> — 超過 10 MB；可降低尺寸或影格率以利分享。</translation>
+    </message>
+    <message>
+        <source>Preparing audio preview…</source>
+        <translation>正在準備音訊預覽…</translation>
+    </message>
+    <message>
+        <source>The imported audio sidecar is missing or damaged.</source>
+        <translation>匯入的音訊附屬檔案遺失或損毀。</translation>
+    </message>
+    <message>
+        <source>No recorded click data is available.</source>
+        <translation>沒有錄製的點擊資料。</translation>
+    </message>
+    <message>
+        <source>No visible clicks remain inside the crop and kept clips.</source>
+        <translation>裁切範圍和保留片段內沒有可見的點擊。</translation>
+    </message>
+    <message>
+        <source>Zooms added: %1</source>
+        <translation>已加入縮放：%1</translation>
+    </message>
+    <message>
+        <source>All suggested zooms overlap zooms you added or changed.</source>
+        <translation>所有建議的縮放都與您新增或修改的縮放重疊。</translation>
+    </message>
+    <message>
+        <source>The suggested magnification is too small to add a zoom.</source>
+        <translation>建議的倍率太小，無法加入縮放。</translation>
+    </message>
+    <message>
+        <source>Add Audio</source>
+        <translation>加入音訊</translation>
+    </message>
+    <message>
+        <source>Audio files (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;All files (*)</source>
+        <translation>音訊檔案 (*.mp3 *.m4a *.aac *.wav *.flac *.ogg);;所有檔案 (*)</translation>
+    </message>
+    <message>
+        <source>A recording can contain up to 128 audio clips.</source>
+        <translation>一段錄影最多可包含 128 個音訊片段。</translation>
+    </message>
+    <message>
+        <source>Importing audio…</source>
+        <translation>正在匯入音訊…</translation>
+    </message>
+    <message>
+        <source>The audio edits could not be saved for crash recovery.</source>
+        <translation>無法儲存音訊編輯以供當機復原。</translation>
+    </message>
+    <message>
+        <source>Cannot prepare audio preview: %1</source>
+        <translation>無法準備音訊預覽：%1</translation>
+    </message>
+    <message>
+        <source>Cannot import audio: %1</source>
+        <translation>無法匯入音訊：%1</translation>
     </message>
 </context>
 <context>
@@ -6076,6 +6424,14 @@ GIF 錄製不支援音訊。</translation>
         <location filename="../src/qml/settings/RecordingSettings.qml" line="93" />
         <source>How screen recordings start, what they capture, and what happens when you stop.</source>
         <translation>螢幕錄製如何開始、錄製哪些內容，以及停止後會發生什麼。</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms to new recordings</source>
+        <translation>自動為新錄影加入縮放</translation>
+    </message>
+    <message>
+        <source>Zoom in on recorded clicks when the editor opens. You can undo this in one step.</source>
+        <translation>開啟編輯器時放大錄下的點擊。您可以一步復原此操作。</translation>
     </message>
 </context>
 <context>
@@ -6605,6 +6961,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <location filename="../src/qml/dialogs/ScreenPickerDialog.qml" line="166" />
         <source>Only the area is recorded.</source>
         <translation>只錄製該範圍。</translation>
+    </message>
+    <message>
+        <source>Automatically add zooms</source>
+        <translation>自動加入縮放</translation>
     </message>
 </context>
 <context>
@@ -8048,6 +8408,40 @@ It may be in use by another application.</source>
     <message>
         <source>Output: %1 × %2 pixels</source>
         <translation>輸出：%1 × %2 像素</translation>
+    </message>
+</context>
+<context>
+    <name>LibraryModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>無法讀取的專案</translation>
+    </message>
+    <message>
+        <source>Open the recording without edits, show its folder, or delete it.</source>
+        <translation>開啟未套用編輯的錄影、顯示資料夾或刪除。</translation>
+    </message>
+    <message>
+        <source>Show the project folder or delete it.</source>
+        <translation>顯示專案資料夾或刪除。</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>已從上次儲存復原</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingLibraryViewModel</name>
+    <message>
+        <source>Unreadable project</source>
+        <translation>無法讀取的專案</translation>
+    </message>
+    <message>
+        <source>Open in the preview</source>
+        <translation>已在預覽中開啟</translation>
+    </message>
+    <message>
+        <source>Recovered from the previous save</source>
+        <translation>已從上次儲存復原</translation>
     </message>
 </context>
 </TS>

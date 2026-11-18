@@ -160,10 +160,22 @@ bool RecordingSettingsManager::preselectArea() const
     return settings.value(kKeyPreselectArea, kDefaultPreselectArea).toBool();
 }
 
+bool RecordingSettingsManager::autoZoomOnOpen() const
+{
+    auto settings = SnapTray::getSettings();
+    return settings.value(kKeyAutoZoomOnOpen, kDefaultAutoZoomOnOpen).toBool();
+}
+
 void RecordingSettingsManager::setPreselectArea(bool value)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyPreselectArea, value);
+}
+
+void RecordingSettingsManager::setAutoZoomOnOpen(bool value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(kKeyAutoZoomOnOpen, value);
 }
 
 int RecordingSettingsManager::quickSaveAction() const
@@ -226,6 +238,18 @@ void RecordingSettingsManager::setPointerEffects(const QJsonObject& value)
 {
     auto settings = SnapTray::getSettings();
     settings.setValue(kKeyPointerEffects, QJsonDocument(value).toJson(QJsonDocument::Compact));
+}
+
+QJsonObject RecordingSettingsManager::animatedExportOptions(bool webp) const
+{
+    auto settings = SnapTray::getSettings();
+    return QJsonDocument::fromJson(settings.value(webp ? kKeyWebpExportOptions : kKeyGifExportOptions).toByteArray()).object();
+}
+
+void RecordingSettingsManager::setAnimatedExportOptions(bool webp, const QJsonObject& value)
+{
+    auto settings = SnapTray::getSettings();
+    settings.setValue(webp ? kKeyWebpExportOptions : kKeyGifExportOptions, QJsonDocument(value).toJson(QJsonDocument::Compact));
 }
 
 QJsonObject RecordingSettingsManager::mp4ExportOptions() const

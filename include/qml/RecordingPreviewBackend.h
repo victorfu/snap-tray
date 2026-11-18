@@ -3,6 +3,7 @@
 #include "recording/PreviewEditHistory.h"
 #include "recording/CursorEffects.h"
 #include "recording/Mp4ExportOptions.h"
+#include "recording/AnimatedExportOptions.h"
 #include "recording/RecordingProject.h"
 #include "video/Mp4VideoSamples.h"
 #include "video/IVideoTranscoder.h"
@@ -110,6 +111,10 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool showCursor READ showCursor WRITE setShowCursor NOTIFY cursorEffectsChanged)
     Q_PROPERTY(qreal cursorScale READ cursorScale WRITE setCursorScale NOTIFY cursorEffectsChanged)
     Q_PROPERTY(int cursorSmoothing READ cursorSmoothing WRITE setCursorSmoothing NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool loopBack READ loopBack WRITE setLoopBack NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int pointerStyle READ pointerStyle WRITE setPointerStyle NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(bool steadyPointerShape READ steadyPointerShape WRITE setSteadyPointerShape NOTIFY cursorEffectsChanged)
+    Q_PROPERTY(int straightenPointerPath READ straightenPointerPath WRITE setStraightenPointerPath NOTIFY cursorEffectsChanged)
     Q_PROPERTY(int clickStyle READ clickStyle WRITE setClickStyle NOTIFY cursorEffectsChanged)
     Q_PROPERTY(QColor clickColor READ clickColor WRITE setClickColor NOTIFY cursorEffectsChanged)
     Q_PROPERTY(QColor rightClickColor READ rightClickColor WRITE setRightClickColor NOTIFY cursorEffectsChanged)
@@ -126,8 +131,11 @@ class RecordingPreviewBackend : public QObject
 
     // Zoom and pan (#161).
     Q_PROPERTY(bool zoomAvailable READ zoomAvailable NOTIFY zoomChanged)
+    Q_PROPERTY(QString autoZoomResult READ autoZoomResult NOTIFY zoomChanged)
+    Q_PROPERTY(int automaticZoomCount READ automaticZoomCount NOTIFY zoomChanged)
     Q_PROPERTY(bool autoZoomAvailable READ autoZoomAvailable NOTIFY zoomChanged)
     Q_PROPERTY(bool zoomEnabled READ zoomEnabled WRITE setZoomEnabled NOTIFY zoomChanged)
+    Q_PROPERTY(int cameraMotionBlur READ cameraMotionBlur WRITE setCameraMotionBlur NOTIFY zoomChanged)
     Q_PROPERTY(bool zoomReduceMotion READ zoomReduceMotion WRITE setZoomReduceMotion NOTIFY zoomChanged)
     Q_PROPERTY(QVariantList zoomSegments READ zoomSegments NOTIFY zoomChanged)
     Q_PROPERTY(int selectedZoom READ selectedZoom WRITE setSelectedZoom NOTIFY selectedZoomChanged)
@@ -154,6 +162,12 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool microphoneNoiseReduction READ microphoneNoiseReduction WRITE setMicrophoneNoiseReduction
                    NOTIFY audioMixChanged)
 
+    Q_PROPERTY(QVariantList shapes READ shapes NOTIFY shapesChanged)
+    Q_PROPERTY(int selectedShape READ selectedShape WRITE setSelectedShape NOTIFY selectedShapeChanged)
+    Q_PROPERTY(bool audioClipsAvailable READ audioClipsAvailable NOTIFY formatChanged)
+    Q_PROPERTY(QVariantList audioClips READ audioClips NOTIFY audioClipsChanged)
+    Q_PROPERTY(int selectedAudioClip READ selectedAudioClip WRITE setSelectedAudioClip NOTIFY selectedAudioClipChanged)
+    Q_PROPERTY(bool importingAudio READ importingAudio NOTIFY processingChanged)
     // Text and image overlays (#188): [{kind, start, end, text, size, color,
     // background, align, opacity}], enums in OverlaySegment order.
     Q_PROPERTY(bool overlaysAvailable READ overlaysAvailable NOTIFY overlaysChanged)
@@ -209,6 +223,9 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool frameStylesFull READ frameStylesFull NOTIFY frameStylesChanged)
     Q_PROPERTY(int maxFrameStyles READ maxFrameStyles CONSTANT)
 
+    // GIF/WebP export options.
+    Q_PROPERTY(QVariantMap animatedOptions READ animatedOptions NOTIFY animatedOptionsChanged)
+    Q_PROPERTY(QString animatedSizeText READ animatedSizeText NOTIFY animatedOptionsChanged)
     // MP4 export options (#190): enum values in Mp4ExportOptions order.
     Q_PROPERTY(int mp4Resolution READ mp4Resolution WRITE setMp4Resolution NOTIFY mp4OptionsChanged)
     Q_PROPERTY(int mp4CustomWidth READ mp4CustomWidth WRITE setMp4CustomWidth NOTIFY mp4OptionsChanged)
@@ -269,7 +286,7 @@ public:
 
     int selectedFormat() const { return m_selectedFormat; }
 
-    bool isProcessing() const { return m_isProcessing; }
+    bool isProcessing() const { return m_isProcessing || m_importingAudio; }
     bool canCancelExport() const;
     int processProgress() const { return m_processProgress; }
     QString processStatus() const { return m_processStatus; }
@@ -369,6 +386,14 @@ public:
     void setCursorScale(qreal value);
     int cursorSmoothing() const { return int(m_cursorEffects.smoothing); }
     void setCursorSmoothing(int value);
+    bool loopBack() const { return m_cursorEffects.loopBack; }
+    void setLoopBack(bool value);
+    int pointerStyle() const { return int(m_cursorEffects.pointerStyle); }
+    void setPointerStyle(int value);
+    bool steadyPointerShape() const { return m_cursorEffects.steadyShape; }
+    void setSteadyPointerShape(bool value);
+    int straightenPointerPath() const { return int(m_cursorEffects.straighten); }
+    void setStraightenPointerPath(int value);
     int clickStyle() const { return int(m_cursorEffects.clickStyle); }
     void setClickStyle(int value);
     QColor clickColor() const { return m_cursorEffects.clickColor; }
@@ -405,6 +430,8 @@ public:
     bool autoZoomAvailable() const;
     bool zoomEnabled() const { return m_zoom.enabled; }
     void setZoomEnabled(bool value);
+    int cameraMotionBlur() const { return int(m_zoom.motionBlur); }
+    void setCameraMotionBlur(int value);
     bool zoomReduceMotion() const { return m_zoom.reduceMotion; }
     void setZoomReduceMotion(bool value);
     QVariantList zoomSegments() const;
@@ -415,6 +442,11 @@ public:
     // activity; segments the user added or changed are kept. Returns how
     // many were generated (0 without clicks: nothing is invented).
     Q_INVOKABLE int generateAutoZoom();
+    QString autoZoomResult() const { return m_autoZoomResult; }
+    int automaticZoomCount() const { return m_automaticZoomCount; }
+    void autoZoomNewRecording();
+    Q_INVOKABLE void dismissAutomaticZoom(bool disable = false);
+
     // A 2x, two-second zoom at the playhead, centred on the pointer when
     // known; returns its index (or -1).
     Q_INVOKABLE int addZoomAt(qint64 positionMs);
@@ -463,11 +495,11 @@ public:
     // The edits and export choices, for a project.
     QJsonObject currentRecipe() const;
 
-    // Separate tracks (#189), undoable; only for recordings made with them,
-    // and only for MP4 (GIF and WebP are silent) where the export can mix.
+    // Whether this recording owns separate microphone and system tracks.
     bool hasSeparateTracks() const { return m_hasSeparateTracks; }
+    // Undoable separate-track mixing, for MP4 recordings with both tracks.
     bool audioMixAvailable() const;
-    bool audioMixActive() const { return audioMixAvailable() && !m_audioMix.isNeutral(); }
+    bool audioMixActive() const { return (audioMixAvailable() && !m_audioMix.isNeutral()) || !m_audioClips.isEmpty(); }
     SnapTray::AudioMixSettings audioMix() const { return m_audioMix; }
     qreal microphoneGainDb() const { return m_audioMix.microphoneGainDb; }
     void setMicrophoneGainDb(qreal db);
@@ -480,6 +512,26 @@ public:
     bool microphoneNoiseReduction() const { return m_audioMix.microphoneNoiseReduction; }
     void setMicrophoneNoiseReduction(bool value);
 
+    QVariantList shapes() const;
+    const SnapTray::ShapeTrack& shapeTrack() const { return m_shapes; }
+    int selectedShape() const { return m_selectedShape; }
+    void setSelectedShape(int index);
+    Q_INVOKABLE QVariantMap shapePointsInView(int index, const QRectF& picture) const;
+    Q_INVOKABLE int addShapeFromView(int kind, const QPointF& from, const QPointF& to, const QRectF& picture);
+    Q_INVOKABLE void setShapeGeometryFromView(int index, const QPointF& from, const QPointF& to, const QRectF& picture);
+    Q_INVOKABLE void setShapeOption(int index, const QString& key, const QVariant& value);
+    Q_INVOKABLE bool setShapeRange(int index, qint64 start, qint64 end);
+    Q_INVOKABLE void removeShape(int index);
+    bool audioClipsAvailable() const { return m_selectedFormat == MP4 && mp4Capabilities().audioMix; }
+    bool importingAudio() const { return m_importingAudio; }
+    QVariantList audioClips() const;
+    int selectedAudioClip() const { return m_selectedAudioClip; }
+    void setSelectedAudioClip(int index);
+    Q_INVOKABLE void chooseAudioClip();
+    Q_INVOKABLE void addAudioClip(const QUrl& file);
+    Q_INVOKABLE void removeAudioClip(int index);
+    Q_INVOKABLE bool setAudioClipRange(int index, qint64 start, qint64 end);
+    Q_INVOKABLE void setAudioClipOption(int index, const QString& key, const QVariant& value);
     // Text and image overlays (#188), undoable; drawn where masks are.
     bool overlaysAvailable() const { return formatCanDrawEffects(); }
     QVariantList overlays() const;
@@ -552,6 +604,7 @@ public:
     Q_INVOKABLE void amendTimelineEdit();
     Q_INVOKABLE void setPartDeleted(int part, bool deleted);
     Q_INVOKABLE void setPartSpeed(int part, qreal speed);
+    Q_INVOKABLE void setPartKeepSound(int part, bool keep);
     // Playback follows the edit: where to continue from positionMs (itself
     // when shown; the next kept part; -1 to start over), and how fast.
     Q_INVOKABLE qint64 playbackTarget(qint64 positionMs) const;
@@ -615,8 +668,13 @@ public:
     // The masked picture for a blurred background in the preview (small).
     QImage appearancePreviewFrame() const { return m_appearancePreviewFrame; }
 
-    // MP4 export options (#190). Saved as the last choice; not edits, so
-    // undo does not cover them (like the format).
+    // Export options are remembered choices, outside edit undo (like format).
+    // GIF/WebP each keep their own choices.
+    QVariantMap animatedOptions() const;
+    QString animatedSizeText() const;
+    Q_INVOKABLE void setAnimatedOption(const QString& key, const QVariant& value);
+    SnapTray::AnimatedExportOptions selectedAnimatedOptions() const;
+    // MP4 export options (#190).
     int mp4Resolution() const { return int(m_mp4Options.resolution); }
     void setMp4Resolution(int value);
     int mp4CustomWidth() const { return m_mp4Options.customWidth; }
@@ -651,6 +709,11 @@ public:
     // Anything drawn into the export: masks, pointer effects or zoom.
     bool effectsActive() const;
     SnapTray::CursorEffectSettings cursorEffects() const { return m_cursorEffects; }
+    SnapTray::CursorEffectSettings renderedCursorEffects() const {
+        auto settings = m_cursorEffects;
+        if (m_selectedFormat == MP4) settings.loopBack = false;
+        return settings;
+    }
 
     // Called by QML VideoPlaybackItem position/duration updates
     Q_INVOKABLE void updatePosition(qint64 ms);
@@ -664,6 +727,7 @@ signals:
     void cursorEffectsChanged();
     void selectedPointerHideChanged();
     void mp4OptionsChanged();
+    void animatedOptionsChanged();
     void appearanceChanged();
     void frameStylesChanged();
     void frameStyleStateChanged();
@@ -671,6 +735,10 @@ signals:
     void keyOverlayChanged();
     void overlaysChanged();
     void audioMixChanged();
+    void shapesChanged();
+    void selectedShapeChanged();
+    void audioClipsChanged();
+    void selectedAudioClipChanged();
     void projectChanged();
     void selectedOverlayChanged();
     void appearancePreviewFrameChanged();
@@ -783,11 +851,16 @@ private:
     bool m_exportSpaceCheckDeferred = false;
     const VideoFileProbe& sourceProbe() const;
     SnapTray::Mp4ExportOptions m_mp4Options;
+    SnapTray::AnimatedExportOptions m_gifOptions, m_webpOptions;
+    qint64 m_animatedBytes = 0;
     SnapTray::RecordingAppearance m_appearance;
     SnapTray::TimelineEdit m_timeline;
     std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
     SnapTray::KeyOverlaySettings m_keyOverlay;
     SnapTray::OverlayTrack m_overlays;
+    SnapTray::ShapeTrack m_shapes;
+    int m_selectedShape = -1;
+    QPointF shapePointFromView(const QPointF& point, const QRectF& picture, int space) const;
     bool m_hasSeparateTracks = false;
     std::optional<SnapTray::RecordingProject> m_project;
     // After a save: keep this recording (or update the project) as a project.
@@ -806,6 +879,12 @@ private:
     std::function<bool(const QString&, const QString&)> m_copyProjectBackgroundForTests;
     // Background images in `projectDir` the recipe no longer uses.
     static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
+    // Auto Zoom is armed only for a fresh recording.
+    QString m_autoZoomResult;
+    int m_automaticZoomCount = 0;
+    bool m_autoZoomPending = false;
+    bool m_autoZoomAttempted = false;
+    void applyPendingAutoZoom();
     // A project's edits wait for the player's size and length (PR #203 review).
     bool m_projectRecipePending = false;
     QJsonObject m_projectOpenedRecipe; // the reopened project's recipe, as applied
@@ -815,6 +894,13 @@ private:
     void rememberAppearance(const SnapTray::RecordingAppearance& appearance);
     void applyPendingProjectRecipe();
     SnapTray::AudioMixSettings m_audioMix;
+    SnapTray::AudioClipTrack m_audioClips;
+    int m_selectedAudioClip = -1;
+    bool m_importingAudio = false;
+    std::shared_ptr<std::atomic_bool> m_audioImportCancelToken = std::make_shared<std::atomic_bool>(false);
+    void refreshPreviewAudio();
+    bool m_previewAudioCacheFailed = false;
+    void storeAudioClipsForRecovery();
     void editAudioMix(const std::function<void(SnapTray::AudioMixSettings&)>& change);
     // The preview plays the tracks mixed at m_audioMix (shared with the player's thread).
     struct PreviewAudio;

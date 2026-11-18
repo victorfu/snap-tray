@@ -3,6 +3,7 @@
 #include <QElapsedTimer>
 #include <QWindow>
 #include "platform/WindowInput.h"
+#include "platform/WindowLevel.h"
 #include <QTemporaryDir>
 
 #include <functional>
@@ -740,7 +741,11 @@ void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
     settings.setFlags(flags);
     settings.setGeometry(50, 50, 300, 200);
     settings.show();
+    // Qt's floating level remains below some Cocoa desktop/system windows.
+    // Use the same native overlay level for both fixtures, as the app does.
+    raiseWindowAboveMenuBar(&settings);
     settings.raise();
+    settings.requestActivate();
     QVERIFY(QTest::qWaitForWindowExposed(&settings));
     QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));
     // A separate top-level surface stands in for a foreground application;
@@ -749,7 +754,9 @@ void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
     browser.setFlags(flags);
     browser.setGeometry(200, 50, 300, 200);
     browser.show();
+    raiseWindowAboveMenuBar(&browser);
     browser.raise();
+    browser.requestActivate();
     QVERIFY(QTest::qWaitForWindowExposed(&browser));
     // Exposure alone does not establish the input region. Wait for both the
     // covered and uncovered portions together; an empty region must not pass.
@@ -778,6 +785,7 @@ void TestCursorTimelineRecorder::occludedWindowDoesNotExcludeExternalClicks()
     QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));
     browser.setFlag(Qt::WindowTransparentForInput, true);
     browser.show();
+    raiseWindowAboveMenuBar(&browser);
     browser.raise();
     QVERIFY(QTest::qWaitForWindowExposed(&browser));
     QTRY_COMPARE(windowPointerInputRegion(&settings), QRegion(settings.frameGeometry()));

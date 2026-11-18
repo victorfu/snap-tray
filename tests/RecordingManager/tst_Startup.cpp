@@ -24,7 +24,7 @@
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
 namespace {
-struct AudioCaptureTestState { int created = 0; int destroyed = 0; };
+struct AudioCaptureTestState { int created = 0; int destroyed = 0; bool asynchronous = false; };
 class FakeStartupAudio final : public IAudioCaptureEngine
 {
 public:
@@ -37,6 +37,7 @@ public:
     QList<AudioDevice> availableInputDevices() const override { return {{"saved-device", "Test microphone", true}}; }
     QString defaultInputDevice() const override { return "saved-device"; }
     bool start() override { m_running = true; return true; }
+    bool startsAsynchronously() const override { return m_state->asynchronous; }
     void stop() override { m_running = false; }
     void pause() override {}
     void resume() override {}
@@ -89,6 +90,8 @@ private slots:
     void failedFinishSaysWhatWasKept_data();
     void failedFinishSaysWhatWasKept();
     void microphoneLossIsReported();
+    void asynchronousAudioStart_data();
+    void asynchronousAudioStart();
     void recoveredAnimationIsSavedDirectly();
     void recoveredRecordingKeepsItsQuality();
     void saveDialogSessionSurvivesANewRecording();
@@ -1434,3 +1437,60 @@ void TestRecordingStartup::recoveredAnimationIsSavedDirectly()
 
 QTEST_MAIN(TestRecordingStartup)
 #include "tst_Startup.moc"
+
+void TestRecordingStartup::asynchronousAudioStart_data()
+{
+    QTest::addColumn<int>("result");
+    QTest::newRow("success") << 1;
+    QTest::newRow("failure while recording") << 0;
+    QTest::newRow("driver never replies") << -1;
+}
+void TestRecordingStartup::asynchronousAudioStart()
+{
+    QFETCH(int, result);
+    RecordingSettingsManager::instance().setAudioEnabled(true);
+    RecordingSettingsManager::instance().setAudioSource(0);
+    auto encoderState = std::make_shared<AudioEncoderTestState>();
+    encoderState->acceptsFrames = true;
+    auto audioState = std::make_shared<AudioCaptureTestState>();
+    audioState->asynchronous = true;
+    RecordingManager manager;
+    prepare(manager);
+    manager.m_createAudioEngine = [audioState] { return new FakeStartupAudio(audioState); };
+    RecordingInitTask::Config config;
+    config.region = QRect(0, 0, 16, 16);
+    config.screenInfo.geometry = config.region;
+    config.frameSize = QSize(16, 16);
+    config.audioEnabled = true;
+    config.outputPath = "unused-async-audio.mp4";
+    auto task = QSharedPointer<RecordingInitTask>::create(config);
+    task->m_createEncoder = [encoderState](const auto& options, QObject* parent) {
+        return EncoderFactoryTestAccess::create(options, parent, encoderState);
+    };
+    QVERIFY(task->initializeEncoder());
+    task->result().success = true;
+    task->result().captureEngine = std::make_unique<FakeStartupCapture>();
+    task->result().captureEngineStarted = true;
+    manager.m_initTask = task;
+    QSignalSpy warnings(&manager, &RecordingManager::recordingWarning);
+    manager.onInitializationComplete(task, manager.m_initGeneration);
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    QCOMPARE(manager.audioStatus().microphone, SnapTray::AudioSourceState::Starting);
+    QPointer<IAudioCaptureEngine> audio(manager.m_audioEngine.get());
+    if (result >= 0) emit audio->startCompleted(result == 1);
+    if (result == 1) {
+        QCOMPARE(manager.audioStatus().microphone, SnapTray::AudioSourceState::Active);
+        QTest::qWait(1200); // A completed start must cancel its timeout.
+        QCOMPARE(warnings.count(), 0);
+        QVERIFY(manager.m_audioEngine);
+    } else {
+        QTRY_COMPARE_WITH_TIMEOUT(warnings.count(), 1, 1800);
+        QCOMPARE(manager.audioStatus().microphone, SnapTray::AudioSourceState::Unavailable);
+        QVERIFY(!manager.m_audioEnabled);
+        QVERIFY(!manager.m_audioEngine);
+        if (audio) emit audio->startCompleted(true); // Stale completion cannot reactivate it.
+        QCOMPARE(manager.audioStatus().microphone, SnapTray::AudioSourceState::Unavailable);
+    }
+    QCOMPARE(manager.state(), RecordingManager::State::Recording);
+    manager.cancelRecording();
+}

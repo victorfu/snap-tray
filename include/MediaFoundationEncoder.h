@@ -28,6 +28,9 @@ public:
 
     bool start(const QString &outputPath, const QSize &frameSize, int frameRate) override;
     void writeFrame(const QImage &frame, qint64 timestampMs = -1) override;
+    void writeFrameNs(const QImage& frame, qint64 timestampNs) override;
+    bool writeNativeFrameNs(const std::shared_ptr<void>& buffer, qint64 timestampNs) override;
+    void finishAtNs(qint64 endTimestampNs) override;
     void finish() override;
     void abort() override;
 

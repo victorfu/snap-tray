@@ -19,6 +19,7 @@ private slots:
     void splitLimits();
     void playbackSkipsCuts();
     void jsonRoundTrip();
+    void legacySoundAndResetToNormal();
 };
 
 void TestTimelineEdit::emptyEditIsThePlainTrim()
@@ -205,4 +206,27 @@ void TestTimelineEdit::heldFramesStayInsideTheirSourceSegment()
     QVERIFY(!map.sourceIntervalForHoldMicroseconds(1000000, 200000)); // deleted source
     QVERIFY(!map.sourceIntervalForHoldMicroseconds(0, 0));
     QVERIFY(!map.sourceIntervalForHoldMicroseconds(-1, 200000));
+}
+
+void TestTimelineEdit::legacySoundAndResetToNormal()
+{
+    TimelineEdit edit;
+    QVERIFY(edit.splitAt(1000, 3000));
+    QVERIFY(edit.setSpeed(0, 2.0));
+    QVERIFY(edit.parts[0].keepSound); // Newly edited parts preserve sound.
+    QVERIFY(edit.setKeepSound(0, false));
+    QVERIFY(edit.setSpeed(0, 1.0));
+    QVERIFY(edit.parts[0].keepSound);
+    QVERIFY(edit.map(0, 3000).isPlainTrim());
+
+    auto legacy = edit.toJson();
+    QJsonArray parts{QJsonObject{{"speed", 2.0}}, QJsonObject{{"speed", 1.0}}};
+    legacy.insert("parts", parts);
+    const auto restored = TimelineEdit::fromJson(legacy);
+    QVERIFY(!restored.parts[0].keepSound);
+    QVERIFY(restored.parts[1].keepSound);
+    QCOMPARE(TimelineEdit::fromJson(restored.toJson()), restored);
+    parts[0] = QJsonObject{{"speed", 2.0}, {"keepSound", true}};
+    legacy.insert("parts", parts);
+    QVERIFY(TimelineEdit::fromJson(legacy).parts[0].keepSound);
 }

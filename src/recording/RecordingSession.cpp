@@ -163,7 +163,9 @@ DiscardResult discard(const QString& videoPath, const RemoveFile& removeFile)
         videoPath, WindowTimelineSidecar::pathFor(videoPath),
         CursorTimelineSidecar::pathFor(videoPath), KeyTimelineSidecar::pathFor(videoPath),
         AudioTracks::pathFor(videoPath, AudioTracks::Track::Microphone),
-        AudioTracks::pathFor(videoPath, AudioTracks::Track::SystemAudio)};
+        AudioTracks::pathFor(videoPath, AudioTracks::Track::SystemAudio),
+        videoPath + QLatin1String(AudioClipTrack::kSuffix), videoPath + QLatin1String(AudioClipTrack::kMixedSuffix),
+        videoPath + QStringLiteral(".imports.json")};
     const QString manifest = manifestPathFor(videoPath);
     const auto exists = [](const QString& path) {
         const QFileInfo file(path);
