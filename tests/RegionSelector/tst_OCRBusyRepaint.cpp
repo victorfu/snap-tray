@@ -162,6 +162,7 @@ private slots:
     void probeSamplesOnlyPaintedPixels_data();
     void probeSamplesOnlyPaintedPixels();
     void animationRepaintsOnlySpinner();
+    void pinAnimationRepaintsAndErases_data();
     void pinAnimationRepaintsAndErases();
 };
 
@@ -264,8 +265,16 @@ void TestOCRBusyRepaint::animationRepaintsOnlySpinner()
     selector.hide();
 }
 
+void TestOCRBusyRepaint::pinAnimationRepaintsAndErases_data()
+{
+    QTest::addColumn<int>("task");
+    QTest::newRow("ocr") << 0;
+    QTest::newRow("background removal") << 1;   // #363
+}
+
 void TestOCRBusyRepaint::pinAnimationRepaintsAndErases()
 {
+    QFETCH(int, task);
     QPixmap image(500, 350);
     image.fill(Qt::white);
     PinWindow window(image, QPoint(50, 50), nullptr, false, false);
@@ -280,14 +289,15 @@ void TestOCRBusyRepaint::pinAnimationRepaintsAndErases()
     const QImage idle = probe.pixels;
     QVERIFY(!idle.isNull());
     probe.regions.clear();
-    window.m_ocrInProgress = true;
+    bool& busy = task == 0 ? window.m_ocrInProgress : window.m_backgroundRemovalInProgress;
+    busy = true;
     window.updateLoadingSpinnerState();
     stopAnimationClock(spinner);
     QVERIFY(waitForQuiet(probe));
     QVERIFY(probe.pixels != idle);
     verifyAnimationFrames(&window, spinner, probe, bounds);
     probe.regions.clear();
-    window.m_ocrInProgress = false;
+    busy = false;
     window.updateLoadingSpinnerState();
     QVERIFY(waitForQuiet(probe));
     QVERIFY(!probe.regions.isEmpty());

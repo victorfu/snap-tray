@@ -921,6 +921,16 @@ target_link_libraries(PinWindow_StripCutOut PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_StripCutOut COMMAND PinWindow_StripCutOut)
 set_tests_properties(PinWindow_StripCutOut PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_ForegroundCutout PinWindow/tst_ForegroundCutout.cpp)
+target_link_libraries(PinWindow_ForegroundCutout PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ForegroundCutout COMMAND PinWindow_ForegroundCutout)
+set_tests_properties(PinWindow_ForegroundCutout PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_RemoveBackground PinWindow/tst_RemoveBackground.cpp)
+target_link_libraries(PinWindow_RemoveBackground PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME PinWindow_RemoveBackground COMMAND PinWindow_RemoveBackground)
+set_tests_properties(PinWindow_RemoveBackground PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
 target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_CropUndo COMMAND PinWindow_CropUndo)

@@ -2754,6 +2754,51 @@ Dimensione: %2</translation>
         <source>Still exporting the previous image</source>
         <translation>L’immagine precedente è ancora in fase di esportazione</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Rimuovi sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>La rimozione dello sfondo non è supportata su questo sistema</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>L’immagine è troppo grande per rimuoverne lo sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Nessun soggetto da mantenere trovato</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Nessuno sfondo da rimuovere trovato</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Impossibile rimuovere lo sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Interrompi l’aggiornamento dal vivo prima di rimuovere lo sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Al momento non è possibile rimuovere lo sfondo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>L’immagine è cambiata, quindi lo sfondo non è stato rimosso</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

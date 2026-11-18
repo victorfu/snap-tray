@@ -2753,6 +2753,51 @@ Size: %2</source>
         <source>Still exporting the previous image</source>
         <translation>이전 이미지를 아직 내보내는 중입니다</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>배경 제거</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>이 시스템에서는 배경 제거를 지원하지 않습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>이미지가 너무 커서 배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>남길 피사체를 찾을 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>제거할 배경을 찾을 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>배경을 제거하기 전에 실시간 업데이트를 중지하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>지금은 배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>이미지가 변경되어 배경을 제거하지 않았습니다</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

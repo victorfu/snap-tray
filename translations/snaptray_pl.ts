@@ -2755,6 +2755,51 @@ Rozmiar: %2</translation>
         <source>Still exporting the previous image</source>
         <translation>Poprzedni obraz jest nadal eksportowany</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Usuń tło</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Usuwanie tła nie jest obsługiwane w tym systemie</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Obraz jest zbyt duży, aby usunąć tło</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Nie znaleziono obiektu do zachowania</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Nie znaleziono tła do usunięcia</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Nie można usunąć tła</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Zatrzymaj aktualizację na żywo przed usunięciem tła</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Nie można teraz usunąć tła</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Obraz się zmienił, więc tło nie zostało usunięte</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2754,6 +2754,51 @@ Koko: %2</translation>
         <source>Still exporting the previous image</source>
         <translation>Edellistä kuvaa viedään yhä</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Poista tausta</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Taustan poistoa ei tueta tässä järjestelmässä</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Kuva on liian suuri taustan poistamiseen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Säilytettävää kohdetta ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Poistettavaa taustaa ei löytynyt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Taustaa ei voitu poistaa</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Pysäytä live-päivitys ennen taustan poistamista</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Taustaa ei voi poistaa juuri nyt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Kuva muuttui, joten taustaa ei poistettu</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

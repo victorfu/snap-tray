@@ -2604,6 +2604,51 @@ English is always included and cannot be removed.</source>
         <source>Still exporting the previous image</source>
         <translation>ยังคงส่งออกภาพก่อนหน้าอยู่</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>ลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>ระบบนี้ไม่รองรับการลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>รูปภาพใหญ่เกินไปที่จะลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>ไม่พบวัตถุหลักที่จะเก็บไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>ไม่พบพื้นหลังที่จะลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>ไม่สามารถลบพื้นหลังได้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>โปรดหยุดการอัปเดตสดก่อนลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>ไม่สามารถลบพื้นหลังได้ในขณะนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>รูปภาพมีการเปลี่ยนแปลง จึงไม่ได้ลบพื้นหลัง</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

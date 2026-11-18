@@ -2754,6 +2754,51 @@ Größe: %2</translation>
         <source>Still exporting the previous image</source>
         <translation>Das vorherige Bild wird noch exportiert</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Hintergrund entfernen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Hintergrund entfernen wird auf diesem System nicht unterstützt</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Das Bild ist zu groß, um den Hintergrund zu entfernen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Kein Motiv zum Behalten gefunden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Kein Hintergrund zum Entfernen gefunden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Hintergrund konnte nicht entfernt werden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Beenden Sie die Live-Aktualisierung, bevor Sie den Hintergrund entfernen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Der Hintergrund kann gerade nicht entfernt werden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Das Bild wurde geändert, daher wurde der Hintergrund nicht entfernt</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

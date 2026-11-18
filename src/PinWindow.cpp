@@ -28,6 +28,8 @@
 #include "pinwindow/RegionLayoutRenderer.h"
 #include "pinwindow/PinMergeHelper.h"
 #include "pinwindow/PinExportJob.h"
+#include "pinwindow/ForegroundCutoutRunner.h"
+#include "platform/ForegroundSegmentation.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryRecorder.h"
 #include "history/HistoryStore.h"
@@ -665,6 +667,10 @@ PinWindow::~PinWindow()
     if (m_exportRunner) {
         m_exportRunner->finishNow();
     }
+    // A background removal still running is dropped, not waited for (#363).
+    if (m_cutoutRunner) {
+        m_cutoutRunner->cancel();
+    }
 
     // Clean up cursor state before destruction (ensures Drag context is cleared)
     CursorManager::instance().clearAllForWidget(this);
@@ -1193,7 +1199,7 @@ void PinWindow::updateSize(bool liveFrame)
 QPixmap PinWindow::getExportPixmapCore(bool includeDisplayEffects, bool nativeResolution) const
 {
     const QPixmap scaledPixmapSource =
-        buildDisplayPixmap(nativeResolution || m_hasMultiRegionData
+        buildDisplayPixmap(nativeResolution || m_nativeResolutionExport
             ? transformedContentLogicalSize() : size(), Qt::SmoothTransformation);
     QPixmap scaledPixmap = scaledPixmapSource;
 
@@ -1238,7 +1244,7 @@ void PinWindow::drawAnnotationsForExport(QPainter& painter, const QSize& logical
             pixmapRect, m_rotationAngle, m_flipHorizontal, m_flipVertical);
         painter.setTransform(transform, true);
     }
-    if (nativeResolution || m_hasMultiRegionData) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
+    if (nativeResolution || m_nativeResolutionExport) painter.scale(1.0 / m_zoomLevel, 1.0 / m_zoomLevel);
     m_annotationLayer->draw(painter);
     painter.restore();
 }
@@ -1378,6 +1384,12 @@ void PinWindow::createContextMenu()
         showToolbar();
         handleToolbarToolSelected(static_cast<int>(ToolId::Crop));
     });
+
+    if (PlatformFeatures::instance().capabilities().supportsForegroundCutout) {
+        QAction* removeBackgroundAction = imageProcessingMenu->addAction(tr("Remove Background"));
+        removeBackgroundAction->setObjectName(QStringLiteral("pinMenuRemoveBackground"));
+        connect(removeBackgroundAction, &QAction::triggered, this, &PinWindow::removeBackground);
+    }
 
     m_contextMenu->addSeparator();
 
@@ -2004,6 +2016,209 @@ bool PinWindow::ensureAutoBlurReadyForExport()
     return false;
 }
 
+namespace {
+
+using CutoutStatus = SnapTray::ForegroundCutout::Status;
+
+struct CutoutStatusMessage {
+    CutoutStatus status;
+    const char* text;
+};
+
+// Every outcome other than Success and Cancelled leaves the pin unchanged.
+constexpr CutoutStatusMessage kCutoutStatusMessages[] = {
+    {CutoutStatus::Unsupported,
+     QT_TRANSLATE_NOOP("PinWindow", "Remove Background is not supported on this system")},
+    {CutoutStatus::TooLarge,
+     QT_TRANSLATE_NOOP("PinWindow", "The image is too large to remove its background")},
+    {CutoutStatus::NoSubject, QT_TRANSLATE_NOOP("PinWindow", "No subject found to keep")},
+    {CutoutStatus::NothingRemoved,
+     QT_TRANSLATE_NOOP("PinWindow", "No background found to remove")},
+    {CutoutStatus::Failed, QT_TRANSLATE_NOOP("PinWindow", "Unable to remove the background")},
+};
+
+const char* cutoutStatusText(CutoutStatus status)
+{
+    for (const CutoutStatusMessage& message : kCutoutStatusMessages) {
+        if (message.status == status) {
+            return message.text;
+        }
+    }
+    return nullptr;
+}
+
+} // namespace
+
+QString PinWindow::backgroundRemovalBlocker() const
+{
+    if (m_isLiveMode) {
+        return tr("Stop Live Update before removing the background");
+    }
+    // Auto-blur places its redactions asynchronously for the current image,
+    // and replacing the image discards a pass still running. Checked again
+    // when the result arrives: auto-blur may start while the worker runs.
+    if (m_autoBlurInProgress) {
+        return tr("Please wait for auto-blur to finish");
+    }
+    // While an erase, a drag or a new stroke is open the history cannot take
+    // a new step; a mosaic still being drawn holds the old pixels and would
+    // carry them past the removal.
+    if (m_originalPixmap.isNull() || isRegionLayoutMode()
+        || (m_toolManager && m_toolManager->isDrawing())
+        || (m_annotationLayer
+            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive()))) {
+        return tr("The background cannot be removed right now");
+    }
+    return QString();
+}
+
+void PinWindow::removeBackground()
+{
+    if (m_backgroundRemovalInProgress) {
+        return;
+    }
+    if (const QString blocker = backgroundRemovalBlocker(); !blocker.isEmpty()) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, blocker);
+        return;
+    }
+    if (const char* refusal = cutoutStatusText(
+            SnapTray::ForegroundCutout::validateSize(m_originalPixmap.size()))) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr(refusal));
+        return;
+    }
+
+    if (!m_cutoutRunner) {
+        if (!m_foregroundMaskProvider) {
+            m_foregroundMaskProvider = &SnapTray::generateForegroundMask;
+        }
+        m_cutoutRunner = std::make_unique<SnapTray::ForegroundCutoutRunner>(m_foregroundMaskProvider);
+    }
+
+    // The worker gets an immutable snapshot; a result for any other image
+    // (cropped, undone, a live frame) is dropped when it arrives.
+    const qint64 sourceKey = m_originalPixmap.cacheKey();
+    const bool started = m_cutoutRunner->start(m_originalPixmap.toImage(),
+        [this, sourceKey](const SnapTray::ForegroundCutout::Result& result) {
+            onBackgroundRemovalFinished(result, sourceKey);
+        });
+    if (!started) {
+        return;
+    }
+    m_backgroundRemovalInProgress = true;
+    updateLoadingSpinnerState();
+    update();
+}
+
+bool PinWindow::cancelBackgroundRemoval()
+{
+    if (!m_backgroundRemovalInProgress) {
+        return false;
+    }
+    if (m_cutoutRunner) {
+        m_cutoutRunner->cancel();
+    }
+    m_backgroundRemovalInProgress = false;
+    updateLoadingSpinnerState();
+    update();
+    return true;
+}
+
+void PinWindow::onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Result& result,
+                                            qint64 sourceCacheKey)
+{
+    m_backgroundRemovalInProgress = false;
+    updateLoadingSpinnerState();
+    update();
+
+    if (result.status == CutoutStatus::Cancelled) {
+        return;
+    }
+    if (m_originalPixmap.cacheKey() != sourceCacheKey) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+                           tr("The image changed, so its background was not removed"));
+        return;
+    }
+    if (const char* failure = cutoutStatusText(result.status)) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr(failure));
+        return;
+    }
+    if (const QString blocker = backgroundRemovalBlocker(); !blocker.isEmpty()) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, blocker);
+        return;
+    }
+    if (!applyForegroundCutout(result.image)) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Unable to remove the background"));
+    }
+}
+
+bool PinWindow::applyForegroundCutout(const QImage& image)
+{
+    if (image.isNull() || image.size() != m_originalPixmap.size()) {
+        qWarning() << "PinWindow::applyForegroundCutout: result does not match the image."
+                   << "result:" << image.size() << "source:" << m_originalPixmap.size();
+        return false;
+    }
+    QPixmap newPixmap = QPixmap::fromImage(image);
+    if (newPixmap.isNull()) {
+        return false;
+    }
+    newPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+
+    // The undo toolbar is where this step is taken back.
+    if (!m_toolbar) {
+        initializeAnnotationComponents();
+    }
+
+    // Same canvas, same size: an ordinary crop-undo entry that moves nothing.
+    CropUndoEntry entry;
+    entry.pixmap = m_originalPixmap;
+    entry.contentLogicalSize = baseContentLogicalSize();
+    entry.sourceSampleRect = sourceSampleRect();
+    entry.rotationAngle = m_rotationAngle;
+    entry.flipH = m_flipHorizontal;
+    entry.flipV = m_flipVertical;
+    entry.storedRegions = m_storedRegions;
+    entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
+
+    m_originalPixmap = newPixmap;
+    // A merged pin's regions hold copies of the old pixels, background
+    // included, and recomposing overlapping regions cannot reproduce a cut
+    // of the composed image. Drop them, as crop does, so Arrange is gone
+    // until this step is undone; the export keeps its native resolution.
+    m_storedRegions.clear();
+    m_hasMultiRegionData = false;
+
+    entry.croppedPixmap = m_originalPixmap;
+    entry.croppedContentLogicalSize = entry.contentLogicalSize;
+    entry.croppedSourceSampleRect = entry.sourceSampleRect;
+    entry.croppedRotationAngle = m_rotationAngle;
+    entry.croppedFlipH = m_flipHorizontal;
+    entry.croppedFlipV = m_flipVertical;
+    entry.croppedStoredRegions = m_storedRegions;
+    entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
+
+    if (m_annotationLayer) {
+        m_annotationLayer->endModifyCoalescing();
+        entry.annotationHistoryState = m_annotationLayer->historyStateToken();
+    }
+
+    m_cropRedoStack.clear();
+    m_cropUndoStack.append(std::move(entry));
+    if (m_cropUndoStack.size() > kMaxCropUndoSize) {
+        m_cropUndoStack.removeFirst();
+    }
+
+    m_cachedRotation = -1;
+    updateSize();
+    showToolbar();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+    return true;
+}
+
 OCRManager* PinWindow::ensureOCRManager()
 {
     if (!m_ocrManager) {
@@ -2015,14 +2230,19 @@ OCRManager* PinWindow::ensureOCRManager()
     return m_ocrManager;
 }
 
+bool PinWindow::hasSpinnerTask() const
+{
+    return m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress
+        || m_backgroundRemovalInProgress;
+}
+
 void PinWindow::updateLoadingSpinnerState()
 {
     if (!m_loadingSpinner) {
         return;
     }
 
-    const bool hasInFlightTask = m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress;
-    if (hasInFlightTask) {
+    if (hasSpinnerTask()) {
         m_loadingSpinner->start();
     } else {
         m_loadingSpinner->stop();
@@ -2716,8 +2936,8 @@ void PinWindow::paintEvent(QPaintEvent* event)
     // Draw watermark
     WatermarkRenderer::render(painter, pixmapRect, m_watermarkSettings);
 
-    // Draw loading spinner when OCR, QR, or auto-blur is in progress
-    if (m_ocrInProgress || m_qrCodeInProgress || m_autoBlurInProgress) {
+    // Draw loading spinner while OCR, QR, auto-blur or background removal runs
+    if (hasSpinnerTask()) {
         QPoint center = pixmapRect.center();
         m_loadingSpinner->draw(painter, center);
     }
@@ -3640,6 +3860,12 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
     // Escape handling
     if (event->key() == Qt::Key_Escape) {
+        // A background removal still running is cancelled, not the pin closed.
+        if (cancelBackgroundRemoval()) {
+            event->accept();
+            return;
+        }
+
         // Escape during a drag puts the annotation back (#237).
         if (cancelAnnotationGesture()) {
             event->accept();
@@ -4849,6 +5075,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     entry.flipV = m_flipVertical;
     entry.storedRegions = m_storedRegions;
     entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
 
     const int signedLength =
         request.operation == ImageStrip::Operation::Remove ? -request.length : request.length;
@@ -4872,6 +5099,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     // Region layout metadata describes the old pixel grid.
     m_storedRegions.clear();
     m_hasMultiRegionData = false;
+    m_nativeResolutionExport = false;
 
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = baseContentLogicalSize();
@@ -4881,6 +5109,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     entry.croppedFlipV = m_flipVertical;
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
 
     if (m_annotationLayer) {
         m_annotationLayer->endModifyCoalescing();
@@ -5109,6 +5338,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     entry.flipV = m_flipVertical;
     entry.storedRegions = m_storedRegions;
     entry.hasMultiRegionData = m_hasMultiRegionData;
+    entry.nativeResolutionExport = m_nativeResolutionExport;
     entry.annotationOffsetDisplay = annotationOffsetDisplay;
 
     // Apply the cropped pixmap
@@ -5121,6 +5351,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     // metadata no longer matches the image.
     m_storedRegions.clear();
     m_hasMultiRegionData = false;
+    m_nativeResolutionExport = false;
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = baseContentLogicalSize();
     entry.croppedSourceSampleRect = sourceSampleRect();
@@ -5129,6 +5360,7 @@ bool PinWindow::commitCropGeometry(const QRectF& exactPhysicalCropRect,
     entry.croppedFlipV = m_flipVertical;
     entry.croppedStoredRegions = m_storedRegions;
     entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+    entry.croppedNativeResolutionExport = m_nativeResolutionExport;
 
     // Invalidate transform cache
     m_cachedRotation = -1;
@@ -5323,6 +5555,7 @@ void PinWindow::undoCrop()
     m_flipVertical = entry.flipV;
     m_storedRegions = entry.storedRegions;
     m_hasMultiRegionData = entry.hasMultiRegionData;
+    m_nativeResolutionExport = entry.nativeResolutionExport;
 
     if (m_annotationLayer) {
         if (entry.isLayout || entry.isStrip) {
@@ -5363,6 +5596,7 @@ void PinWindow::redoCrop()
     m_flipVertical = entry.croppedFlipV;
     m_storedRegions = entry.croppedStoredRegions;
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
+    m_nativeResolutionExport = entry.croppedNativeResolutionExport;
 
     if (m_annotationLayer) {
         if (entry.isStrip) {
@@ -7263,6 +7497,7 @@ void PinWindow::setMultiRegionData(const QVector<LayoutRegion>& regions)
 {
     m_storedRegions = regions;
     m_hasMultiRegionData = !regions.isEmpty() && regions.size() <= LayoutModeConstants::kMaxRegionCount;
+    m_nativeResolutionExport = m_hasMultiRegionData;
     if (m_hasMultiRegionData) {
         setContentLogicalSize(regionBoundsSize(regions));
         resetSourceSampleRect();
@@ -7392,6 +7627,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         entry.flipV = m_flipVertical;
         entry.storedRegions = m_storedRegions;
         entry.hasMultiRegionData = m_hasMultiRegionData;
+        entry.nativeResolutionExport = m_nativeResolutionExport;
         entry.layoutViewScale = m_zoomLevel;
 
         m_storedRegions = std::move(committedRegions);
@@ -7407,6 +7643,7 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         entry.croppedFlipV = m_flipVertical;
         entry.croppedStoredRegions = m_storedRegions;
         entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+        entry.croppedNativeResolutionExport = m_nativeResolutionExport;
         if (m_annotationLayer) {
             m_annotationLayer->endModifyCoalescing();
             entry.annotationHistoryState = m_annotationLayer->historyStateToken();
