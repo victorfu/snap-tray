@@ -223,9 +223,10 @@ class RecordingPreviewBackend : public QObject
     Q_PROPERTY(bool frameStylesFull READ frameStylesFull NOTIFY frameStylesChanged)
     Q_PROPERTY(int maxFrameStyles READ maxFrameStyles CONSTANT)
 
-    // MP4 export options (#190): enum values in Mp4ExportOptions order.
+    // GIF/WebP export options.
     Q_PROPERTY(QVariantMap animatedOptions READ animatedOptions NOTIFY animatedOptionsChanged)
     Q_PROPERTY(QString animatedSizeText READ animatedSizeText NOTIFY animatedOptionsChanged)
+    // MP4 export options (#190): enum values in Mp4ExportOptions order.
     Q_PROPERTY(int mp4Resolution READ mp4Resolution WRITE setMp4Resolution NOTIFY mp4OptionsChanged)
     Q_PROPERTY(int mp4CustomWidth READ mp4CustomWidth WRITE setMp4CustomWidth NOTIFY mp4OptionsChanged)
     Q_PROPERTY(int mp4FrameRate READ mp4FrameRate WRITE setMp4FrameRate NOTIFY mp4OptionsChanged)
@@ -494,9 +495,9 @@ public:
     // The edits and export choices, for a project.
     QJsonObject currentRecipe() const;
 
-    // Separate tracks (#189), undoable; only for recordings made with them,
-    // and only for MP4 (GIF and WebP are silent) where the export can mix.
+    // Whether this recording owns separate microphone and system tracks.
     bool hasSeparateTracks() const { return m_hasSeparateTracks; }
+    // Undoable separate-track mixing, for MP4 recordings with both tracks.
     bool audioMixAvailable() const;
     bool audioMixActive() const { return (audioMixAvailable() && !m_audioMix.isNeutral()) || !m_audioClips.isEmpty(); }
     SnapTray::AudioMixSettings audioMix() const { return m_audioMix; }
@@ -667,12 +668,13 @@ public:
     // The masked picture for a blurred background in the preview (small).
     QImage appearancePreviewFrame() const { return m_appearancePreviewFrame; }
 
-    // MP4 export options (#190). Saved as the last choice; not edits, so
-    // undo does not cover them (like the format).
+    // Export options are remembered choices, outside edit undo (like format).
+    // GIF/WebP each keep their own choices.
     QVariantMap animatedOptions() const;
     QString animatedSizeText() const;
     Q_INVOKABLE void setAnimatedOption(const QString& key, const QVariant& value);
     SnapTray::AnimatedExportOptions selectedAnimatedOptions() const;
+    // MP4 export options (#190).
     int mp4Resolution() const { return int(m_mp4Options.resolution); }
     void setMp4Resolution(int value);
     int mp4CustomWidth() const { return m_mp4Options.customWidth; }
@@ -877,12 +879,13 @@ private:
     std::function<bool(const QString&, const QString&)> m_copyProjectBackgroundForTests;
     // Background images in `projectDir` the recipe no longer uses.
     static void removeUnusedBackgrounds(const QString& projectDir, const QJsonObject& recipe);
-    // A project's edits wait for the player's size and length (PR #203 review).
+    // Auto Zoom is armed only for a fresh recording.
     QString m_autoZoomResult;
     int m_automaticZoomCount = 0;
     bool m_autoZoomPending = false;
     bool m_autoZoomAttempted = false;
     void applyPendingAutoZoom();
+    // A project's edits wait for the player's size and length (PR #203 review).
     bool m_projectRecipePending = false;
     QJsonObject m_projectOpenedRecipe; // the reopened project's recipe, as applied
     // Applying a project's recipe: its looks are not remembered as defaults.
@@ -894,6 +897,7 @@ private:
     SnapTray::AudioClipTrack m_audioClips;
     int m_selectedAudioClip = -1;
     bool m_importingAudio = false;
+    std::shared_ptr<std::atomic_bool> m_audioImportCancelToken = std::make_shared<std::atomic_bool>(false);
     void refreshPreviewAudio();
     bool m_previewAudioCacheFailed = false;
     void storeAudioClipsForRecovery();

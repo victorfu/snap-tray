@@ -25,6 +25,7 @@ struct TimelineSegment {
     qint64 endMs = 0;   // source time, exclusive
     double speed = 1.0; // 2.0 = twice as fast (half as long in the output)
     bool keepSound = true;
+    bool isSilent() const { return !keepSound && !qFuzzyCompare(speed, 1.0); }
     qint64 lengthMs() const { return endMs - startMs; }
     // Header-only: the platform transcoders use it without linking the core.
     qint64 outputLengthMs() const { return speed > 0.0 ? qint64(std::llround(double(lengthMs()) / speed)) : lengthMs(); }

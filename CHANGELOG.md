@@ -19,7 +19,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 ### Improved
 
 - Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
-- GIF and WebP have independent size, frame-rate, quality and looping options, repeated-frame optimization and actual file-size reporting.
+- GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.
 - Windows recording defaults to WGC, preserves precise frame times and avoids repeatedly encoding still desktops. DXGI can recover from temporary capture loss; WASAPI starts asynchronously and reports audio gaps and timestamp repairs.
 
 - Auto Zoom respects cuts and playback speed, holds text-field and typing interactions longer, and can run once when a new recording opens (off by default).

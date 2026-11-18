@@ -1427,6 +1427,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>การบันทึกอาจกำลังใช้งานอยู่หรือกู้คืนไม่ได้แล้ว เปิด «กู้คืนการบันทึก» อีกครั้งเพื่อรีเฟรชรายการ</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>กู้คืนโปรเจกต์ไม่สำเร็จ</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>ไม่สามารถเปิดสำเนาสำหรับกู้คืนได้ โปรดตรวจสอบพื้นที่ว่างในดิสก์และสิทธิ์ของไฟล์ โปรเจกต์ต้นฉบับยังคงอยู่</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>กู้คืนการบันทึกแล้ว</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>เปิดโปรเจกต์กู้คืนแยกต่างหากแล้ว ไม่สามารถอ่านการแก้ไขของโปรเจกต์ต้นฉบับได้ โฟลเดอร์ต้นฉบับยังคงอยู่</translation>
+    </message>
 </context>
 <context>
     <name>MultiRegionListPanel</name>

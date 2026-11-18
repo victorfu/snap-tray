@@ -459,9 +459,14 @@ void WGCCaptureEngine::Private::repeatLoop(quint64 generationAtStart)
 
 void WGCCaptureEngine::Private::emitFrame(const SnapTray::CapturedFrame &frame, quint64 generationAtStart)
 {
-    std::lock_guard<std::mutex> lock(emitMutex);
-    emitFrameLocked(frame, generationAtStart);
-    ++pictureSerial;
+    {
+        std::lock_guard<std::mutex> lock(emitMutex);
+        emitFrameLocked(frame, generationAtStart);
+        ++pictureSerial;
+    }
+    // Match the waiter's mutex after releasing emitMutex: this closes the
+    // predicate-to-wait gap without reversing repeatLoop's lock order.
+    std::lock_guard<std::mutex> wakeLock(repeaterMutex);
     repeaterWake.notify_all();
 }
 

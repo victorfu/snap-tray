@@ -111,15 +111,15 @@ struct AutoZoomOptions {
     std::vector<qint64> keyTimes; // source times only, no key contents
 };
 
-// Zoom segments from clicks and drags in the pointer timeline: nearby
-// interactions are grouped into following segments, and short gaps merged
-// so the view does not pump in and out. Hidden or off-frame activity
-// is ignored. Empty without clicks.
 struct AutoZoomResult {
     enum class Reason { Added, NoClickData, NoVisibleInteractions, NoFreeSlots, InsufficientScale };
     std::vector<ZoomSegment> segments;
     Reason reason = Reason::NoVisibleInteractions;
 };
+// Zoom segments from clicks and drags in the pointer timeline: nearby
+// interactions are grouped into following segments, and short gaps merged
+// so the view does not pump in and out. Hidden or off-frame activity
+// is ignored. Empty without clicks.
 AutoZoomResult generateAutoZoomResult(const CursorTimeline& timeline, const AutoZoomOptions& options);
 
 std::vector<ZoomSegment> generateAutoZoom(const CursorTimeline& timeline, const AutoZoomOptions& options);

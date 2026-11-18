@@ -61,6 +61,7 @@ void TestShapeTrack::contentTracksZoomAndScreenStaysFixed()
     auto first = original, zoomed = original;
     const auto filter = recordingFrameFilter(state, QSize(200, 120), map);
     filter(first, 0, 100); filter(zoomed, 1500, 1600);
+    QVERIFY(first != original);
     QCOMPARE(first, zoomed);
 }
 void TestShapeTrack::masksNeverLeakAndBlurIncludesShapes()

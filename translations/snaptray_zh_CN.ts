@@ -1479,6 +1479,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>此录制可能正在使用或已无法恢复。请重新打开“恢复录制”以刷新列表。</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>项目恢复失败</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>无法打开恢复副本。请检查可用磁盘空间和文件权限。原始项目已保留。</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>已恢复录制</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>已打开独立的恢复项目。无法读取原始项目的编辑内容；原始文件夹已保留。</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

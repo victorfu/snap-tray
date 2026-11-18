@@ -105,7 +105,7 @@ The timeline can do more than trim the ends. In the preview:
 
 The preview plays the edit: cut parts are skipped and each part plays at its own speed. The time under the video shows the exported length. Cuts and speeds can be undone like other edits, and **Reset Crop and Trim** removes them.
 
-The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio stays in sync at every seam. **Keep sound** is on by default and preserves pitch at 0.5×, 1×, 1.5×, 2× and 4×. Turn it off to silence a sped-up or slowed-down part. The shared audio processor mixes recorded and imported tracks before changing speed. Preview playback supports 0.25×–2×; combinations outside that range are labeled **approximate**, while export uses the exact clip speed. Cutting only the first or last part works like a trim. Cuts and speed changes are available for MP4, GIF and WebP on all supported recording platforms.
+The export joins the kept parts in order. Pointer smoothing, motion blur and click highlights never reach across a cut, so a click in a cut part never shows. Audio stays in sync at every seam. **Keep sound** is on by default for new parts and preserves pitch at 0.5×, 1×, 1.5×, 2× and 4×. Turn it off to silence a sped-up or slowed-down part. Older projects without this setting retain their original silence on speed-edited parts. Returning a part to 1× restores normal sound. The shared audio processor mixes recorded and imported tracks before changing speed. Preview playback supports 0.25×–2×; combinations outside that range are labeled **approximate**, while export uses the exact clip speed. Cutting only the first or last part works like a trim. Cuts and speed changes are available for MP4, GIF and WebP on all supported recording platforms.
 
 ## Disk space
 
@@ -165,7 +165,7 @@ Your last choices are remembered (hidden ranges belong to one recording and are 
 
 **Steady pointer shape** hides shape changes shorter than 250 ms, except near a click. **Straighten path** (Off, Low, High) reduces small bends before smoothing; it requires smoothing and preserves clicks, shape boundaries and dragging. Both options are off by default and restart at each kept clip.
 
-For GIF and WebP, **Loop back** returns the camera and pointer toward the first frame during the final 700 ms, then holds for 120 ms. It stays within the last kept clip, so a short clip may use a shorter return. The pointer returns only if both ends are visible inside the crop; hidden ranges and **Still ending** take precedence. This setting does not affect MP4.
+For GIF and WebP, **Loop back** returns the camera and pointer toward the first frame during the final 700 ms, including a final 120 ms hold. It stays within the last kept clip, so a short clip may use a shorter return. The pointer returns only if both ends are visible inside the crop; hidden ranges prevent a return; **Still ending** freezes the departure position before the loop return. This setting does not affect MP4.
 
 ### Shortcut hints
 
@@ -249,7 +249,7 @@ Normally the recording is deleted once its file is saved. Turn on **Keep editabl
 
 A project holds the **full screen recording**, including anything you blurred, masked or cropped out, plus its pointer, keys and separate audio tracks, so it uses disk space and contains what the saved file leaves out. It stays on this computer in SnapTray's app data folder and is never uploaded. **Delete Project...** in the Library asks first, then removes a project (the file you saved from it stays). The Recordings section repeats that projects keep the full recording, and how long unchanged ones are kept, and **Delete projects not changed for** removes old ones automatically after 7, 30 or 90 days. Projects are separate from recordings waiting for recovery; neither one ever removes the other's files.
 
-Projects retain one previous valid manifest as `manifest.prev.json`. If the current manifest is missing or corrupt, the Library opens the previous saved edits and labels the recovery. Read-permission or other I/O failures do not trigger a fallback. If both copies are unusable, the folder remains visible with its size and date; you can show or delete it, or open its available recording as a separate project without edits. Automatic cleanup includes unreadable projects and protects the currently open project.
+Projects retain one previous valid manifest as `manifest.prev.json`. If the current manifest is missing or corrupt, the Library opens the previous saved edits and labels the recovery. Read-permission or other I/O failures do not trigger a fallback. If both copies are unusable, the folder remains visible with its size and date; you can show or delete it, or open its available recording as a separate project without edits. Automatic cleanup skips every unreadable project and the currently open project. Unreadable projects can only be deleted manually. Manifests from newer versions are left untouched, without falling back to an older backup. Opening a raw recording again reuses its separate recovery project.
 
 The backup includes embedded overlay images, so that portion of a project's storage can double. The previous recipe's background image is also kept until it is no longer needed by either manifest.
 
@@ -288,9 +288,9 @@ The estimate is the target bitrate over the exported length, so the real file is
 
 ### GIF and WebP export options
 
-GIF and WebP remember their own **Size**, **Frame rate**, **Quality** and **Loop forever** settings. Keep the original dimensions, limit the longest edge to 1280/960/640/480 pixels, or enter a custom width; exports never enlarge the picture. Frame rate can follow the source or use 30/20/15/10 fps. **Smaller file (slower)** enables repeated-frame optimization. GIF holds are bounded to five seconds per encoded frame, preserving the overall duration.
+GIF and WebP remember their own **Size**, **Frame rate**, **Quality** and **Loop forever** settings. Keep the original dimensions, limit the longest edge to 1280/960/640/480 pixels, or enter a custom width; exports never enlarge the picture. Frame rate can follow the source or use 30/20/15/10 fps. **Smaller file (slower)** enables additional WebP compression. GIF always coalesces repeated frames; its holds are bounded to five seconds per encoded frame, preserving the overall duration.
 
-The actual file size is shown after export, with sharing advice above 10 MB for GIF and 25 MB for WebP. These controls apply to the editor. Quick mode continues to record directly at the configured recording dimensions, frame rate and quality. Both formats are silent.
+The actual file size is shown after export, with sharing advice above 10 MB and a stronger warning above 25 MB for either format. These controls apply to the editor. Quick mode continues to record directly at the configured recording dimensions, frame rate and quality. Both formats are silent.
 
 ## Audio options
 

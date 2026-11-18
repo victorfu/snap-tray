@@ -1,5 +1,6 @@
 #include "recording/ShapeTrack.h"
 #include <QJsonArray>
+#include <QDebug>
 #include <QPainter>
 
 namespace SnapTray {
@@ -61,8 +62,9 @@ ShapeTrack ShapeTrack::fromJson(const QJsonObject& json)
 {
     ShapeTrack result;
     constexpr qint64 maxTime = 24LL * 60 * 60 * 1000;
-    for (const auto& value : json.value("shapes").toArray()) {
-        if (result.segments.size() >= 256) break;
+    const auto entries = json.value("shapes").toArray();
+    for (const auto& value : entries) {
+        if (result.segments.size() >= kMaxSegments) break;
         const auto j = value.toObject();
         const auto shape = ShapeParameters::fromJson(j);
         if (!shape) continue;
@@ -73,9 +75,11 @@ ShapeTrack ShapeTrack::fromJson(const QJsonObject& json)
         s.startMs = j.value("startMs").toInteger(); s.endMs = j.value("endMs").toInteger(-1);
         s.fadeInMs = j.value("fadeInMs").toInteger(150); s.fadeOutMs = j.value("fadeOutMs").toInteger(150);
         if (s.startMs < 0 || s.startMs > maxTime || (s.endMs != -1 && s.endMs <= s.startMs)
-            || s.endMs > maxTime || s.fadeInMs < 0 || s.fadeInMs > 10000 || s.fadeOutMs < 0 || s.fadeOutMs > 10000) continue;
+            || s.endMs > maxTime || s.fadeInMs < 0 || s.fadeInMs > kMaxFadeMs || s.fadeOutMs < 0 || s.fadeOutMs > kMaxFadeMs) continue;
         result.segments.push_back(s);
     }
+    const auto dropped = entries.size() - qsizetype(result.segments.size());
+    if (dropped) qWarning() << "ShapeTrack: ignored" << dropped << "invalid or excess shapes";
     return result;
 }
 }

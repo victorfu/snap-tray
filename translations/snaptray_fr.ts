@@ -1480,6 +1480,22 @@ Taille du fichier : %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>L’enregistrement est peut-être utilisé ou n’est plus récupérable. Rouvrez « Récupérer les enregistrements » pour actualiser la liste.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Échec de la récupération du projet</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Impossible d’ouvrir la copie de récupération. Vérifiez l’espace disque disponible et les autorisations des fichiers. Le projet d’origine est conservé.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Enregistrement récupéré</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Le projet de récupération distinct a été ouvert. Les modifications du projet d’origine sont illisibles ; le dossier d’origine est conservé.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

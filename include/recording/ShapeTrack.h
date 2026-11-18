@@ -14,6 +14,8 @@ struct ShapeSegment {
     double opacityAt(qint64 sourceMs) const;
 };
 struct ShapeTrack {
+    static constexpr size_t kMaxSegments = 256;
+    static constexpr qint64 kMaxFadeMs = 10000;
     std::vector<ShapeSegment> segments;
     bool isEmpty() const { return segments.empty(); }
     bool operator==(const ShapeTrack& o) const { return segments == o.segments; }

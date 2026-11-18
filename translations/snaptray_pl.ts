@@ -1481,6 +1481,22 @@ Rozmiar pliku: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Nagranie może być używane lub nie można go już odzyskać. Otwórz ponownie „Odzyskaj nagrania”, aby odświeżyć listę.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Nie udało się odzyskać projektu</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Nie można otworzyć kopii odzyskiwania. Sprawdź wolne miejsce na dysku i uprawnienia plików. Oryginalny projekt został zachowany.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Odzyskano nagranie</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Otwarto osobny odzyskany projekt. Nie można odczytać zmian oryginalnego projektu; oryginalny folder został zachowany.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

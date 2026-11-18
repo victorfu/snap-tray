@@ -1481,6 +1481,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Снимак се можда користи или се више не може опоравити. Поново отворите „Опорави снимке“ да освежите листу.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Опоравак пројекта није успео</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Није могуће отворити копију за опоравак. Проверите слободан простор на диску и дозволе датотека. Оригинални пројекат је сачуван.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Снимак је опорављен</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Отворен је засебан пројекат за опоравак. Измене оригиналног пројекта није могуће прочитати; оригинална фасцикла је сачувана.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

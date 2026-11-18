@@ -3875,6 +3875,17 @@ void tst_RecordingPreviewExport::importedAudioSurvivesSourceRemovalAndProjectReo
              qPrintable(QString::number(imported.assetFrames)));
     QVERIFY(imported.durationMs() >= 1000 && imported.durationMs() <= 1001);
     QCOMPARE(imported.endMs, qMin(backend.duration(), imported.durationMs()));
+    // A decoder/sink cancellation after writing some PCM must roll back the
+    // append, preserving every asset that existing edits reference.
+    QFile archive(source + QLatin1String(SnapTray::AudioClipTrack::kSuffix));
+    QVERIFY(archive.open(QIODevice::ReadOnly));
+    const auto beforeImport = archive.readAll(); archive.close();
+    int cancellationChecks = 0;
+    QString importError;
+    QVERIFY(!SnapTray::importAudioClip(wav, source, importError, [&] { return ++cancellationChecks >= 3; }));
+    QVERIFY(cancellationChecks >= 3);
+    QVERIFY(archive.open(QIODevice::ReadOnly));
+    QCOMPARE(archive.readAll(), beforeImport); archive.close();
     QVERIFY(QFile::remove(wav));
     QVERIFY(QFileInfo::exists(source + QLatin1String(SnapTray::AudioClipTrack::kMixedSuffix)));
     backend.undo(); QVERIFY(backend.audioClips().isEmpty());
@@ -3923,6 +3934,26 @@ void tst_RecordingPreviewExport::importedAudioSurvivesSourceRemovalAndProjectReo
     backend.undo(); QCOMPARE(backend.audioClips().size(), 1);
     RecordingPreviewBackend recovered(source);
     QCOMPARE(recovered.audioClips().size(), 1);
+    // Reopening a missing or truncated import archive keeps the recipe and
+    // reports the unavailable asset instead of silently dropping the clip.
+    const QString archivePath = project->videoPath() + QLatin1String(SnapTray::AudioClipTrack::kSuffix);
+    for (const bool missing : {false, true}) {
+        if (missing) QVERIFY(QFile::remove(archivePath));
+        else { QFile damaged(archivePath); QVERIFY(damaged.open(QIODevice::ReadWrite)); QVERIFY(damaged.resize(20)); }
+        RecordingPreviewBackend broken(project->videoPath());
+        broken.updateVideoSize(kFrameSize);
+        broken.updateDuration(backend.duration());
+        broken.setProject(*project);
+        broken.show();
+        QTRY_VERIFY(!broken.projectLoading());
+        QCOMPARE(broken.audioClips().size(), 1);
+        QTRY_VERIFY(broken.errorMessage().contains("missing or damaged"));
+        SnapTray::AudioTrackMixer unavailable(project->videoPath(), {});
+        QVERIFY(!unavailable.setClips(edit->audioClips));
+        const auto stillSaved = SnapTray::RecordingProjects::load(project->dir);
+        QVERIFY(stillSaved);
+        QCOMPARE(stillSaved->recipe, project->recipe);
+    }
     QVERIFY(SnapTray::RecordingProjects::remove(*project));
 }
 

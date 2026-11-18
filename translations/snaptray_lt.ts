@@ -1481,6 +1481,22 @@ Failo dydis: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Įrašas gali būti naudojamas arba jo nebegalima atkurti. Iš naujo atidarykite „Atkurti įrašus“, kad atnaujintumėte sąrašą.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projekto atkurti nepavyko</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Nepavyko atverti atkūrimo kopijos. Patikrinkite laisvą vietą diske ir failų leidimus. Pradinis projektas išsaugotas.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Įrašas atkurtas</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Atvertas atskiras atkūrimo projektas. Nepavyko perskaityti pradinio projekto pakeitimų; pradinis aplankas išsaugotas.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

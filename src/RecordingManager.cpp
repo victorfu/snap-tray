@@ -82,6 +82,7 @@ constexpr int kDefaultAudioBitsPerSample = 16;
 constexpr int kOverlayRenderDelay = 100;  // ms, delay before capture to allow overlay render
 constexpr int kDurationUpdate = 100;      // ms, recording duration UI update interval
 constexpr int kDiskCheckIntervalMs = 2000;
+constexpr int kAudioStartTimeoutMs = 1000;
 constexpr int kMicrophoneSource = 0;
 constexpr int kSystemAudioSource = 1;
 constexpr int kBothAudioSources = 2;
@@ -283,6 +284,13 @@ RecordingManager::RecordingManager(QObject *parent)
         return SnapTray::currentPlatformCapabilities().recordingDirectMp4Only;
     };
 
+    m_audioStartTimer.setSingleShot(true);
+    m_audioStartTimer.setInterval(kAudioStartTimeoutMs);
+    connect(&m_audioStartTimer, &QTimer::timeout, this, [this] {
+        if (!m_audioStartPending) return;
+        qWarning() << "RecordingManager: audio startup timed out";
+        finishAudioStart(false);
+    });
     cleanupStaleTempFiles();
 }
 
@@ -1205,14 +1213,7 @@ void RecordingManager::configureAudioCapture()
             connect(m_audioEngine.get(), &IAudioCaptureEngine::startCompleted, this,
                 [this, configuredEngine](bool success) {
                     if (!configuredEngine || m_audioEngine.get() != configuredEngine.data()) return;
-                    if (success) transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
-                    else {
-                        transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Unavailable);
-                        reportAudioWarning(tr("Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device."));
-                        m_audioEnabled = false;
-                        cleanupAudio();
-                        if (m_controlBar) m_controlBar->setAudioEnabled(false);
-                    }
+                    finishAudioStart(success);
                 });
             // Connect status signals before configuration because some engines
             // can report a source fallback synchronously from setAudioSource().
@@ -1447,8 +1448,10 @@ void RecordingManager::startRecordingAfterCountdown()
     // Start audio capture here to synchronize with video timer
     if (m_audioEngine) {
         startAudioTracks();
+        m_audioStartPending = m_audioEngine->startsAsynchronously();
+        if (m_audioStartPending) m_audioStartTimer.start();
         if (m_audioEngine->start()) {
-            if (!m_audioEngine->startsAsynchronously())
+            if (m_audioEngine && !m_audioEngine->startsAsynchronously())
                 transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
         } else {
             qWarning() << "RecordingManager: Failed to start audio capture";
@@ -2310,9 +2313,30 @@ void RecordingManager::cleanupRecording()
 
 }
 
+void RecordingManager::finishAudioStart(bool success)
+{
+    if (!m_audioStartPending) return;
+    m_audioStartPending = false;
+    m_audioStartTimer.stop();
+    if (success) {
+        transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Active);
+        return;
+    }
+    qWarning() << "RecordingManager: asynchronous audio startup failed";
+    transitionAudioSources(SnapTray::AudioSourceState::Starting, SnapTray::AudioSourceState::Unavailable);
+    reportAudioWarning(tr("Audio is unavailable. This recording will be silent. Check system permissions and the selected audio device."));
+    m_audioEnabled = false;
+    // The engine's deferred disposal retains a blocked driver thread until it
+    // exits; never call its synchronous stop() from the startup timeout.
+    cleanupAudio();
+    if (m_controlBar) m_controlBar->setAudioEnabled(false);
+}
+
 void RecordingManager::cleanupAudio()
 {
-    // Custom deleter handles disconnect + stop() + deleteLater()
+    m_audioStartTimer.stop();
+    m_audioStartPending = false;
+    // The custom deleter drains callbacks and retains blocked driver threads.
     m_audioEngine.reset();
 }
 

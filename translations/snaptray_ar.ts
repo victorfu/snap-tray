@@ -1484,6 +1484,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>قد يكون التسجيل قيد الاستخدام أو لم يعد قابلاً للاستعادة. أعد فتح «استعادة التسجيلات» لتحديث القائمة.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>فشل استرداد المشروع</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>تعذر فتح نسخة الاسترداد. تحقق من مساحة القرص المتاحة وأذونات الملفات. تم الاحتفاظ بالمشروع الأصلي.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>تم استرداد التسجيل</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>تم فتح مشروع استرداد منفصل. تعذرت قراءة تعديلات المشروع الأصلي؛ تم الاحتفاظ بالمجلد الأصلي.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

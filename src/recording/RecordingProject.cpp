@@ -123,10 +123,11 @@ void retryIncompleteProjects(const QDir& projects)
 bool validManifest(const QJsonObject& object)
 {
     return object.value(QStringLiteral("type")).toString() == QLatin1String(kManifestType)
-        && object.value(QStringLiteral("version")).toInt(-1) == kManifestVersion;
+        && object.value(QStringLiteral("version")).toInt(-1) == kManifestVersion
+        && object.value(QStringLiteral("recipe")).isObject();
 }
 
-enum class ManifestRead { Valid, Missing, Corrupt, IoError };
+enum class ManifestRead { Valid, Missing, Corrupt, IoError, UnsupportedVersion };
 ManifestRead readManifest(const QString& path, QJsonObject& object)
 {
     QFile file(path);
@@ -136,6 +137,10 @@ ManifestRead readManifest(const QString& path, QJsonObject& object)
     if (file.error() != QFileDevice::NoError) return ManifestRead::IoError;
     QJsonParseError error;
     object = QJsonDocument::fromJson(bytes, &error).object();
+    if (error.error == QJsonParseError::NoError
+        && object.value(QStringLiteral("type")).toString() == QLatin1String(kManifestType)
+        && object.value(QStringLiteral("version")).toDouble(-1) > kManifestVersion)
+        return ManifestRead::UnsupportedVersion;
     return error.error == QJsonParseError::NoError && validManifest(object)
         ? ManifestRead::Valid : ManifestRead::Corrupt;
 }
@@ -153,7 +158,7 @@ bool writeJson(const QString& path, const QJsonObject& object)
     if (std::exchange(failNextManifestWrite(), false)) return false;
     QJsonObject previous;
     const auto status = readManifest(path, previous);
-    if (status == ManifestRead::IoError) return false;
+    if (status == ManifestRead::IoError || status == ManifestRead::UnsupportedVersion) return false;
     if (status == ManifestRead::Valid
         && !commitJson(QFileInfo(path).dir().filePath(QLatin1String(kPreviousManifestName)), previous)) return false;
     // A corrupt primary must never replace the last valid backup.
@@ -169,6 +174,7 @@ QJsonObject manifestOf(const RecordingProject& p)
             {QStringLiteral("modified"), p.modified.toString(Qt::ISODateWithMs)},
             {QStringLiteral("durationMs"), double(p.durationMs)},
             {QStringLiteral("savedPath"), p.savedPath},
+            {QStringLiteral("recoveredFromProjectId"), p.recoveredFromProjectId},
             {QStringLiteral("recipe"), p.recipe},
             {QStringLiteral("thumbnailGeneration"), p.thumbnailGeneration}};
 }
@@ -351,7 +357,7 @@ QStringList sidecarSuffixes()
 
 std::optional<RecordingProject> create(const QString& videoPath, bool copy, const QJsonObject& recipe,
                                        const QImage& thumbnail, qint64 durationMs, const QString& savedPath,
-                                       const RecipePreparer& prepareRecipe)
+                                       const RecipePreparer& prepareRecipe, const QString& recoveredFromProjectId)
 {
     if (!QFileInfo::exists(videoPath)) return std::nullopt;
     QDir projects(root());
@@ -378,6 +384,7 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     project.durationMs = durationMs;
     project.savedPath = savedPath;
     project.recipe = recipe;
+    project.recoveredFromProjectId = recoveredFromProjectId;
     project.thumbnailGeneration = QUuid::createUuid().toString(QUuid::WithoutBraces);
     // No source is removed before the complete recipe and all assets have
     // committed. A failed save can retry using exactly the same source paths,
@@ -440,6 +447,16 @@ std::optional<RecordingProject> create(const QString& videoPath, bool copy, cons
     return project;
 }
 
+std::optional<RecordingProject> recoverSource(const RecordingProject& damaged, qint64 durationMs)
+{
+    if (!damaged.unreadable || !damaged.sourceRecoverable || !contains(damaged.dir)) return std::nullopt;
+    const QString sourceId = QFileInfo(damaged.dir).fileName();
+    for (const auto& project : list()) {
+        if (!project.unreadable && project.recoveredFromProjectId == sourceId) return project;
+    }
+    return create(damaged.videoPath(), true, RecordingRecipe::toJson({}, {}), {}, durationMs, {}, {}, sourceId);
+}
+
 std::optional<RecordingProject> load(const QString& dir)
 {
     currentThumbnails().remove(dir);
@@ -448,6 +465,10 @@ std::optional<RecordingProject> load(const QString& dir)
         : readManifest(QDir(dir).filePath(QLatin1String(kManifestName)), m);
     if (status == ManifestRead::IoError) {
         qWarning() << "RecordingProjects: cannot read project.json";
+        return std::nullopt;
+    }
+    if (status == ManifestRead::UnsupportedVersion) {
+        qWarning() << "RecordingProjects: unsupported manifest version; leaving the project untouched";
         return std::nullopt;
     }
     const bool recovered = status != ManifestRead::Valid;
@@ -468,6 +489,7 @@ std::optional<RecordingProject> load(const QString& dir)
     if (!p.modified.isValid()) p.modified = p.created;
     p.durationMs = qint64(m.value(QStringLiteral("durationMs")).toDouble(0));
     p.savedPath = m.value(QStringLiteral("savedPath")).toString();
+    p.recoveredFromProjectId = m.value(QStringLiteral("recoveredFromProjectId")).toString();
     p.thumbnailGeneration = m.value(QStringLiteral("thumbnailGeneration")).toString();
     p.recipe = RecordingRecipe::migrate(m.value(QStringLiteral("recipe")).toObject());
     if (p.videoName.isEmpty() || !QFileInfo::exists(p.videoPath())) return std::nullopt;
@@ -521,7 +543,8 @@ QList<RecordingProject> list()
             const auto primary = readManifest(folder.filePath(QLatin1String(kManifestName)), ignored);
             const auto backup = readManifest(folder.filePath(QLatin1String(kPreviousManifestName)), ignored);
             damaged.sourceRecoverable = !damaged.videoName.isEmpty()
-                && primary != ManifestRead::IoError && backup != ManifestRead::IoError;
+                && primary != ManifestRead::IoError && backup != ManifestRead::IoError
+                && primary != ManifestRead::UnsupportedVersion && backup != ManifestRead::UnsupportedVersion;
             projects.append(damaged);
         }
     }
@@ -556,7 +579,7 @@ int removeOlderThan(int days, const QDateTime& now)
     {
         const QSignalBlocker batch(events());
         for (const auto& project : list()) {
-            if (project.dir == openProjectDir) continue;
+            if (project.unreadable || project.dir == openProjectDir) continue;
             if (project.modified.daysTo(now) >= days && remove(project)) ++removed;
         }
     }

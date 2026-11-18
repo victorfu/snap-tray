@@ -1481,6 +1481,22 @@ Velikost souboru: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Nahrávka se možná používá nebo ji již nelze obnovit. Znovu otevřete „Obnovit nahrávky“ pro aktualizaci seznamu.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Obnovení projektu selhalo</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Kopii pro obnovení nelze otevřít. Zkontrolujte volné místo na disku a oprávnění souborů. Původní projekt zůstává zachován.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Záznam obnoven</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Byl otevřen samostatný obnovený projekt. Úpravy původního projektu nelze přečíst; původní složka zůstává zachována.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

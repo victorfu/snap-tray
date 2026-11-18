@@ -1479,6 +1479,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>녹화가 사용 중이거나 더 이상 복구할 수 없을 수 있습니다. 목록을 새로 고치려면 «녹화 복구»를 다시 여세요.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>프로젝트 복구 실패</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>복구 사본을 열 수 없습니다. 디스크 여유 공간과 파일 권한을 확인하세요. 원본 프로젝트는 보존됩니다.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>녹화 복구됨</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>별도의 복구 프로젝트를 열었습니다. 원본 프로젝트의 편집 내용을 읽을 수 없어 원본 폴더를 보존했습니다.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

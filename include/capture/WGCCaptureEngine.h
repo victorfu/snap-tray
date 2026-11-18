@@ -24,7 +24,7 @@
  * of the frames, as with Desktop Duplication. A closed capture item or a lost
  * device is reported through error(), never as a frozen but healthy stream.
  *
- * Experimental: selected by RecordingSettingsManager::windowsGraphicsCapture();
+ * Preferred by default through RecordingSettingsManager::windowsGraphicsCapture();
  * recording falls back to DXGICaptureEngine when it cannot start.
  */
 class WGCCaptureEngine : public ICaptureEngine

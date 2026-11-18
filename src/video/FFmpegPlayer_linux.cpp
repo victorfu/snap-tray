@@ -189,12 +189,21 @@ public:
     float volume() const override { return gain; }
     void setMuted(bool value) override { muted = value; }
     bool setAudioSource(AudioSource source) override {
+        const qint64 current = position();
+        const bool wantsAudio = bool(source) || media.hasAudio;
         {
             QMutexLocker lock(&audioSourceMutex);
             audioSource = std::move(source);
         }
-        seek(position()); // Drop samples buffered with the previous source.
-        return true;
+        if (wantsAudio && !audioReady) {
+            audioReady = output.open();
+            if (!audioReady) emit error(QStringLiteral("Audio playback is unavailable. Check the audio server and output device."));
+        } else if (!wantsAudio) {
+            audioReady = false;
+            output.close();
+        }
+        seek(current); // Drop samples buffered with the previous source.
+        return !wantsAudio || audioReady;
     }
     bool isMuted() const override { return muted; }
     void setLooping(bool value) override { loop = value; }
@@ -228,7 +237,7 @@ private:
             qRound64(((target + qRound(100 * rate)) * 48 - audioStart) / double(rate)), qint64(output.writableFrames()))) : 0;
         watcher.setFuture(QtConcurrent::run([this, token, target, audioStart, audioCount, playbackRate] {
             Decoded result; result.generation = token; result.position = target;
-            result.audioEnd = audioStart + qRound64(audioCount * double(playbackRate));
+            result.audioEnd = audioStart;
             result.image = video->frameAt(target); result.error = video->lastError();
             if (audioCount) {
                 AudioSource source;
@@ -240,8 +249,10 @@ private:
                     constexpr qint64 kPreviewHorizonMs = 24 * 60 * 60 * 1000;
                     stretchedAudio->begin({0, kPreviewHorizonMs, playbackRate});
                     stretchGeneration = token;
+                    stretchStartSource = audioStart;
                 }
                 result.pcm = stretchedAudio->read(audioCount);
+                result.audioEnd = stretchStartSource + stretchedAudio->sourceFrame();
                 stretchNextSource = result.audioEnd;
                 if (result.pcm.isEmpty()) result.error = source ? QStringLiteral("Mixed audio unavailable.") : audio->error();
             }
@@ -252,7 +263,7 @@ private:
     std::unique_ptr<SnapTray::FFmpeg::AudioReader> audio;
     std::unique_ptr<SnapTray::AudioSegmentReader> stretchedAudio; // decoder worker only
     quint64 stretchGeneration = 0;
-    qint64 stretchNextSource = -1;
+    qint64 stretchNextSource = -1, stretchStartSource = 0;
     QMutex audioSourceMutex;
     AudioSource audioSource;
     VideoFileProbe media;

@@ -8,8 +8,9 @@ namespace SnapTray {
 // regions makes undo and crash recovery independent of the original files.
 struct AudioClip {
     QString name;
-    qint64 assetFrame = 0, assetFrames = 0;
-    qint64 startMs = 0, endMs = 0, offsetMs = 0;
+    qint64 assetFrame = 0, assetFrames = 0; // offset and length in 48 kHz PCM frames
+    qint64 startMs = 0, endMs = 0; // placement on the recording source timeline
+    qint64 offsetMs = 0; // time skipped from the imported asset
     double gainDb = 0;
     qint64 fadeInMs = 5, fadeOutMs = 5;
     bool loop = false;
@@ -17,6 +18,7 @@ struct AudioClip {
     bool operator==(const AudioClip& o) const;
 };
 struct AudioClipTrack {
+    static constexpr size_t kMaxClips = 128;
     static constexpr auto kSuffix = ".imports.pcm";
     static constexpr auto kMixedSuffix = ".mixed.pcm";
     static constexpr qint64 kMaxFileBytes = 512LL * 1024 * 1024;

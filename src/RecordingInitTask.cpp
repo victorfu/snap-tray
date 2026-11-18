@@ -54,6 +54,13 @@ RecordingInitTask::RecordingInitTask(const Config& config, QObject* parent)
     , m_config(config)
     , m_cancelled(0)
 {
+    m_createGraphicsCapture = []() -> ICaptureEngine* {
+#ifdef Q_OS_WIN
+        return WGCCaptureEngine::isAvailable() ? new WGCCaptureEngine(nullptr) : nullptr;
+#else
+        return nullptr;
+#endif
+    };
 }
 
 RecordingInitTask::~RecordingInitTask()
@@ -190,19 +197,20 @@ bool RecordingInitTask::initializeCaptureEngine()
 
 #ifdef Q_OS_WIN
     if (m_config.preferGraphicsCapture) {
-        if (!WGCCaptureEngine::isAvailable()) {
+        m_result.captureEngine.reset(m_createGraphicsCapture());
+        if (!m_result.captureEngine) {
             m_result.captureFallbackReason = QStringLiteral("WGC unavailable on this system; using DXGI/BitBlt.");
             qWarning() << "RecordingInitTask: Windows Graphics Capture unavailable, using the default engine";
         } else {
-            m_result.captureEngine.reset(new WGCCaptureEngine(nullptr));
             if (configureAndStartCaptureEngine()) {
                 qDebug() << "RecordingInitTask: Capture engine started:" << m_result.captureEngine->engineName();
                 return true;
             }
-            const auto *wgc = static_cast<WGCCaptureEngine *>(m_result.captureEngine.get());
-            m_result.captureFallbackReason = QStringLiteral("WGC start failed: %1; using DXGI/BitBlt.").arg(wgc->lastStartError());
+            const auto *wgc = qobject_cast<WGCCaptureEngine *>(m_result.captureEngine.get());
+            const QString reason = wgc ? wgc->lastStartError() : m_result.error;
+            m_result.captureFallbackReason = QStringLiteral("WGC start failed: %1; using DXGI/BitBlt.").arg(reason);
             qWarning() << "RecordingInitTask: Windows Graphics Capture failed to start ("
-                       << wgc->lastStartError() << "), using the default engine";
+                       << reason << "), using the default engine";
             m_result.captureEngine.reset();
             m_result.error.clear();
         }
@@ -210,7 +218,7 @@ bool RecordingInitTask::initializeCaptureEngine()
 #endif
 
     // Create capture engine with nullptr parent (will be reparented on main thread)
-    m_result.captureEngine.reset(ICaptureEngine::createBestEngine(nullptr));
+    m_result.captureEngine.reset(m_createFallbackCapture());
     if (!m_result.captureEngine) {
         m_result.error = "Failed to create capture engine";
         return false;

@@ -12,6 +12,11 @@ void AudioSegmentReader::begin(const TimelineSegment& part)
     m_inputFrame = m_outputFrame = 0;
     m_finished = false;
 }
+qint64 AudioSegmentReader::sourceFrame() const
+{
+    return m_part.startMs * AudioTracks::kSampleRate / 1000
+        + qint64(std::llround(m_outputFrame * m_part.speed));
+}
 QByteArray AudioSegmentReader::read(int frames)
 {
     if (frames <= 0) return {};
@@ -23,7 +28,7 @@ QByteArray AudioSegmentReader::read(int frames)
     if (normal) {
         pcm = m_source(m_part.startMs * rate / 1000 + m_outputFrame, frames);
         if (pcm.size() != frames * bytes) return {};
-    } else if (m_part.keepSound) {
+    } else if (!m_part.isSilent()) {
         const qint64 sourceEnd = m_part.lengthMs() * rate / 1000;
         constexpr int kInputChunkFrames = 4800;
         while (m_stretch.availableFrames() < size_t(frames) && !m_finished) {
@@ -46,7 +51,7 @@ QByteArray AudioSegmentReader::read(int frames)
         // The timeline rounds once to milliseconds. A fractional WSOLA tail
         // is trimmed/zero-filled here, never carried into the next segment.
     }
-    if (m_part.keepSound) {
+    if (!m_part.isSilent()) {
         constexpr qint64 fadeFrames = kSeamFadeMs * rate / 1000;
         for (int i = 0; i < frames; ++i) {
             const qint64 at = m_outputFrame + i;

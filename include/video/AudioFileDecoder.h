@@ -12,7 +12,9 @@ namespace SnapTray {
 using AudioPcmSink = std::function<bool(const QByteArray&, std::optional<qint64>)>;
 bool decodeAudioFile(const QString& path, const AudioPcmSink& sink, QString& error);
 // Prepare the legacy mixed track for the shared preview time stretcher.
-bool cacheRecordingAudio(const QString& videoPath, qint64 audioStartMs, QString& error);
+bool cacheRecordingAudio(const QString& videoPath, qint64 audioStartMs, QString& error,
+                         const std::function<bool()>& cancelled = {});
 // Transactional append: failed/oversize imports leave no usable empty clip.
-std::optional<AudioClip> importAudioClip(const QString& input, const QString& videoPath, QString& error);
+std::optional<AudioClip> importAudioClip(const QString& input, const QString& videoPath, QString& error,
+                                         const std::function<bool()>& cancelled = {});
 }

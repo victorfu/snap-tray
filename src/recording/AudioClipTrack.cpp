@@ -1,12 +1,13 @@
 #include "recording/AudioClipTrack.h"
 #include "recording/AudioTracks.h"
 #include <QJsonArray>
+#include <QDebug>
 #include <cmath>
 
 namespace SnapTray {
 qint64 AudioClip::durationMs() const
 {
-    constexpr qint64 framesPerMs = AudioTracks::kSampleRate / 1000;
+    constexpr qint64 framesPerMs = AudioTracks::kFramesPerMs;
     // The millisecond editor must include the final partial millisecond,
     // including platform resamplers that return one sample short of a second.
     return assetFrames <= 0 ? 0 : assetFrames / framesPerMs + (assetFrames % framesPerMs != 0);
@@ -30,8 +31,9 @@ AudioClipTrack AudioClipTrack::fromJson(const QJsonObject& json)
 {
     AudioClipTrack track;
     constexpr qint64 maxTimelineMs = 24LL * 60 * 60 * 1000;
-    for (const auto& value : json.value("clips").toArray()) {
-        if (track.clips.size() >= 128) break;
+    const auto entries = json.value("clips").toArray();
+    for (const auto& value : entries) {
+        if (track.clips.size() >= kMaxClips) break;
         const auto j = value.toObject();
         AudioClip c;
         c.name = j.value("name").toString().left(256);
@@ -44,8 +46,8 @@ AudioClipTrack AudioClipTrack::fromJson(const QJsonObject& json)
         c.fadeInMs = j.value("fadeInMs").toInteger(5);
         c.fadeOutMs = j.value("fadeOutMs").toInteger(5);
         c.loop = j.value("loop").toBool();
-        if (c.assetFrame < 0 || c.assetFrames <= 0 || c.assetFrames > kMaxDurationMs * 48
-            || c.assetFrame > kMaxArchiveBytes / 4 - c.assetFrames
+        if (c.assetFrame < 0 || c.assetFrames <= 0 || c.assetFrames > AudioTracks::msToFrames(kMaxDurationMs)
+            || c.assetFrame > kMaxArchiveBytes / AudioTracks::kBytesPerFrame - c.assetFrames
             || c.startMs < 0 || c.endMs <= c.startMs || c.endMs > maxTimelineMs
             || c.offsetMs < 0 || c.offsetMs >= c.durationMs()
             || !std::isfinite(c.gainDb) || c.gainDb < -24 || c.gainDb > 12
@@ -53,6 +55,8 @@ AudioClipTrack AudioClipTrack::fromJson(const QJsonObject& json)
             || c.fadeInMs > c.endMs - c.startMs || c.fadeOutMs > c.endMs - c.startMs) continue;
         track.clips.push_back(c);
     }
+    const auto dropped = entries.size() - qsizetype(track.clips.size());
+    if (dropped) qWarning() << "AudioClipTrack: ignored" << dropped << "invalid or excess audio clips";
     return track;
 }
 }

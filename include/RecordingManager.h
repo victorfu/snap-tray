@@ -186,6 +186,7 @@ private:
     // Moves every source currently in `from` to `to` (e.g. Starting -> Active).
     void transitionAudioSources(SnapTray::AudioSourceState from, SnapTray::AudioSourceState to);
     void configureAudioCapture();
+    void finishAudioStart(bool success);
     void beginAsyncInitialization();   // Start async initialization
     void onInitializationComplete(const QSharedPointer<RecordingInitTask> &task,
                                   quint64 generation);   // Handle async init completion
@@ -338,6 +339,8 @@ private:
     // Audio capture
     AudioEnginePtr m_audioEngine;       // Audio engine with callback-draining deferred disposal
     bool m_audioEnabled;
+    QTimer m_audioStartTimer;
+    bool m_audioStartPending = false;
     SnapTray::RecordingAudioStatus m_audioStatus;
     int m_audioSource;  // 0=Microphone, 1=SystemAudio, 2=Both
     QString m_audioDevice;

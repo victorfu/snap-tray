@@ -38,7 +38,7 @@ Item {
                 spacing: 8
                 SegmentButton {
                     text: qsTr("Undo")
-                    onClicked: { backend.undo(); backend.dismissAutomaticZoom() }
+                    onClicked: root.undoEdit()
                 }
                 SegmentButton {
                     text: qsTr("Don't add automatically again")

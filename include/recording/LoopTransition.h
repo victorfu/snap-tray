@@ -1,6 +1,7 @@
 #pragma once
 #include "recording/TimelineEdit.h"
 #include <algorithm>
+#include <optional>
 
 namespace SnapTray {
 // Presentation-only return shared by the pointer and camera. Its interval is

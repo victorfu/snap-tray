@@ -183,12 +183,15 @@ bool TimelineEdit::setSpeed(int part, double speed)
     if (part < 0 || part >= int(parts.size()) || !isAllowedSpeed(speed)) return false;
     if (qFuzzyCompare(parts[size_t(part)].speed, speed)) return false;
     parts[size_t(part)].speed = speed;
+    if (qFuzzyCompare(speed, 1.0)) parts[size_t(part)].keepSound = true;
     return true;
 }
 
 bool TimelineEdit::setKeepSound(int part, bool keep)
 {
-    if (part < 0 || part >= int(parts.size()) || parts[size_t(part)].keepSound == keep) return false;
+    if (part < 0 || part >= int(parts.size())) return false;
+    if (qFuzzyCompare(parts[size_t(part)].speed, 1.0)) keep = true;
+    if (parts[size_t(part)].keepSound == keep) return false;
     parts[size_t(part)].keepSound = keep;
     return true;
 }
@@ -233,8 +236,10 @@ TimelineEdit TimelineEdit::fromJson(const QJsonObject& json)
         const QJsonObject object = value.toObject();
         Part part;
         part.deleted = object.value(QStringLiteral("deleted")).toBool(false);
-        part.keepSound = object.value(QStringLiteral("keepSound")).toBool(true);
         part.speed = object.value(QStringLiteral("speed")).toDouble(1.0);
+        // Before Keep sound existed, speed-edited parts exported silence.
+        part.keepSound = qFuzzyCompare(part.speed, 1.0)
+            || object.value(QStringLiteral("keepSound")).toBool(false);
         if (!isAllowedSpeed(part.speed)) return edit;
         parts.push_back(part);
     }

@@ -1174,15 +1174,18 @@ void RecordingPreviewBackend::refreshPreviewAudio()
         const QString source = m_videoPath;
         const qint64 audioStart = probe.audioStartMs;
         const QPointer<RecordingPreviewBackend> weakThis(this);
-        (void)QtConcurrent::run([source, audioStart, weakThis] {
+        const auto cancel = m_audioImportCancelToken;
+        cancel->store(false);
+        (void)QtConcurrent::run([source, audioStart, weakThis, cancel] {
             QString error;
-            const bool ok = SnapTray::cacheRecordingAudio(source, audioStart, error);
+            const bool ok = SnapTray::cacheRecordingAudio(source, audioStart, error, [cancel] { return cancel->load(); });
             if (!weakThis) return;
-            QMetaObject::invokeMethod(weakThis, [weakThis, ok, error] {
+            QMetaObject::invokeMethod(weakThis, [weakThis, ok, error, cancel] {
                 if (!weakThis) return;
                 weakThis->m_importingAudio = false;
-                weakThis->m_previewAudioCacheFailed = !ok;
                 emit weakThis->processingChanged();
+                if (cancel->load()) return;
+                weakThis->m_previewAudioCacheFailed = !ok;
                 if (!ok) weakThis->setErrorMessage(RecordingPreviewBackend::tr("Cannot prepare audio preview: %1").arg(error));
                 weakThis->refreshPreviewAudio();
             }, Qt::QueuedConnection);
@@ -1201,15 +1204,15 @@ void RecordingPreviewBackend::refreshPreviewAudio()
     std::weak_ptr<PreviewAudio> weakAudio = audio;
     player->setAudioSource([weakAudio](qint64 startFrame, int frames) {
         const auto audio = weakAudio.lock();
-        if (!audio) return QByteArray(qMax(0, frames) * 4, '\0');
+        if (!audio) return QByteArray(qMax(0, frames) * SnapTray::AudioTracks::kBytesPerFrame, '\0');
         QMutexLocker lock(&audio->mutex);
         QByteArray pcm = audio->mixer.read(startFrame, frames);
-        if (pcm.size() != frames * 4) return pcm;
+        if (pcm.size() != frames * SnapTray::AudioTracks::kBytesPerFrame) return pcm;
         for (int i = 0; i < frames; ++i) {
-            const int part = audio->timeline.segmentAt((startFrame + i) / 48);
+            const int part = audio->timeline.segmentAt((startFrame + i) / SnapTray::AudioTracks::kFramesPerMs);
             if (part < 0) continue;
             const auto& segment = audio->timeline.segments()[size_t(part)];
-            if (!segment.keepSound && !qFuzzyCompare(segment.speed, 1.0)) std::memset(pcm.data() + i * 4, 0, 4);
+            if (segment.isSilent()) std::memset(pcm.data() + i * SnapTray::AudioTracks::kBytesPerFrame, 0, SnapTray::AudioTracks::kBytesPerFrame);
         }
         return pcm;
     });
@@ -1438,7 +1441,7 @@ std::shared_ptr<const SnapTray::ZoomTrack> RecordingPreviewBackend::preparedZoom
     if (!m_preparedZoom) {
         auto zoom = std::make_shared<SnapTray::ZoomTrack>(m_zoom);
         if (m_cursorTimeline)
-            zoom->prepareFollow(*m_cursorTimeline, m_cursorEffects, timelineMap(), zoomBounds());
+            zoom->prepareFollow(*m_cursorTimeline, renderedCursorEffects(), timelineMap(), zoomBounds());
         m_preparedZoom = std::move(zoom);
     }
     return m_preparedZoom;
@@ -1536,6 +1539,7 @@ RecordingPreviewBackend::~RecordingPreviewBackend()
 {
     SnapTray::RecordingProjects::setOpenProjectDir({});
     m_exportCancelToken->store(true);
+    m_audioImportCancelToken->store(true);
     // Never saved: drop the derived export. The recording itself is untouched.
     if (m_awaitingSave && m_pendingSaveOutput != m_videoPath) {
         QFile::remove(m_pendingSaveOutput);
@@ -1597,7 +1601,8 @@ void RecordingPreviewBackend::ensureView()
 
 bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == m_view && event && event->type() == QEvent::Close && isProcessing()) {
+    if (watched == m_view && event && event->type() == QEvent::Close && isProcessing()
+        && !(m_applicationQuitting && m_importingAudio && !m_isProcessing)) {
         static_cast<QCloseEvent*>(event)->ignore();
         // Never drop an export silently: let the user choose to keep or cancel it.
         if (canCancelExport() && !m_applicationQuitting && !m_exportCloseQuestionPending) {
@@ -1611,6 +1616,7 @@ bool RecordingPreviewBackend::eventFilter(QObject* watched, QEvent* event)
     // quit being handled right now.
     if (watched == qApp && event && event->type() == QEvent::Quit) {
         m_applicationQuitting = true;
+        m_audioImportCancelToken->store(true);
         QTimer::singleShot(0, this, [this] { m_applicationQuitting = false; });
         return QObject::eventFilter(watched, event);
     }
@@ -2023,7 +2029,7 @@ QVariantMap RecordingPreviewBackend::shapePointsInView(int index, const QRectF& 
 int RecordingPreviewBackend::addShapeFromView(int kind, const QPointF& from, const QPointF& to, const QRectF& picture)
 {
     if (isProcessing() || !overlaysAvailable() || picture.isEmpty() || m_videoSize.isEmpty()
-        || kind < ShapeParameters::Arrow || kind > ShapeParameters::Step || m_shapes.segments.size() >= 256) return -1;
+        || kind < ShapeParameters::Arrow || kind > ShapeParameters::Step || m_shapes.segments.size() >= SnapTray::ShapeTrack::kMaxSegments) return -1;
     if (QLineF(from, to).length() < 3) return -1;
     SnapTray::ShapeSegment segment;
     segment.shape.kind = ShapeParameters::Kind(kind);
@@ -2064,7 +2070,7 @@ void RecordingPreviewBackend::setShapeOption(int index, const QString& key, cons
         next.shape.from = shapePointFromView(points.value("from").toPointF(), picture, space);
         next.shape.to = shapePointFromView(points.value("to").toPointF(), picture, space);
     } else if (key == QLatin1String("fadeInMs") || key == QLatin1String("fadeOutMs")) {
-        if (value.toLongLong() < 0 || value.toLongLong() > 10000) return;
+        if (value.toLongLong() < 0 || value.toLongLong() > SnapTray::ShapeTrack::kMaxFadeMs) return;
         (key == QLatin1String("fadeInMs") ? next.fadeInMs : next.fadeOutMs) = value.toLongLong();
     } else {
         const QStringList options{QStringLiteral("color"), QStringLiteral("width"), QStringLiteral("arrowStyle"), QStringLiteral("number")};
@@ -2119,7 +2125,7 @@ void RecordingPreviewBackend::chooseAudioClip()
 void RecordingPreviewBackend::addAudioClip(const QUrl& file)
 {
     if (isProcessing() || !audioClipsAvailable() || !file.isLocalFile() || m_duration <= 0) return;
-    if (m_audioClips.clips.size() >= 128) { setErrorMessage(tr("A recording can contain up to 128 audio clips.")); return; }
+    if (m_audioClips.clips.size() >= SnapTray::AudioClipTrack::kMaxClips) { setErrorMessage(tr("A recording can contain up to 128 audio clips.")); return; }
     m_importingAudio = true;
     m_processStatus = tr("Importing audio…");
     emit processStatusChanged();
@@ -2128,19 +2134,23 @@ void RecordingPreviewBackend::addAudioClip(const QUrl& file)
     const bool separate = m_hasSeparateTracks;
     const qint64 position = qBound<qint64>(0, m_position, qMax<qint64>(0, m_duration - 100));
     QPointer<RecordingPreviewBackend> weakThis(this);
-    (void)QtConcurrent::run([source, input = file.toLocalFile(), separate, position, weakThis] {
+    const auto cancel = m_audioImportCancelToken;
+    cancel->store(false);
+    (void)QtConcurrent::run([source, input = file.toLocalFile(), separate, position, weakThis, cancel] {
         QString error;
-        auto clip = SnapTray::importAudioClip(input, source, error);
+        const auto cancelled = [cancel] { return cancel->load(); };
+        auto clip = SnapTray::importAudioClip(input, source, error, cancelled);
         auto media = IVideoTranscoder::create();
         const auto probe = media ? media->probe(source) : VideoFileProbe{};
         if (clip && !separate && probe.hasAudio
-            && !SnapTray::cacheRecordingAudio(source, probe.audioStartMs, error)) clip.reset();
+            && !SnapTray::cacheRecordingAudio(source, probe.audioStartMs, error, cancelled)) clip.reset();
         if (!weakThis) return;
-        QMetaObject::invokeMethod(weakThis, [weakThis, clip, error, position] {
+        QMetaObject::invokeMethod(weakThis, [weakThis, clip, error, position, cancel] {
             if (!weakThis) return;
             auto* self = weakThis.data();
             self->m_importingAudio = false;
             emit self->processingChanged();
+            if (cancel->load()) return;
             if (!clip) { self->setErrorMessage(RecordingPreviewBackend::tr("Cannot import audio: %1").arg(error)); return; }
             auto added = *clip;
             added.startMs = position;
@@ -4038,7 +4048,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
             } else if (sourceProbe.hasAudio) {
                 // Every audible kept part contributes, including pitch-preserved speed changes.
                 for (const auto& segment : request.segments) {
-                    if (!qFuzzyCompare(segment.speed, 1.0) && !segment.keepSound) continue;
+                    if (segment.isSilent()) continue;
                     audioCoverageMs += qMax<qint64>(0, qMin(sourceProbe.audioEndMs, segment.endMs)
                                                            - qMax(sourceProbe.audioStartMs, segment.startMs));
                 }
@@ -4047,7 +4057,7 @@ void RecordingPreviewBackend::performTranscode(bool smartSave)
                 if (request.segments.empty()) {
                     audioCoverageMs += qMax<qint64>(0, qMin(clip.endMs, rangeEndMs) - qMax(clip.startMs, rangeStartMs));
                 } else for (const auto& segment : request.segments) {
-                    if (!qFuzzyCompare(segment.speed, 1.0) && !segment.keepSound) continue;
+                    if (segment.isSilent()) continue;
                     audioCoverageMs += qMax<qint64>(0, qMin(clip.endMs, segment.endMs) - qMax(clip.startMs, segment.startMs));
                 }
             }

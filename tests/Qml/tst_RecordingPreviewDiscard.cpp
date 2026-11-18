@@ -19,6 +19,7 @@ private slots:
     void programmaticCloseStillDiscards();
     void titleBarCloseAsksInsteadOfDiscarding();
     void keyboardFlow();
+    void applicationQuitCloseIsNotBlocked_data();
     void applicationQuitCloseIsNotBlocked();
     void saveAppliesATypedTrimTime_data();
     void saveAppliesATypedTrimTime();
@@ -150,6 +151,13 @@ void tst_RecordingPreviewDiscard::keyboardFlow()
     QCOMPARE(discarded.count(), 1);
 }
 
+void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked_data()
+{
+    QTest::addColumn<bool>("importing");
+    QTest::newRow("idle") << false;
+    QTest::newRow("importing audio") << true;
+}
+
 void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked()
 {
     // QCoreApplication::quit() closes every window and stops if one refuses;
@@ -165,8 +173,11 @@ void tst_RecordingPreviewDiscard::applicationQuitCloseIsNotBlocked()
     QVERIFY(QTest::qWaitForWindowExposed(view));
 
     QSignalSpy discarded(&backend, &RecordingPreviewBackend::discardRequested);
+    QFETCH(bool, importing);
+    backend.m_importingAudio = importing;
     QEvent quit(QEvent::Quit);
     backend.eventFilter(qApp, &quit);
+    QVERIFY(backend.m_audioImportCancelToken->load());
     QVERIFY(view->close());
     QVERIFY(!backend.discardConfirmationPending());
     QCOMPARE(closed.count(), 1);

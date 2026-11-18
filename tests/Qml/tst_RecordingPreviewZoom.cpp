@@ -56,6 +56,7 @@ private slots:
     void automaticallyZoomsOnlyFreshRecordingOnce();
     void followPreviewAndExportAgree();
     void exportReusesPreparedFollowPath();
+    void mp4FollowIgnoresAnimatedLoopReturn();
     void followComposesWithEdits();
     void autoZoomKeepsTheUsersZooms();
     void autoZoomNeverLeavesAStaleSelection();
@@ -652,3 +653,27 @@ void tst_RecordingPreviewZoom::typedTimesStayWithTheirZoom()
 
 QTEST_MAIN(tst_RecordingPreviewZoom)
 #include "tst_RecordingPreviewZoom.moc"
+
+void tst_RecordingPreviewZoom::mp4FollowIgnoresAnimatedLoopReturn()
+{
+    QTemporaryDir dir;
+    RecordingPreviewBackend backend(writeClicks(dir));
+    backend.updateVideoSize(kFrame);
+    backend.updateDuration(10000);
+    SnapTray::ZoomSegment segment{0, 10000, 2.0, QPointF(300, 300), true};
+    segment.follow = true;
+    backend.editZoom([&](SnapTray::ZoomTrack& track) { track.setSegments({segment}); });
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    const auto ordinary = backend.preparedZoom();
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    backend.setLoopBack(true);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    const auto withPersistedLoop = backend.preparedZoom();
+    for (qint64 at : {9300, 9500, 9750, 9999})
+        QCOMPARE(withPersistedLoop->viewportAt(at, backend.zoomBounds()), ordinary->viewportAt(at, backend.zoomBounds()));
+    backend.setSelectedFormat(RecordingPreviewBackend::GIF);
+    const auto animated = backend.preparedZoom();
+    QVERIFY(animated->viewportAt(9750, backend.zoomBounds()) != ordinary->viewportAt(9750, backend.zoomBounds()));
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QCOMPARE(backend.preparedZoom()->viewportAt(9750, backend.zoomBounds()), ordinary->viewportAt(9750, backend.zoomBounds()));
+}

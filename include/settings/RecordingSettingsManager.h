@@ -56,8 +56,9 @@ public:
     // Choose an area before each recording (#194); off by default (the
     // whole screen, as before).
     bool preselectArea() const;
-    bool autoZoomOnOpen() const;
     void setPreselectArea(bool value);
+    // Automatically suggest zooms for fresh recordings; off by default.
+    bool autoZoomOnOpen() const;
     void setAutoZoomOnOpen(bool value);
 
     // Quick mode (#193, preview off): what happens once the file is saved.
@@ -73,11 +74,11 @@ public:
     int projectCleanupDays() const;
     void setProjectCleanupDays(int days);
 
-    // Last MP4 export options chosen in the preview (Mp4ExportOptions JSON, #190);
-    // empty = defaults (export as recorded).
+    // Independent GIF/WebP export choices (AnimatedExportOptions JSON).
     QJsonObject animatedExportOptions(bool webp) const;
     void setAnimatedExportOptions(bool webp, const QJsonObject& value);
 
+    // Last MP4 export choices (Mp4ExportOptions JSON); empty = export as recorded.
     QJsonObject mp4ExportOptions() const;
     void setMp4ExportOptions(const QJsonObject& value);
 
@@ -93,9 +94,8 @@ public:
     bool nativeFrameEncoding() const;
     void setNativeFrameEncoding(bool value);
 
-    // Windows only, no UI yet. Record through Windows Graphics Capture instead
-    // of Desktop Duplication (experimental until compared on real hardware,
-    // #152); Desktop Duplication remains the fallback.
+    // Windows: prefer WGC by default. DXGI/BitBlt remains the fallback when
+    // WGC is unavailable, fails to start, or this preference is disabled.
     bool windowsGraphicsCapture() const;
     void setWindowsGraphicsCapture(bool value);
 

@@ -50,10 +50,10 @@ struct UptimeClock {
 qint64 eventAgeMs(const UptimeClock& now, quint64 eventStamp);
 
 #ifdef __OBJC__
+QString kindForCursor(NSCursor* cursor);
 // A cursor image as recorded: premultiplied ARGB at `scale` pixels per
 // point, with the hotspot (points from the top-left) in the same pixels.
 // nullopt when there is no usable image.
-QString kindForCursor(NSCursor* cursor);
 std::optional<CursorProbe::Shape> shapeFromImage(NSImage* image, CGPoint hotSpotPoints, qreal scale);
 #endif
 

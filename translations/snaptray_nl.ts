@@ -1480,6 +1480,22 @@ Bestandsgrootte: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>De opname is mogelijk in gebruik of kan niet meer worden hersteld. Open «Opnamen herstellen» opnieuw om de lijst te vernieuwen.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projectherstel mislukt</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>De herstelkopie kon niet worden geopend. Controleer de vrije schijfruimte en bestandsrechten. Het oorspronkelijke project blijft behouden.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Opname hersteld</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Het afzonderlijke herstelproject is geopend. De bewerkingen van het oorspronkelijke project konden niet worden gelezen; de oorspronkelijke map blijft behouden.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

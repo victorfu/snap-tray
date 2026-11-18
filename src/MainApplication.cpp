@@ -1,3 +1,4 @@
+#include "video/IVideoTranscoder.h"
 #include "MainApplication.h"
 
 #include "CaptureManager.h"
@@ -1541,13 +1542,22 @@ void MainApplication::openRecordingProject(const QString& projectDir)
         return;
     }
     auto project = SnapTray::RecordingProjects::load(projectDir);
+    bool recoveredSource = false;
     if (!project && !m_previewBackend) {
-        // Recover into an independent project; never change or consume the
-        // damaged folder or silently overwrite the user's previous edits.
+        // Recovery owns an independent copy and remembers it for later opens.
         for (const auto& item : SnapTray::RecordingProjects::list()) {
             if (item.dir != projectDir || !item.sourceRecoverable) continue;
-            project = SnapTray::RecordingProjects::create(item.videoPath(), true,
-                SnapTray::RecordingRecipe::toJson({}, {}), {}, 0, {});
+            const auto transcoder = IVideoTranscoder::create();
+            const auto probe = transcoder ? transcoder->probe(item.videoPath()) : VideoFileProbe{};
+            if (probe.valid) project = SnapTray::RecordingProjects::recoverSource(item, probe.durationMs);
+            if (!project) {
+                qWarning() << "MainApplication: could not recover a recording project";
+                SnapTray::QmlToast::screenToast().showToast(
+                    SnapTray::QmlToast::Level::Warning, tr("Project Recovery Failed"),
+                    tr("The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept."));
+                return;
+            }
+            recoveredSource = true;
             break;
         }
     }
@@ -1566,6 +1576,12 @@ void MainApplication::openRecordingProject(const QString& projectDir)
     // A project is always the full-quality recording: Save re-encodes as needed.
     showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
     if (m_previewBackend) m_previewBackend->setProject(*project);
+    if (m_previewBackend && recoveredSource) {
+        qWarning() << "MainApplication: opened a separate recovery project without the original edits";
+        SnapTray::QmlToast::screenToast().showToast(
+            SnapTray::QmlToast::Level::Warning, tr("Recovered Recording"),
+            tr("Opened the separate recovery project. The original project's edits could not be read; the original folder is kept."));
+    }
     if (m_historyWindow) m_historyWindow->setOpenProjectDir(m_previewBackend ? m_previewBackend->projectDir() : QString());
 }
 

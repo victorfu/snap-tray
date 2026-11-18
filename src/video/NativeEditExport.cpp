@@ -110,7 +110,7 @@ VideoTranscodeResult exportNativeEdit(const VideoTranscodeRequest& request,
             tracks->setFallback([&media](qint64 start, int count) { return media.audioAt(start, count); });
     }
     for (const auto& s : segments) {
-        format.audio |= (qFuzzyCompare(s.speed, 1.0) || s.keepSound) && (tracks || (source.hasAudio
+        format.audio |= !s.isSilent() && (tracks || (source.hasAudio
             && qMin(s.endMs, source.audioEndMs) > qMax(s.startMs, source.audioStartMs)));
     }
     QTemporaryDir staging(QFileInfo(request.outputPath).absolutePath() + QStringLiteral("/.snaptray-export-XXXXXX"));

@@ -28,6 +28,8 @@ namespace AudioTracks {
 
 enum class Track { Microphone, SystemAudio };
 constexpr int kSampleRate = 48000;
+constexpr int kFramesPerMs = kSampleRate / 1000;
+constexpr qint64 msToFrames(qint64 ms) { return ms * kFramesPerMs; }
 constexpr int kChannels = 2;
 constexpr int kBytesPerFrame = kChannels * 2;
 constexpr auto kMicrophoneSuffix = ".mic.pcm";

@@ -85,6 +85,7 @@ class tst_WebPAnimEncoder : public QObject
 private slots:
     void framesRoundTripThroughImport();
     void loopAndExactDuration();
+    void minimizeSizeChangesCompression();
 };
 
 void tst_WebPAnimEncoder::framesRoundTripThroughImport()
@@ -162,3 +163,36 @@ void tst_WebPAnimEncoder::loopAndExactDuration()
 
 QTEST_MAIN(tst_WebPAnimEncoder)
 #include "tst_WebPAnimEncoder.moc"
+
+void tst_WebPAnimEncoder::minimizeSizeChangesCompression()
+{
+    QTemporaryDir dir;
+    std::vector<QImage> frames;
+    QImage background(160, 120, QImage::Format_ARGB32);
+    for (int y = 0; y < background.height(); ++y)
+        for (int x = 0; x < background.width(); ++x)
+            background.setPixel(x, y, qRgb((x * 37 + y * 13) % 256, (x * 19 + y * 41) % 256, (x * 7 + y * 29) % 256));
+    for (int i = 0; i < 36; ++i) {
+        auto frame = background;
+        for (int y = 40; y < 56; ++y)
+            for (int x = i * 3; x < i * 3 + 16; ++x) frame.setPixelColor(x, y, Qt::red);
+        frames.push_back(frame);
+    }
+    const auto encode = [&](bool smaller) {
+        const QString path = dir.filePath(smaller ? "small.webp" : "fast.webp");
+        WebPAnimationEncoder encoder;
+        encoder.setQuality(90);
+        encoder.setMinimizeSize(smaller);
+        if (!encoder.start(path, background.size(), 10)) return QByteArray{};
+        for (size_t i = 0; i < frames.size(); ++i) encoder.writeFrame(frames[i], qint64(i) * 100);
+        encoder.finish(qint64(frames.size()) * 100);
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) return QByteArray{};
+        return file.readAll();
+    };
+    const auto fast = encode(false), small = encode(true);
+    QVERIFY(!fast.isEmpty()); QVERIFY(!small.isEmpty());
+    QCOMPARE(decodeFrames(fast).size(), frames.size());
+    QCOMPARE(decodeFrames(small).size(), frames.size());
+    QVERIFY2(small.size() < fast.size(), qPrintable(QString("small=%1 fast=%2").arg(small.size()).arg(fast.size())));
+}

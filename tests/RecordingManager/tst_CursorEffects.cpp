@@ -238,7 +238,9 @@ void TestCursorEffects::straighteningKeepsBothGapEndpoints()
     // The spring has settled during the gap. RDP must not pull the held
     // endpoint toward the line to the distant sample at 1000 ms.
     QVERIFY(QLineF(*clean.pointerPosition(700), QPointF(100, 8)).length() < 0.1);
-    QCOMPARE(clean.pointerPosition(700), clean.pointerPosition(700));
+    CursorEffectRenderer replay(t, s, 1500);
+    (void)replay.pointerPosition(1100); // An out-of-order seek must produce the same held point.
+    QCOMPARE(clean.pointerPosition(700), replay.pointerPosition(700));
 }
 
 void TestCursorEffects::springSteadyMotion()

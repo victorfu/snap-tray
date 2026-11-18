@@ -143,12 +143,13 @@ public:
     // nothing has to draw on them. Takes effect from the next captured frame.
     virtual void setNativeFrameOutput(bool enabled) { Q_UNUSED(enabled); }
 
-    // Asynchronous backends can deliver completed frames directly to the
-    // encoding queue instead of depending on GUI-thread polling.
+    // True when the encoder must extend samples between sparse arrivals.
     virtual bool allowsSparseFrames() const { return false; }
+    // True when capture has fallen back to a compatibility path.
     virtual bool usesCompatibilityMode() const { return false; }
     // Request an immediate current picture when the recording gate opens.
     virtual void requestFrame() {}
+    // Asynchronous backends deliver directly instead of GUI-thread polling.
     virtual bool deliversFrames() const { return false; }
 
     // True when captured frames already contain the pointer. Backends leave

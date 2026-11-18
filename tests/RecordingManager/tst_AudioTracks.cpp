@@ -64,6 +64,7 @@ private slots:
     void importedClipsMixAndRoundTrip();
     void stretchPreservesPitchAndBlockIndependence();
     void editedAudioHasExactLengthAndSeamFades();
+    void sourceClockIsIndependentOfReadBlocks();
     void writerPlacesChunksOnTheTimeline();
     void writerReportsBufferedFlushFailures_data();
     void writerReportsBufferedFlushFailures();
@@ -135,7 +136,7 @@ void TestAudioTracks::editedAudioHasExactLengthAndSeamFades()
         reader.begin(part);
         const auto muted = reader.read(length);
         if (speed != 1.0) QCOMPARE(muted, QByteArray(length * 4, '\0'));
-        else QCOMPARE(sampleAt(muted, 0), 10000); // The old normal-speed behavior.
+        else QCOMPARE(muted, output); // Normal-speed audio always has the same seam fades.
     }
 }
 
@@ -376,4 +377,20 @@ void TestAudioTracks::importedClipsMixAndRoundTrip()
     QCOMPARE(sampleAt(mixer.read(1600 * 48, 4800), 500), qint16(2000));
     clips.clips[0].assetFrames += 1;
     QVERIFY(!mixer.setClips(clips));
+}
+
+void TestAudioTracks::sourceClockIsIndependentOfReadBlocks()
+{
+    const auto silence = [](qint64, int frames) { return QByteArray(frames * AudioTracks::kBytesPerFrame, '\0'); };
+    for (const double speed : {0.5, 1.5}) {
+        AudioSegmentReader fragmented(silence), continuous(silence);
+        const TimelineSegment part{123, 10123, speed};
+        fragmented.begin(part); continuous.begin(part);
+        // Odd chunks repeatedly expose the half-sample rounding boundary.
+        constexpr int block = 137, blocks = 200;
+        for (int i = 0; i < blocks; ++i) QVERIFY(!fragmented.read(block).isEmpty());
+        QVERIFY(!continuous.read(block * blocks).isEmpty());
+        QCOMPARE(fragmented.sourceFrame(), continuous.sourceFrame());
+        QCOMPARE(fragmented.sourceFrame(), qint64(123 * 48 + block * blocks * speed));
+    }
 }

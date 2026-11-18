@@ -213,7 +213,6 @@ bool WebPAnimationEncoder::start(const QString &outputPath, const QSize &frameSi
     // Configure for good quality/speed balance
     m_data->encOptions.minimize_size = m_minimizeSize;
     m_data->encOptions.anim_params.loop_count = m_looping ? 0 : 1;  // 0 = infinite loop
-    m_data->encOptions.minimize_size = 0;  // Faster encoding
     m_data->encOptions.allow_mixed = 1;    // Allow lossy and lossless frames
 
     // Initialize WebP config

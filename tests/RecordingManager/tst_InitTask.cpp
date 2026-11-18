@@ -4,6 +4,9 @@
 #include <QTemporaryDir>
 #include <QDir>
 #include <QFile>
+#include <QScopeGuard>
+#include "settings/RecordingSettingsManager.h"
+#include "settings/Settings.h"
 #include <type_traits>
 #include <utility>
 #include "RecordingInitTask.h"
@@ -48,6 +51,11 @@ private slots:
 
     // Configuration tests
     void testDefaultConfig();
+    void windowsGraphicsCaptureDefaultsAndPreference();
+#ifdef Q_OS_WIN
+    void graphicsCaptureFallbackReasons_data();
+    void graphicsCaptureFallbackReasons();
+#endif
     void testConfigWithRegion();
     void testConfigWithAudio();
     void testConfigWithGif();
@@ -382,3 +390,61 @@ void TestRecordingInitTask::testFinishedSignalEmitted()
 
 QTEST_MAIN(TestRecordingInitTask)
 #include "tst_InitTask.moc"
+
+void TestRecordingInitTask::windowsGraphicsCaptureDefaultsAndPreference()
+{
+    auto storage = SnapTray::getSettings();
+    const QString key = "recording/windowsGraphicsCapture";
+    const auto previous = storage.value(key);
+    const auto restore = qScopeGuard([&] {
+        if (previous.isValid()) storage.setValue(key, previous); else storage.remove(key);
+    });
+    storage.remove(key);
+    auto& settings = RecordingSettingsManager::instance();
+    QVERIFY(settings.windowsGraphicsCapture());
+    settings.setWindowsGraphicsCapture(false);
+    QVERIFY(!settings.windowsGraphicsCapture());
+    settings.setWindowsGraphicsCapture(true);
+    QVERIFY(settings.windowsGraphicsCapture());
+}
+#ifdef Q_OS_WIN
+void TestRecordingInitTask::graphicsCaptureFallbackReasons_data()
+{
+    QTest::addColumn<int>("outcome");
+    QTest::newRow("unavailable") << 0;
+    QTest::newRow("cannot start") << 1;
+    QTest::newRow("started") << 2;
+}
+void TestRecordingInitTask::graphicsCaptureFallbackReasons()
+{
+    QFETCH(int, outcome);
+    class Capture : public ICaptureEngine {
+    public:
+        explicit Capture(bool starts) : m_starts(starts) {}
+        bool setRegion(const QRect&, QScreen*) override { return true; }
+        bool setRegion(const QRect&, const CaptureScreenInfo&) override { return true; }
+        bool start() override { return m_starts; }
+        void stop() override {}
+        bool isRunning() const override { return m_starts; }
+        QImage captureFrame() override { return {}; }
+        QString engineName() const override { return "test capture"; }
+    private:
+        bool m_starts;
+    };
+    auto config = createTestConfig();
+    config.preferGraphicsCapture = true;
+    RecordingInitTask task(config);
+    int fallbacks = 0;
+    task.m_createGraphicsCapture = [outcome]() -> ICaptureEngine* {
+        return outcome == 0 ? nullptr : new Capture(outcome == 2);
+    };
+    task.m_createFallbackCapture = [&]() -> ICaptureEngine* { ++fallbacks; return new Capture(true); };
+    QVERIFY(task.initializeCaptureEngine());
+    QCOMPARE(fallbacks, outcome == 2 ? 0 : 1);
+    QVERIFY(task.result().captureEngineStarted);
+    QVERIFY(task.result().error.isEmpty());
+    if (outcome == 0) QVERIFY(task.result().captureFallbackReason.contains("WGC unavailable"));
+    if (outcome == 1) QVERIFY(task.result().captureFallbackReason.contains("WGC start failed"));
+    if (outcome == 2) QVERIFY(task.result().captureFallbackReason.isEmpty());
+}
+#endif

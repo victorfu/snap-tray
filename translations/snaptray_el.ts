@@ -1480,6 +1480,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Η εγγραφή μπορεί να χρησιμοποιείται ή να μην είναι πλέον ανακτήσιμη. Ανοίξτε ξανά την «Ανάκτηση εγγραφών» για ανανέωση της λίστας.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Αποτυχία ανάκτησης έργου</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Δεν ήταν δυνατό το άνοιγμα του αντιγράφου ανάκτησης. Ελέγξτε τον ελεύθερο χώρο και τα δικαιώματα αρχείων. Το αρχικό έργο διατηρείται.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Η εγγραφή ανακτήθηκε</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Άνοιξε το ξεχωριστό έργο ανάκτησης. Δεν ήταν δυνατή η ανάγνωση των αλλαγών του αρχικού έργου· ο αρχικός φάκελος διατηρείται.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

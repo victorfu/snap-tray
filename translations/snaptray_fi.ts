@@ -1480,6 +1480,22 @@ Tiedoston koko: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Tallenne saattaa olla käytössä tai sitä ei voi enää palauttaa. Avaa ”Palauta tallenteet” uudelleen päivittääksesi luettelon.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Projektin palautus epäonnistui</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Palautuskopiota ei voitu avata. Tarkista vapaa levytila ja tiedostojen käyttöoikeudet. Alkuperäinen projekti säilytetään.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Tallenne palautettu</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Erillinen palautusprojekti avattiin. Alkuperäisen projektin muokkauksia ei voitu lukea; alkuperäinen kansio säilytetään.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

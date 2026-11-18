@@ -1479,6 +1479,22 @@ Kích thước tệp: %3</translation>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>Bản ghi có thể đang được sử dụng hoặc không còn khôi phục được. Mở lại «Khôi phục bản ghi» để làm mới danh sách.</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>Khôi phục dự án thất bại</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>Không thể mở bản sao khôi phục. Hãy kiểm tra dung lượng đĩa trống và quyền truy cập tệp. Dự án gốc được giữ nguyên.</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>Đã khôi phục bản ghi</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>Đã mở dự án khôi phục riêng. Không thể đọc các chỉnh sửa của dự án gốc; thư mục gốc được giữ nguyên.</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

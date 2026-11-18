@@ -1479,6 +1479,22 @@ File size: %3</source>
         <source>The recording may be in use or no longer recoverable. Reopen Recover Recordings to refresh the list.</source>
         <translation>録画が使用中か、復元できなくなっている可能性があります。「録画を復元」を開き直して一覧を更新してください。</translation>
     </message>
+    <message>
+        <source>Project Recovery Failed</source>
+        <translation>プロジェクトの復元に失敗</translation>
+    </message>
+    <message>
+        <source>The recovery copy could not be opened. Check free disk space and file permissions. The original project is kept.</source>
+        <translation>復元用コピーを開けませんでした。ディスクの空き容量とファイルのアクセス権を確認してください。元のプロジェクトは保持されています。</translation>
+    </message>
+    <message>
+        <source>Recovered Recording</source>
+        <translation>録画を復元しました</translation>
+    </message>
+    <message>
+        <source>Opened the separate recovery project. The original project's edits could not be read; the original folder is kept.</source>
+        <translation>別の復元プロジェクトを開きました。元のプロジェクトの編集内容は読み取れませんでした。元のフォルダーは保持されています。</translation>
+    </message>
 </context>
 <context>
     <name>MosaicBlurTypeSection</name>

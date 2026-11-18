@@ -14,6 +14,8 @@ public:
     explicit AudioSegmentReader(Source source) : m_source(std::move(source)) {}
     void begin(const TimelineSegment& part);
     QByteArray read(int frames);
+    // Source position derived from the total output, rounded only once.
+    qint64 sourceFrame() const;
 private:
     Source m_source;
     TimelineSegment m_part;

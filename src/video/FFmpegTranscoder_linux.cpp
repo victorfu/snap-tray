@@ -321,10 +321,10 @@ private:
         }
         bool withAudio = false;
         if (tracks) {
-            for (const auto& segment : segments) withAudio = withAudio || qFuzzyCompare(segment.speed, 1.0) || segment.keepSound;
+            for (const auto& segment : segments) withAudio = withAudio || !segment.isSilent();
         } else if (source.hasAudio) {
             for (const auto& segment : segments) {
-                withAudio = withAudio || ((qFuzzyCompare(segment.speed, 1.0) || segment.keepSound)
+                withAudio = withAudio || ((!segment.isSilent())
                     && qMin(segment.endMs, source.audioEndMs) - qMax(segment.startMs, source.audioStartMs) > 0);
             }
         }
