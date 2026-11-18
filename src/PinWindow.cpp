@@ -47,6 +47,8 @@
 #include "tools/ToolRepaintHelper.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
 #include "tools/handlers/CropToolHandler.h"
+#include "tools/handlers/CutOutToolHandler.h"
+#include "pinwindow/ImageStripTransform.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -2856,7 +2858,7 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
 
         // The crop draft owns every press: its handles and body must not be
         // taken by an annotation lying under them (#358).
-        if (isCropToolActive()) {
+        if (isImageEditToolActive()) {
             m_annotationLayer->clearSelection();
             m_toolManager->handleMousePress(mapToOriginalCoords(event->position()), event->modifiers());
             refreshCropCursor();
@@ -3077,7 +3079,7 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
     }
 
     // The crop tool also follows a hovering pointer, for its handle cursors.
-    if (isCropToolActive() && !m_isResizing && !m_isDragging) {
+    if (isImageEditToolActive() && !m_isResizing && !m_isDragging) {
         m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
         refreshCropCursor();
         return;
@@ -3241,7 +3243,7 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                         static_cast<int>(m_annotationLayer->itemCount() - 1));
                 }
                 m_toolManager->handleMouseRelease(mapToOriginalCoords(event->position()), event->modifiers());
-                if (isCropToolActive()) {
+                if (isImageEditToolActive()) {
                     refreshCropCursor();
                 }
                 if (m_currentToolId == ToolId::EmojiSticker) {
@@ -3293,6 +3295,17 @@ void PinWindow::mouseDoubleClickEvent(QMouseEvent* event)
             cancelImageEditGesture();
             if (inside) {
                 commitCropDraft();
+            }
+            return;
+        }
+        // The same for the cut-out band (#371).
+        if (isCutOutToolActive()) {
+            CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+            const bool inside =
+                cutOutHandler && cutOutHandler->draftContains(mapToOriginalCoords(event->position()));
+            cancelImageEditGesture();
+            if (inside) {
+                commitCutOutDraft();
             }
             return;
         }
@@ -3479,7 +3492,7 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
 
-    if (handleCropDraftKey(event)) {
+    if (handleCropDraftKey(event) || handleCutOutDraftKey(event)) {
         event->accept();
         return;
     }
@@ -3785,10 +3798,16 @@ void PinWindow::initializeAnnotationComponents()
             return applyCropSourcePixels(sourcePixelRect);
         });
         cropHandler->setDraftChangedCallback([this]() { syncCropDraftUi(); });
-        syncCropHandlerImageSize();
     } else {
         qWarning() << "PinWindow: Failed to get CropToolHandler. Crop tool will not function.";
     }
+    if (auto* cutOutHandler = cutOutToolHandler()) {
+        cutOutHandler->setCommitCallback([this](const ImageStrip::Request& request) {
+            return applyStrip(request);
+        });
+        cutOutHandler->setDraftChangedCallback([this]() { syncCutOutDraftUi(); });
+    }
+    syncCropHandlerImageSize();
 
     // Load saved annotation settings
     auto& annotationSettings = AnnotationSettingsManager::instance();
@@ -3888,6 +3907,27 @@ void PinWindow::initializeAnnotationComponents()
     });
     connect(optionsVM, &PinToolOptionsViewModel::cropApplyRequested, this, [this]() {
         commitCropDraft();
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cutOutOperationSelected, this, [this](int operation) {
+        if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
+            cutOutHandler->setOperation(static_cast<ImageStrip::Operation>(operation));
+            update();
+        }
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cutOutAxisSelected, this, [this](int axis) {
+        if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
+            cutOutHandler->setViewAxis(static_cast<ImageStrip::Axis>(axis));
+            update();
+        }
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cutOutApplyRequested, this, [this]() {
+        commitCutOutDraft();
+    });
+    connect(optionsVM, &PinToolOptionsViewModel::cutOutCancelRequested, this, [this]() {
+        if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
+            cutOutHandler->discardDraft();
+            update();
+        }
     });
     connect(optionsVM, &PinToolOptionsViewModel::cropCancelRequested, this, [this]() {
         if (CropToolHandler* cropHandler = cropToolHandler()) {
@@ -4162,6 +4202,9 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     if (CropToolHandler* cropHandler = cropToolHandler()) {
         cropHandler->discardDraft();
     }
+    if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
+        cutOutHandler->discardDraft();
+    }
     if (clearActiveTool) {
         m_currentToolId = ToolId::Selection;
         if (m_toolManager) {
@@ -4254,8 +4297,10 @@ void PinWindow::handleToolbarToolSelected(int toolId)
 
     // Each live frame is a new image and would drop the crop selection as it
     // is drawn; say what to do instead of offering a tool that cannot work.
-    if (tool == ToolId::Crop && m_isLiveMode && !m_livePaused) {
-        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Pause Live Update to crop"));
+    if ((tool == ToolId::Crop || tool == ToolId::CutOut) && m_isLiveMode && !m_livePaused) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info,
+                           tool == ToolId::Crop ? tr("Pause Live Update to crop")
+                                                : tr("Stop Live Update before cutting out a strip"));
         syncToolbarActiveButtonForVisibleState();
         return;
     }
@@ -4266,9 +4311,13 @@ void PinWindow::handleToolbarToolSelected(int toolId)
     // Choosing Crop again while a selection waits keeps it: the click is far
     // more likely a slip than a wish to throw the draft away. Esc or Cancel
     // discard it.
-    if (sameToolClicked && tool == ToolId::Crop) {
+    if (sameToolClicked && (tool == ToolId::Crop || tool == ToolId::CutOut)) {
         const CropToolHandler* cropHandler = cropToolHandler();
-        if (cropHandler && cropHandler->hasDraft()) {
+        const CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+        const bool waiting = tool == ToolId::Crop
+            ? (cropHandler && cropHandler->hasDraft())
+            : (cutOutHandler && cutOutHandler->hasDraft());
+        if (waiting) {
             if (m_toolbar) {
                 m_toolbar->viewModel()->setActiveTool(toolId);
             }
@@ -4337,6 +4386,9 @@ void PinWindow::handleToolbarToolSelected(int toolId)
         if (tool == ToolId::Crop) {
             syncCropHandlerImageSize();
             syncCropDraftUi();
+        } else if (tool == ToolId::CutOut) {
+            syncCropHandlerImageSize();
+            syncCutOutDraftUi();
         }
     }
     else {
@@ -4435,6 +4487,303 @@ void PinWindow::syncCropHandlerImageSize()
         cropHandler->setViewOrientation(m_rotationAngle, m_flipHorizontal, m_flipVertical);
         cropHandler->setPositionStep(cropPositionStep());
     }
+    // The cut-out tool works on the same pixel grid.
+    if (auto* cutOutHandler = cutOutToolHandler()) {
+        cutOutHandler->setImageSize(cropToolImageSize());
+        cutOutHandler->setSource(cropSourcePixelSize(),
+                                 m_originalPixmap.devicePixelRatio(),
+                                 m_originalPixmap.cacheKey());
+        cutOutHandler->setViewOrientation(m_rotationAngle, m_flipHorizontal, m_flipVertical);
+        // Whether a strip can be exact depends on the zoom just synced.
+        if (m_subToolbar) {
+            m_subToolbar->viewModel()->setCutOutAvailable(
+                cutOutHandler->canMarkStrip(), !qFuzzyCompare(m_zoomLevel, 1.0));
+        }
+    }
+}
+
+CutOutToolHandler* PinWindow::cutOutToolHandler() const
+{
+    return m_toolManager
+        ? dynamic_cast<CutOutToolHandler*>(m_toolManager->handler(ToolId::CutOut))
+        : nullptr;
+}
+
+bool PinWindow::isCutOutToolActive() const
+{
+    return m_annotationMode && m_currentToolId == ToolId::CutOut && m_toolManager;
+}
+
+bool PinWindow::isImageEditToolActive() const
+{
+    return isCropToolActive() || isCutOutToolActive();
+}
+
+void PinWindow::syncCutOutDraftUi()
+{
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    if (!cutOutHandler) {
+        return;
+    }
+    if (m_subToolbar) {
+        // Sizes as the pin shows the image: a quarter turn swaps the sides.
+        QSize shownResult = cutOutHandler->resultSize();
+        if (m_rotationAngle % 180 != 0) shownResult.transpose();
+        auto* optionsVM = m_subToolbar->viewModel();
+        optionsVM->setCutOutState(static_cast<int>(cutOutHandler->operation()),
+                                  static_cast<int>(cutOutHandler->viewAxis()));
+        optionsVM->setCutOutDraft(cutOutHandler->hasDraft(),
+                                  cutOutHandler->request().length, shownResult);
+        optionsVM->setCutOutAvailable(cutOutHandler->canMarkStrip(),
+                                      !qFuzzyCompare(m_zoomLevel, 1.0));
+        updateSubToolbarPosition();
+    }
+    update();
+}
+
+bool PinWindow::handleCutOutDraftKey(QKeyEvent* event)
+{
+    if (!isCutOutToolActive()) {
+        return false;
+    }
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    if (!cutOutHandler || !cutOutHandler->hasDraft()) {
+        return false;
+    }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+        commitCutOutDraft();
+        return true;
+    }
+
+    // The band only moves along its own axis.
+    QPoint sourceStep;
+    if (!arrowKeySourceStep(event, &sourceStep)) {
+        return false;
+    }
+    const int along = cutOutHandler->request().axis == ImageStrip::Axis::Rows
+        ? sourceStep.y() : sourceStep.x();
+    if (along == 0) {
+        return false;
+    }
+    cutOutHandler->nudgeDraft(along);
+    return true;
+}
+
+bool PinWindow::applyStrip(const ImageStrip::Request& request)
+{
+    if (m_isLiveMode) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error,
+                           tr("Stop Live Update before cutting out a strip"));
+        return false;
+    }
+    // While an erase or a drag is open the annotation layer refuses to move
+    // its items; the image must not change without them.
+    if (isRegionLayoutMode()
+        || (m_annotationLayer
+            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive()))) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("This strip cannot be applied"));
+        return false;
+    }
+    // Auto-blur adds redactions asynchronously, placed for the current image.
+    if (!ensureAutoBlurReadyForExport()) {
+        return false;
+    }
+    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+
+    const QSize gridSize = cropSourcePixelSize();
+    const QSize toolImageSize = cropToolImageSize();
+    if (toolImageSize.isEmpty() || ImageStrip::validate(gridSize, request) != ImageStrip::Error::None) {
+        qWarning() << "PinWindow::applyStrip: strip does not fit the image."
+                   << "start:" << request.start << "length:" << request.length << "source:" << gridSize;
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("This strip cannot be applied"));
+        return false;
+    }
+
+    const bool rows = request.axis == ImageStrip::Axis::Rows;
+    const int gridExtent = ImageStrip::extentAlong(gridSize, request.axis);
+    // Annotations live in tool/display space, which may be zoomed.
+    const qreal toolPerPixel =
+        static_cast<qreal>(rows ? toolImageSize.height() : toolImageSize.width()) / gridExtent;
+    // Pixels after the strip, and the annotations on them, must move by a
+    // whole number of view units. A fraction would be rounded differently by
+    // each annotation type and add up strip after strip, until a redaction no
+    // longer covers what it hides.
+    qreal dprForStep = m_originalPixmap.devicePixelRatio();
+    if (dprForStep <= 0.0) dprForStep = 1.0;
+    const int lengthStep = ImageStrip::lengthStep(dprForStep, toolPerPixel);
+    if (lengthStep <= 0 || request.length % lengthStep != 0) {
+        // At 100% the cause is the image itself (a size that is not a whole
+        // number of logical pixels), which resetting the zoom cannot help.
+        m_toast->showToast(SnapTray::QmlToast::Level::Error,
+                           qFuzzyCompare(m_zoomLevel, 1.0)
+                               ? tr("This strip cannot be applied")
+                               : tr("Reset zoom to 100% to cut out a strip"));
+        return false;
+    }
+    const qreal toolStart = request.start * toolPerPixel;
+    const qreal toolLength = request.length * toolPerPixel;
+    const auto placementOf = [&](const AnnotationItem& item) {
+        return ImageStrip::placementOf(QRectF(item.boundingRect()), request.axis, request.operation,
+                                       toolStart, toolLength);
+    };
+
+    // A visible annotation touching the strip cannot simply be moved: a
+    // redaction would stop covering what it hides, a stroke would be joined
+    // across the gap. Refuse instead of guessing.
+    if (m_annotationLayer) {
+        for (size_t i = 0; i < m_annotationLayer->itemCount(); ++i) {
+            const AnnotationItem* item = m_annotationLayer->itemAt(static_cast<int>(i));
+            if (item && placementOf(*item) == ImageStrip::Placement::Crossing) {
+                m_toast->showToast(
+                    SnapTray::QmlToast::Level::Error,
+                    tr("Annotations cross this strip. Move or delete them first."));
+                return false;
+            }
+        }
+        // An undone annotation that Redo can bring back returns whole and, as
+        // one piece, can only follow one side of the strip: part of what it
+        // covered would be left bare. (Items that only an Undo restores are
+        // fine: undoing that far undoes this strip first.)
+        bool redoCrossing = false;
+        m_annotationLayer->forEachRedoItem([&](const AnnotationItem* item) {
+            redoCrossing = redoCrossing
+                || (item && placementOf(*item) == ImageStrip::Placement::Crossing);
+        });
+        if (redoCrossing) {
+            m_toast->showToast(
+                SnapTray::QmlToast::Level::Error,
+                tr("Annotations cross this strip. Move or delete them first."));
+            return false;
+        }
+    }
+
+    qreal dpr = m_originalPixmap.devicePixelRatio();
+    if (dpr <= 0.0) dpr = 1.0;
+    const QRectF previousSampleRect = sourceSampleRect();
+    const qreal sampleOrigin = rows ? previousSampleRect.top() : previousSampleRect.left();
+    const qreal sampleEnd = rows ? previousSampleRect.bottom() : previousSampleRect.right();
+
+    // One strip unit is one device pixel of the sampled source. A blank strip
+    // appended after the last pixel goes after any partly sampled row too.
+    // The display rounds a fractional sample origin to a device row, so the
+    // rows the user marked are counted from the same rounded origin.
+    ImageStrip::Request deviceRequest = request;
+    deviceRequest.start = qRound(sampleOrigin) + request.start;
+    if (request.operation == ImageStrip::Operation::Insert && request.start >= gridExtent) {
+        deviceRequest.start = qCeil(sampleEnd);
+    }
+    const int deviceExtent = rows ? m_originalPixmap.height() : m_originalPixmap.width();
+    if (request.operation == ImageStrip::Operation::Insert) {
+        deviceRequest.start = qMin(deviceRequest.start, deviceExtent);
+    }
+
+    // Annotations are shifted, never rescaled, so the pin must show the new
+    // image at exactly the scale it shows the old one. With rounded sizes that
+    // is not a given; check it before anything changes.
+    const int signedLengthForScale =
+        request.operation == ImageStrip::Operation::Remove ? -request.length : request.length;
+    const int predictedLogicalExtent = qMax(1, qRound((gridExtent + signedLengthForScale) / dpr));
+    const int oldToolExtent = rows ? toolImageSize.height() : toolImageSize.width();
+    const int predictedToolExtent = qMax(1, qRound(predictedLogicalExtent * m_zoomLevel));
+    const int toolShift = qRound(signedLengthForScale * toolPerPixel);
+    if (predictedToolExtent != oldToolExtent + toolShift) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("This strip cannot be applied"));
+        return false;
+    }
+    const ImageStrip::Result result = ImageStrip::apply(m_originalPixmap.toImage(), deviceRequest);
+    QPixmap newPixmap = result.ok() ? QPixmap::fromImage(result.image) : QPixmap();
+    if (newPixmap.isNull()) {
+        // Nothing has been changed yet: the pin stays exactly as it was.
+        qWarning() << "PinWindow::applyStrip: transform failed, error" << static_cast<int>(result.error);
+        m_toast->showToast(
+            SnapTray::QmlToast::Level::Error,
+            result.error == ImageStrip::Error::TooLarge
+                ? tr("The image would become too large")
+                : tr("This strip cannot be applied"));
+        return false;
+    }
+    newPixmap.setDevicePixelRatio(dpr);
+
+    CropUndoEntry entry;
+    entry.isStrip = true;
+    entry.pixmap = m_originalPixmap;
+    entry.contentLogicalSize = baseContentLogicalSize();
+    entry.sourceSampleRect = previousSampleRect;
+    entry.rotationAngle = m_rotationAngle;
+    entry.flipH = m_flipHorizontal;
+    entry.flipV = m_flipVertical;
+    entry.storedRegions = m_storedRegions;
+    entry.hasMultiRegionData = m_hasMultiRegionData;
+
+    const int signedLength =
+        request.operation == ImageStrip::Operation::Remove ? -request.length : request.length;
+    // The logical size follows from the real pixel count, so repeated
+    // operations cannot drift at a fractional pixel ratio.
+    const int newLogicalExtent = qMax(1, qRound((gridExtent + signedLength) / dpr));
+    QSize newLogicalSize = entry.contentLogicalSize;
+    QRectF newSampleRect = previousSampleRect;
+    if (rows) {
+        newLogicalSize.setHeight(newLogicalExtent);
+        newSampleRect.setHeight(previousSampleRect.height() + signedLength);
+    } else {
+        newLogicalSize.setWidth(newLogicalExtent);
+        newSampleRect.setWidth(previousSampleRect.width() + signedLength);
+    }
+
+    invalidateAutoBlurRequest();
+    m_originalPixmap = newPixmap;
+    setContentLogicalSize(newLogicalSize);
+    setSourceSampleRect(newSampleRect);
+    // Region layout metadata describes the old pixel grid.
+    m_storedRegions.clear();
+    m_hasMultiRegionData = false;
+
+    entry.croppedPixmap = m_originalPixmap;
+    entry.croppedContentLogicalSize = baseContentLogicalSize();
+    entry.croppedSourceSampleRect = sourceSampleRect();
+    entry.croppedRotationAngle = m_rotationAngle;
+    entry.croppedFlipH = m_flipHorizontal;
+    entry.croppedFlipV = m_flipVertical;
+    entry.croppedStoredRegions = m_storedRegions;
+    entry.croppedHasMultiRegionData = m_hasMultiRegionData;
+
+    if (m_annotationLayer) {
+        m_annotationLayer->endModifyCoalescing();
+        entry.annotationHistoryState = m_annotationLayer->historyStateToken();
+        entry.layoutHistoryCeiling = m_annotationLayer->latestHistoryGeneration();
+        const QPointF shift = ImageStrip::shiftAfter(request.axis, request.operation, toolLength);
+        const qreal toolMiddle = request.operation == ImageStrip::Operation::Remove
+            ? toolStart + toolLength / 2.0 : toolStart;
+        m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
+            [&](AnnotationLayer::LayoutItemKey key, const AnnotationItem& annotation) {
+                ImageStrip::Placement placement = placementOf(annotation);
+                if (placement == ImageStrip::Placement::Crossing) {
+                    // Only items an Undo could restore get here, and undoing
+                    // that far undoes this strip first, with these very
+                    // shifts. Until then they follow their center.
+                    const QPointF center = QRectF(annotation.boundingRect()).center();
+                    placement = (rows ? center.y() : center.x()) >= toolMiddle
+                        ? ImageStrip::Placement::After : ImageStrip::Placement::Before;
+                }
+                const QPointF delta = placement == ImageStrip::Placement::After ? shift : QPointF();
+                entry.layoutAnnotationOffsets.insert(key, delta);
+                return delta;
+            });
+    }
+
+    m_cropRedoStack.clear();
+    m_cropUndoStack.append(std::move(entry));
+    if (m_cropUndoStack.size() > kMaxCropUndoSize) {
+        m_cropUndoStack.removeFirst();
+    }
+
+    m_cachedRotation = -1;
+    leaveCropTool();
+    updateSize();
+    updateToolbarPosition();
+    syncCropHandlerImageSize();
+    updateUndoRedoState();
+    return true;
 }
 
 CropToolHandler* PinWindow::cropToolHandler() const
@@ -4490,6 +4839,16 @@ bool PinWindow::handleCropDraftKey(QKeyEvent* event)
         return true;
     }
 
+    QPoint sourceStep;
+    if (!arrowKeySourceStep(event, &sourceStep)) {
+        return false;
+    }
+    cropHandler->nudgeDraft(sourceStep);
+    return true;
+}
+
+bool PinWindow::arrowKeySourceStep(const QKeyEvent* event, QPoint* sourceStep) const
+{
     static const QHash<int, QPoint> kArrowSteps = {
         {Qt::Key_Left, QPoint(-1, 0)},
         {Qt::Key_Right, QPoint(1, 0)},
@@ -4504,11 +4863,10 @@ bool PinWindow::handleCropDraftKey(QKeyEvent* event)
     if (modifiers != Qt::NoModifier && modifiers != Qt::ShiftModifier) {
         return false;
     }
-    // Arrows follow the screen; the draft is stored unrotated and unmirrored.
+    // Arrows follow the screen; drafts are stored unrotated and unmirrored.
     const int distance = modifiers == Qt::ShiftModifier ? kCropNudgeLargeStep : kCropNudgeStep;
-    const QPointF sourceStep = buildOrientationLinearTransform(
-        m_rotationAngle, m_flipHorizontal, m_flipVertical).inverted().map(QPointF(*step) * distance);
-    cropHandler->nudgeDraft(sourceStep.toPoint());
+    *sourceStep = buildOrientationLinearTransform(
+        m_rotationAngle, m_flipHorizontal, m_flipVertical).inverted().map(QPointF(*step) * distance).toPoint();
     return true;
 }
 
@@ -4789,11 +5147,31 @@ bool PinWindow::commitCropDraft()
 void PinWindow::cancelImageEditGesture()
 {
     CropToolHandler* cropHandler = cropToolHandler();
-    if (cropHandler && cropHandler->isDrawing()) {
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    const bool cropDrawing = cropHandler && cropHandler->isDrawing();
+    const bool cutOutDrawing = cutOutHandler && cutOutHandler->isDrawing();
+    if (cropDrawing) {
         cropHandler->cancelDrawing();
+    }
+    if (cutOutDrawing) {
+        cutOutHandler->cancelDrawing();
+    }
+    if (cropDrawing || cutOutDrawing) {
         refreshCropCursor();
         update();
     }
+}
+
+bool PinWindow::commitCutOutDraft()
+{
+    CutOutToolHandler* cutOutHandler = cutOutToolHandler();
+    if (!cutOutHandler || !isCutOutToolActive() || !cutOutHandler->hasDraft()) {
+        return false;
+    }
+    // As for crop: the second press of a double-click began a drag.
+    cutOutHandler->cancelDrawing();
+    // applyStrip() explains every refusal itself.
+    return cutOutHandler->commitDraft();
 }
 
 void PinWindow::undoCrop()
@@ -4812,7 +5190,7 @@ void PinWindow::undoCrop()
     m_hasMultiRegionData = entry.hasMultiRegionData;
 
     if (m_annotationLayer) {
-        if (entry.isLayout) {
+        if (entry.isLayout || entry.isStrip) {
             m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
                 [&entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem&) {
                     return -entry.layoutAnnotationOffsets.value(key);
@@ -4852,7 +5230,13 @@ void PinWindow::redoCrop()
     m_hasMultiRegionData = entry.croppedHasMultiRegionData;
 
     if (m_annotationLayer) {
-        if (entry.isLayout) {
+        if (entry.isStrip) {
+            // The same per-item shifts the strip applied the first time.
+            m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
+                [&entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem&) {
+                    return entry.layoutAnnotationOffsets.value(key);
+                });
+        } else if (entry.isLayout) {
             entry.layoutAnnotationOffsets.clear();
             m_annotationLayer->translateLayoutOwnedItems(entry.layoutHistoryCeiling,
                 [&entry](AnnotationLayer::LayoutItemKey key, const AnnotationItem& item) {
@@ -6278,7 +6662,7 @@ void PinWindow::startLiveCapture()
     invalidateAutoBlurRequest();
     m_isLiveMode = true;
     // Frames are about to replace the image under the crop tool.
-    if (isCropToolActive()) {
+    if (isImageEditToolActive()) {
         leaveCropTool();
     }
     syncHoverBar();
@@ -6401,7 +6785,7 @@ void PinWindow::resumeLiveCapture()
 
     m_livePaused = false;
     // Frames are about to replace the image under the crop tool.
-    if (isCropToolActive()) {
+    if (isImageEditToolActive()) {
         leaveCropTool();
     }
     if (m_captureTimer) {
@@ -6684,7 +7068,7 @@ bool PinWindow::handlePolylineAnnotationRelease(const QPoint& pos)
 
 void PinWindow::updateAnnotationCursor(const QPoint& pos)
 {
-    if (isCropToolActive()) {
+    if (isImageEditToolActive()) {
         // Crop presses never reach annotations, so their hover cursors would lie.
         CursorManager::instance().setHoverTargetForWidget(this, HoverTarget::None);
         CursorManager::instance().reapplyCursorForWidget(this);

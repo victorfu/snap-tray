@@ -387,6 +387,19 @@ void AnnotationLayer::forEachItem(const std::function<void(const AnnotationItem*
     }
 }
 
+void AnnotationLayer::forEachRedoItem(
+    const std::function<void(const AnnotationItem*)>& visitor) const
+{
+    if (!visitor) {
+        return;
+    }
+    for (const auto& command : m_redoStack) {
+        for (const auto& item : command.items) {
+            if (item.item) visitor(item.item.get());
+        }
+    }
+}
+
 void AnnotationLayer::forEachOwnedItem(
     const std::function<void(AnnotationItem*)>& visitor)
 {

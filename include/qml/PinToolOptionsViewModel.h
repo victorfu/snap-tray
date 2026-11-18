@@ -36,6 +36,17 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(bool showAutoBlurSection READ showAutoBlurSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(bool showCropSection READ showCropSection NOTIFY sectionVisibilityChanged)
 
+    // Cut-out section (#371): remove or insert, band direction, sizes.
+    Q_PROPERTY(bool showCutOutSection READ showCutOutSection NOTIFY sectionVisibilityChanged)
+    Q_PROPERTY(QVariantList cutOutOperationOptions READ cutOutOperationOptions CONSTANT)
+    Q_PROPERTY(QVariantList cutOutAxisOptions READ cutOutAxisOptions CONSTANT)
+    Q_PROPERTY(int cutOutOperation READ cutOutOperation NOTIFY cutOutStateChanged)
+    Q_PROPERTY(int cutOutAxis READ cutOutAxis NOTIFY cutOutStateChanged)
+    Q_PROPERTY(bool cutOutHasDraft READ cutOutHasDraft NOTIFY cutOutDraftChanged)
+    Q_PROPERTY(QString cutOutSizeText READ cutOutSizeText NOTIFY cutOutDraftChanged)
+    // Shown instead of the size while no strip can be exact (odd zoom).
+    Q_PROPERTY(QString cutOutHintText READ cutOutHintText NOTIFY cutOutDraftChanged)
+
     // Crop section (#358): aspect preset, draft size and apply / cancel.
     Q_PROPERTY(QVariantList cropAspectOptions READ cropAspectOptions CONSTANT)
     Q_PROPERTY(int cropAspect READ cropAspect NOTIFY cropAspectChanged)
@@ -123,6 +134,22 @@ public:
     bool showAutoBlurSection() const { return m_showAutoBlur; }
     bool showCropSection() const { return m_showCrop; }
     bool hasContent() const;
+
+    // Cut-out state, pushed by the host that owns the tool. Operation is an
+    // ImageStrip::Operation; axis an ImageStrip::Axis as seen on screen.
+    bool showCutOutSection() const { return m_showCutOut; }
+    QVariantList cutOutOperationOptions() const;
+    QVariantList cutOutAxisOptions() const;
+    int cutOutOperation() const { return m_cutOutOperation; }
+    int cutOutAxis() const { return m_cutOutAxis; }
+    void setCutOutState(int operation, int axis);
+    bool cutOutHasDraft() const { return m_cutOutHasDraft; }
+    QString cutOutSizeText() const { return m_cutOutSizeText; }
+    // `length` in source pixels; `resultSize` is the image after applying.
+    void setCutOutDraft(bool hasDraft, int length, const QSize& resultSize);
+    QString cutOutHintText() const;
+    // `zoomed`: the pin is not at 100%, so resetting the zoom may help.
+    void setCutOutAvailable(bool available, bool zoomed);
 
     // Crop draft state, pushed by the host that owns the crop tool.
     QVariantList cropAspectOptions() const;
@@ -290,6 +317,12 @@ signals:
     void cropAspectSelected(int aspect);   // CropDraftModel::Aspect
     void cropApplyRequested();
     void cropCancelRequested();
+    void cutOutStateChanged();
+    void cutOutDraftChanged();
+    void cutOutOperationSelected(int operation);
+    void cutOutAxisSelected(int axis);
+    void cutOutApplyRequested();
+    void cutOutCancelRequested();
 
 public slots:
     // Called from QML
@@ -315,6 +348,10 @@ public slots:
     void handleCropAspectSelected(int aspect);
     void handleCropApply();
     void handleCropCancel();
+    void handleCutOutOperationSelected(int operation);
+    void handleCutOutAxisSelected(int axis);
+    void handleCutOutApply();
+    void handleCutOutCancel();
     void handleZOrderRequested(int move);
 
     // Returns true if the wheel delta was consumed (width adjusted)
@@ -348,6 +385,15 @@ private:
     bool m_showAutoBlur = false;
     bool m_showCrop = false;
     bool m_showingEmojiPicker = false;
+
+    // Cut-out
+    bool m_showCutOut = false;
+    int m_cutOutOperation = 0;
+    int m_cutOutAxis = 0;
+    bool m_cutOutHasDraft = false;
+    QString m_cutOutSizeText;
+    bool m_cutOutAvailable = true;
+    bool m_cutOutZoomed = false;
 
     // Crop
     int m_cropAspect = 0;

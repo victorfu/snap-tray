@@ -37,6 +37,7 @@ private slots:
     void textAndShapeTogglesAreCheckboxes();
     void arrangeButtonsAreNamedAndRequestMoves();
     void cropControlsAreNamedAndFollowTheDraft();
+    void cutOutControlsAreNamedAndFollowTheDraft();
 
 private:
     std::unique_ptr<QQuickView> load(PinToolOptionsViewModel& viewModel);
@@ -456,6 +457,76 @@ void tst_ToolOptionsAccessibility::cropControlsAreNamedAndFollowTheDraft()
         QPointF(applyButton->width() / 2, applyButton->height() / 2));
     QTest::mouseClick(view.get(), Qt::LeftButton, Qt::NoModifier, applyCenter.toPoint());
     QCOMPARE(apply.count(), 2);
+
+    vm.showForTool(static_cast<int>(ToolId::Pencil));
+    QTRY_VERIFY(!section->isVisible());
+}
+
+// #371: the cut-out strip names its two choices and only lets Apply / Cancel
+// act while a band is marked.
+void tst_ToolOptionsAccessibility::cutOutControlsAreNamedAndFollowTheDraft()
+{
+    PinToolOptionsViewModel vm;
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    auto view = load(vm);
+    QVERIFY(view);
+    QQuickItem* root = view->rootObject();
+    auto* section = root->findChild<QQuickItem*>("toolOptionsCutOutSection");
+    QVERIFY(section);
+    QVERIFY(section->isVisible());
+    QVERIFY(!root->findChild<QQuickItem*>("toolOptionsCropSection")->isVisible());
+    QVERIFY(root->width() >= section->width());
+
+    QAccessibleInterface* remove = named(root, QStringLiteral("Remove the strip and join the rest"));
+    QAccessibleInterface* insert = named(root, QStringLiteral("Insert a transparent strip"));
+    QAccessibleInterface* horizontal = named(root, QStringLiteral("Horizontal strip"));
+    QAccessibleInterface* vertical = named(root, QStringLiteral("Vertical strip"));
+    QVERIFY(remove && insert && horizontal && vertical);
+    QCOMPARE(remove->role(), QAccessible::RadioButton);
+    QVERIFY(remove->state().checked);
+    QVERIFY(!insert->state().checked);
+    QVERIFY(horizontal->state().checked);
+    QVERIFY(!vertical->state().checked);
+
+    QSignalSpy operation(&vm, &PinToolOptionsViewModel::cutOutOperationSelected);
+    QSignalSpy axis(&vm, &PinToolOptionsViewModel::cutOutAxisSelected);
+    insert->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    vertical->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(operation.count(), 1);
+    QCOMPARE(operation.first().first().toInt(), 1);
+    QCOMPARE(axis.count(), 1);
+    QCOMPARE(axis.first().first().toInt(), 1);
+    vm.setCutOutState(1, 1);
+    QTRY_VERIFY(insert->state().checked);
+    QVERIFY(vertical->state().checked);
+    QVERIFY(!remove->state().checked);
+
+    QSignalSpy apply(&vm, &PinToolOptionsViewModel::cutOutApplyRequested);
+    QSignalSpy cancel(&vm, &PinToolOptionsViewModel::cutOutCancelRequested);
+    auto* applyButton = root->findChild<QQuickItem*>("cutOutApplyButton");
+    auto* cancelButton = root->findChild<QQuickItem*>("cutOutCancelButton");
+    auto* sizeLabel = root->findChild<QQuickItem*>("cutOutSizeLabel");
+    QVERIFY(applyButton && cancelButton && sizeLabel);
+    QVERIFY(!applyButton->isEnabled());
+    QVERIFY(!cancelButton->isEnabled());
+    QVERIFY(!sizeLabel->isVisible());
+    QVERIFY(QMetaObject::invokeMethod(applyButton, "apply"));
+    QVERIFY(QMetaObject::invokeMethod(cancelButton, "cancel"));
+    QCOMPARE(apply.count(), 0);
+    QCOMPARE(cancel.count(), 0);
+
+    vm.setCutOutDraft(true, 60, QSize(660, 400));
+    QTRY_VERIFY(applyButton->isEnabled());
+    QTRY_VERIFY(sizeLabel->isVisible());
+    QCOMPARE(sizeLabel->property("text").toString(), vm.cutOutSizeText());
+    QAccessibleInterface* applyAccessible = named(root, QStringLiteral("Apply cut out"));
+    QAccessibleInterface* cancelAccessible = named(root, QStringLiteral("Cancel cut out"));
+    QVERIFY(applyAccessible && cancelAccessible);
+    QCOMPARE(applyAccessible->role(), QAccessible::Button);
+    applyAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    cancelAccessible->actionInterface()->doAction(QAccessibleActionInterface::pressAction());
+    QCOMPARE(apply.count(), 1);
+    QCOMPARE(cancel.count(), 1);
 
     vm.showForTool(static_cast<int>(ToolId::Pencil));
     QTRY_VERIFY(!section->isVisible());

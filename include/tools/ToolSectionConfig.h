@@ -20,6 +20,7 @@ struct ToolSectionConfig {
     bool showSizeSection = false;
     bool showAutoBlurSection = false;
     bool showCropSection = false;
+    bool showCutOutSection = false;
 
     /**
      * @brief Get the section configuration for a tool.

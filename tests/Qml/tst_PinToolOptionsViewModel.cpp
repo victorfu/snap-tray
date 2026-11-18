@@ -5,6 +5,7 @@
 #include "annotations/AnnotationStyle.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/ShapeAnnotation.h"
+#include "pinwindow/ImageStripTransform.h"
 #include "tools/CropDraftModel.h"
 #include "tools/ToolId.h"
 #include "ui/DesignSystem.h"
@@ -61,6 +62,7 @@ private slots:
     void testDefaultRed_MatchesDesignSystem();
     void cropSectionOnlyForCropTool();
     void cropDraftStateAndRequests();
+    void cutOutSectionStateAndRequests();
 };
 
 void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
@@ -526,6 +528,72 @@ void tst_PinToolOptionsViewModel::cropDraftStateAndRequests()
     QCOMPARE(selected.first().first().toInt(), static_cast<int>(CropDraftModel::Aspect::Square));
     vm.handleCropApply();
     vm.handleCropCancel();
+    QCOMPARE(apply.count(), 1);
+    QCOMPARE(cancel.count(), 1);
+}
+
+void tst_PinToolOptionsViewModel::cutOutSectionStateAndRequests()
+{
+    using ImageStrip::Axis;
+    using ImageStrip::Operation;
+    PinToolOptionsViewModel vm;
+    QVERIFY(!vm.showCutOutSection());
+
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    QVERIFY(vm.showCutOutSection());
+    QVERIFY(!vm.showCropSection());
+    QVERIFY(vm.hasContent());
+    QCOMPARE(vm.targetLabel(), PinToolOptionsViewModel::tr("Cut Out"));
+    // Crop and cut-out never show together, and other tools show neither.
+    vm.showForTool(static_cast<int>(ToolId::Crop));
+    QVERIFY(vm.showCropSection());
+    QVERIFY(!vm.showCutOutSection());
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    vm.showForTool(static_cast<int>(ToolId::Arrow));
+    QVERIFY(!vm.showCutOutSection());
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    vm.clearSections();
+    QVERIFY(!vm.showCutOutSection());
+
+    QCOMPARE(vm.cutOutOperationOptions().size(), 2);
+    QCOMPARE(vm.cutOutAxisOptions().size(), 2);
+    for (const QVariantList& options : {vm.cutOutOperationOptions(), vm.cutOutAxisOptions()}) {
+        for (const QVariant& option : options) {
+            QVERIFY(!option.toMap().value("label").toString().isEmpty());
+            QVERIFY(!option.toMap().value("name").toString().isEmpty());
+        }
+    }
+
+    QSignalSpy state(&vm, &PinToolOptionsViewModel::cutOutStateChanged);
+    QSignalSpy draft(&vm, &PinToolOptionsViewModel::cutOutDraftChanged);
+    vm.setCutOutState(int(Operation::Remove), int(Axis::Rows));
+    QCOMPARE(state.count(), 0);   // already the default
+    vm.setCutOutDraft(true, 120, QSize(800, 480));
+    QVERIFY(vm.cutOutHasDraft());
+    QCOMPARE(vm.cutOutSizeText(), QStringLiteral("\u2212120 px \u2192 800 \u00D7 480 px"));
+    QCOMPARE(draft.count(), 1);
+    vm.setCutOutState(int(Operation::Insert), int(Axis::Columns));
+    QCOMPARE(state.count(), 1);
+    QCOMPARE(vm.cutOutOperation(), int(Operation::Insert));
+    QCOMPARE(vm.cutOutAxis(), int(Axis::Columns));
+    vm.setCutOutDraft(true, 120, QSize(920, 600));
+    QCOMPARE(vm.cutOutSizeText(), QStringLiteral("+120 px \u2192 920 \u00D7 600 px"));
+    vm.setCutOutDraft(false, 0, QSize());
+    QVERIFY(!vm.cutOutHasDraft());
+    QVERIFY(vm.cutOutSizeText().isEmpty());
+
+    QSignalSpy operation(&vm, &PinToolOptionsViewModel::cutOutOperationSelected);
+    QSignalSpy axis(&vm, &PinToolOptionsViewModel::cutOutAxisSelected);
+    QSignalSpy apply(&vm, &PinToolOptionsViewModel::cutOutApplyRequested);
+    QSignalSpy cancel(&vm, &PinToolOptionsViewModel::cutOutCancelRequested);
+    vm.handleCutOutOperationSelected(int(Operation::Insert));
+    vm.handleCutOutOperationSelected(7);
+    vm.handleCutOutAxisSelected(int(Axis::Columns));
+    vm.handleCutOutAxisSelected(-1);
+    vm.handleCutOutApply();
+    vm.handleCutOutCancel();
+    QCOMPARE(operation.count(), 1);
+    QCOMPARE(axis.count(), 1);
     QCOMPARE(apply.count(), 1);
     QCOMPARE(cancel.count(), 1);
 }
