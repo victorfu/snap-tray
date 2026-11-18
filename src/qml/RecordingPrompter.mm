@@ -53,6 +53,7 @@ RecordingPrompter::RecordingPrompter(QScreen* capture, QScreen* display, QString
     m_view->create();
     setWindowExcludedFromCapture(m_view.get(), true);
     m_view->show();
+    QmlOverlayManager::preventWindowHideOnDeactivate(m_view.get());
 }
 
 void RecordingPrompter::checkPlacement()
