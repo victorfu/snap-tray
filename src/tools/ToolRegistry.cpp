@@ -168,6 +168,17 @@ void ToolRegistry::registerTools() {
     });
 
     registerTool({
+        ToolId::CutOut,
+        "cut-out",
+        QCoreApplication::translate("ToolRegistry", "Cut Out"),
+        "",
+        ToolCategory::Drawing,
+        false, false, false, false, false, false,  // no capabilities
+        false, false, false,  // UI visibility: none
+        false, QColor()
+    });
+
+    registerTool({
         ToolId::Measure,
         "measure",
         QCoreApplication::translate("ToolRegistry", "Measure"),
@@ -455,6 +466,7 @@ QVector<ToolId> ToolRegistry::getToolsForToolbar(ToolbarType type) const {
             ToolId::EmojiSticker,
             ToolId::Beautify,
             ToolId::Crop,
+            ToolId::CutOut,
             ToolId::Measure,
             ToolId::Undo,
             ToolId::Redo,

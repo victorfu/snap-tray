@@ -390,6 +390,23 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         {"CropSection", "Cancel crop"},
         {"CropSection", "Apply"},
         {"CropSection", "Apply crop"},
+        // #371: the cut-out tool.
+        {"ToolRegistry", "Cut Out"},
+        {"PinToolOptionsViewModel", "Cut Out"},
+        {"PinToolOptionsViewModel", "Remove"},
+        {"PinToolOptionsViewModel", "Remove the strip and join the rest"},
+        {"PinToolOptionsViewModel", "Insert"},
+        {"PinToolOptionsViewModel", "Insert a transparent strip"},
+        {"PinToolOptionsViewModel", "Horizontal strip"},
+        {"PinToolOptionsViewModel", "Vertical strip"},
+        {"CutOutSection", "Cancel cut out"},
+        {"CutOutSection", "Apply cut out"},
+        {"PinWindow", "Stop Live Update before cutting out a strip"},
+        {"PinWindow", "This strip cannot be applied"},
+        {"PinWindow", "Annotations cross this strip. Move or delete them first."},
+        {"PinWindow", "The image would become too large"},
+        {"PinWindow", "Reset zoom to 100% to cut out a strip"},
+        {"PinToolOptionsViewModel", "Reset zoom to 100% to cut out a strip"},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

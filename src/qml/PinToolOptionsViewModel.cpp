@@ -6,11 +6,14 @@
 #include "annotations/LineStyle.h"
 #include "annotations/ShapeAnnotation.h"
 #include "annotations/StepBadgeAnnotation.h"
+#include "pinwindow/ImageStripTransform.h"
 #include "tools/CropDraftModel.h"
 #include "tools/ToolSectionConfig.h"
 #include "tools/ToolWidthSlot.h"
 #include "ui/DesignSystem.h"
 #include "settings/AnnotationSettingsManager.h"
+
+#include <QCoreApplication>
 
 #include <iterator>
 
@@ -76,7 +79,7 @@ bool PinToolOptionsViewModel::hasContent() const
 {
     return m_showColor || m_showWidth || m_showText ||
            m_showArrowStyle || m_showLineStyle || m_showShape ||
-           m_showSize || m_showAutoBlur || m_showCrop;
+           m_showSize || m_showAutoBlur || m_showCrop || m_showCutOut;
 }
 
 void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
@@ -97,8 +100,9 @@ void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
     m_showSize = showSize;
     m_showAutoBlur = showAutoBlur;
     // Only showForTool() turns the crop section on.
-    const bool hadCrop = m_showCrop;
+    const bool hadCrop = m_showCrop || m_showCutOut;
     m_showCrop = false;
+    m_showCutOut = false;
     emit sectionVisibilityChanged();
     if (hadCrop) emit targetChanged();   // the strip label said "Crop"
 }
@@ -162,11 +166,111 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showShapeSection,
                            config.showSizeSection,
                            config.showAutoBlurSection);
-    if (config.showCropSection) {
-        m_showCrop = true;
+    if (config.showCropSection || config.showCutOutSection) {
+        m_showCrop = config.showCropSection;
+        m_showCutOut = config.showCutOutSection;
         emit sectionVisibilityChanged();
         emit targetChanged();
     }
+}
+
+QVariantList PinToolOptionsViewModel::cutOutOperationOptions() const
+{
+    return {
+        QVariantMap{{"value", static_cast<int>(ImageStrip::Operation::Remove)},
+                    {"label", tr("Remove")},
+                    {"name", tr("Remove the strip and join the rest")}},
+        QVariantMap{{"value", static_cast<int>(ImageStrip::Operation::Insert)},
+                    {"label", tr("Insert")},
+                    {"name", tr("Insert a transparent strip")}},
+    };
+}
+
+QVariantList PinToolOptionsViewModel::cutOutAxisOptions() const
+{
+    return {
+        QVariantMap{{"value", static_cast<int>(ImageStrip::Axis::Rows)},
+                    {"label", tr("Horizontal")},
+                    {"name", tr("Horizontal strip")}},
+        QVariantMap{{"value", static_cast<int>(ImageStrip::Axis::Columns)},
+                    {"label", tr("Vertical")},
+                    {"name", tr("Vertical strip")}},
+    };
+}
+
+void PinToolOptionsViewModel::setCutOutState(int operation, int axis)
+{
+    if (m_cutOutOperation == operation && m_cutOutAxis == axis) {
+        return;
+    }
+    m_cutOutOperation = operation;
+    m_cutOutAxis = axis;
+    emit cutOutStateChanged();
+}
+
+void PinToolOptionsViewModel::setCutOutDraft(bool hasDraft, int length, const QSize& resultSize)
+{
+    // "-120 px > 800 x 480 px": what changes, then the image that results.
+    const bool remove = m_cutOutOperation == static_cast<int>(ImageStrip::Operation::Remove);
+    const QString sizeText = hasDraft
+        ? QStringLiteral("%1%2 px \u2192 %3 \u00D7 %4 px")
+              .arg(remove ? QStringLiteral("\u2212") : QStringLiteral("+"))
+              .arg(length)
+              .arg(resultSize.width())
+              .arg(resultSize.height())
+        : QString();
+    if (m_cutOutHasDraft == hasDraft && m_cutOutSizeText == sizeText) {
+        return;
+    }
+    m_cutOutHasDraft = hasDraft;
+    m_cutOutSizeText = sizeText;
+    emit cutOutDraftChanged();
+}
+
+QString PinToolOptionsViewModel::cutOutHintText() const
+{
+    if (m_cutOutAvailable) {
+        return QString();
+    }
+    return m_cutOutZoomed
+        ? tr("Reset zoom to 100% to cut out a strip")
+        : QCoreApplication::translate("PinWindow", "This strip cannot be applied");
+}
+
+void PinToolOptionsViewModel::setCutOutAvailable(bool available, bool zoomed)
+{
+    if (m_cutOutAvailable == available && m_cutOutZoomed == zoomed) {
+        return;
+    }
+    m_cutOutAvailable = available;
+    m_cutOutZoomed = zoomed;
+    emit cutOutDraftChanged();
+}
+
+void PinToolOptionsViewModel::handleCutOutOperationSelected(int operation)
+{
+    if (operation == static_cast<int>(ImageStrip::Operation::Remove)
+        || operation == static_cast<int>(ImageStrip::Operation::Insert)) {
+        emit cutOutOperationSelected(operation);
+    }
+}
+
+void PinToolOptionsViewModel::handleCutOutAxisSelected(int axis)
+{
+    if (axis == static_cast<int>(ImageStrip::Axis::Rows)
+        || axis == static_cast<int>(ImageStrip::Axis::Columns)) {
+        emit cutOutAxisSelected(axis);
+    }
+}
+
+void PinToolOptionsViewModel::handleCutOutApply()
+{
+    emit cutOutApplyRequested();
+}
+
+void PinToolOptionsViewModel::handleCutOutCancel()
+{
+    emit cutOutCancelRequested();
 }
 
 QVariantList PinToolOptionsViewModel::cropAspectOptions() const
@@ -640,6 +744,7 @@ constexpr SelectionSections kSelectionSections[] = {
 QString PinToolOptionsViewModel::targetLabel() const
 {
     if (m_showCrop) return tr("Crop");
+    if (m_showCutOut) return tr("Cut Out");
     if (!m_editingSelection) return tr("New object");
     QString name;
     switch (m_targetKind) {

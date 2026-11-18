@@ -66,6 +66,8 @@ class AnnotationLayer;
 class AnnotationItem;
 class ToolManager;
 class CropToolHandler;
+class CutOutToolHandler;
+namespace ImageStrip { struct Request; }
 class InlineTextEditor;
 class TextAnnotationEditor;
 class AutoBlurManager;
@@ -79,6 +81,7 @@ class RegionSettingsHelper;
 struct LayoutRegion;
 class AnnotationContext;
 class TestPinWindowCropUndo;
+class TestPinWindowStripCutOut;
 
 namespace snaptray {
 namespace colorwidgets {
@@ -194,6 +197,7 @@ protected:
 
 private:
     friend class TestPinWindowCropUndo;
+    friend class TestPinWindowStripCutOut;
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
@@ -358,6 +362,19 @@ private:
     void syncCropDraftUi();
     bool handleCropDraftKey(QKeyEvent* event);
     void refreshCropCursor();
+    // Cut-out tool (#371): removes a band across the image or inserts a blank
+    // one, as one undoable image change. Returns false, changing nothing,
+    // when the strip cannot be applied.
+    bool applyStrip(const ImageStrip::Request& request);
+    CutOutToolHandler* cutOutToolHandler() const;
+    bool isCutOutToolActive() const;
+    // Crop or cut-out: tools that edit the image and own every pointer press.
+    bool isImageEditToolActive() const;
+    void syncCutOutDraftUi();
+    bool handleCutOutDraftKey(QKeyEvent* event);
+    // An arrow key as a step in unrotated source pixels (1, or 10 with Shift).
+    // False for any other key or modifier.
+    bool arrowKeySourceStep(const QKeyEvent* event, QPoint* sourceStep) const;
     void undoCrop();
     void redoCrop();
     bool canUndoCrop();
@@ -595,6 +612,8 @@ private:
         QPointF annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
         bool isLayout = false;
+        // A strip cut-out: per-item shifts are kept in layoutAnnotationOffsets.
+        bool isStrip = false;
         qreal layoutViewScale = 1.0;
         std::uint64_t layoutHistoryCeiling = 0;
         QHash<QPair<quint64, quint64>, QPointF> layoutAnnotationOffsets;
