@@ -56,12 +56,14 @@ void TestOCRCredentialGeometry::nativeChineseSpacing()
 
 void TestOCRCredentialGeometry::nativeOcrCoverage_data()
 {
+    QTest::addColumn<bool>("email");
     QTest::addColumn<QString>("family");
     QTest::addColumn<int>("pixelSize");
     for (const auto& family : {QStringLiteral("Arial"),
                               QFontDatabase::systemFont(QFontDatabase::FixedFont).family()}) {
         for (int size : {20, 32, 48}) {
-            QTest::addRow("%s-%d", qPrintable(family), size) << family << size;
+            QTest::addRow("%s-%d", qPrintable(family), size) << false << family << size;
+            QTest::addRow("email-%s-%d", qPrintable(family), size) << true << family << size;
         }
     }
 }
@@ -71,13 +73,14 @@ void TestOCRCredentialGeometry::nativeOcrCoverage()
     if (!qEnvironmentVariableIsSet("SNAPTRAY_TEST_NATIVE_OCR")) {
         QSKIP("Set SNAPTRAY_TEST_NATIVE_OCR=1 on a host with native OCR to run this integration fixture");
     }
+    QFETCH(bool, email);
     QFETCH(QString, family);
     QFETCH(int, pixelSize);
     QFont font(family);
     font.setPixelSize(pixelSize);
-    const QString prefix = QStringLiteral("password: ");
+    const QString prefix = email ? QStringLiteral("Contact: ") : QStringLiteral("password: ");
     // A mixed suffix disambiguates Vision's automatic orientation detection.
-    const QString value = QString(16, QLatin1Char('W')) + QStringLiteral("aB12");
+    const QString value = email ? QStringLiteral("person@example.org") : QString(16, QLatin1Char('W')) + QStringLiteral("aB12");
     const QPointF baseline(20, 70);
     QImage input(1200, 160, QImage::Format_RGB32);
     input.fill(Qt::white);
@@ -108,7 +111,7 @@ void TestOCRCredentialGeometry::nativeOcrCoverage()
     }
     QVERIFY(hasGeometry);
 #endif
-    const auto regions = CredentialDetector::detect(result.blocks, input.size());
+    const auto regions = CredentialDetector::detect(result.blocks, input.size(), {"email"});
     QVERIFY(!regions.isEmpty());
     // Independent raster oracle: all visibly dark value pixels must be covered.
     // No OCR geometry or character-width ratios are used for expected bounds.

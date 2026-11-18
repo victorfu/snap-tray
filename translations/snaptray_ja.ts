@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>メールアドレス</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>ウェブアドレス</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 アドレス</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>電話番号</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>決済カード</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>キャプチャ</translation>
@@ -2772,6 +2792,51 @@ Size: %2</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>前の画像をエクスポートしています</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>背景を削除</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>このシステムでは背景の削除に対応していません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>画像が大きすぎるため背景を削除できません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>残す被写体が見つかりません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>削除できる背景が見つかりません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>背景を削除できません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>背景を削除する前にライブ更新を停止してください</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>現在は背景を削除できません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>画像が変更されたため、背景は削除されませんでした</translation>
     </message>
 </context>
 <context>
@@ -8913,6 +8978,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>文字を大きくする</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>自動ぼかしの確認</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>隠す範囲を選択してください。OCR は機密情報を見落とすことがあります。</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>領域 %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>ぼかした顔：%1 件 · テキスト領域：%2 件</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>顔や機密テキストは検出されませんでした</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>適用</translation>
     </message>
 </context>
 </TS>

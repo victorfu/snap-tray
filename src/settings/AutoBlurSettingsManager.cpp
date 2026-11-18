@@ -12,6 +12,7 @@ AutoBlurSettingsManager& AutoBlurSettingsManager::instance()
 AutoBlurSettingsManager::Options AutoBlurSettingsManager::load() const
 {
     Options options;
+    options.sensitiveCategories = loadSensitiveCategories();
     options.enabled = loadEnabled();
     options.detectFaces = loadDetectFaces();
     options.blurIntensity = loadBlurIntensity();
@@ -21,10 +22,21 @@ AutoBlurSettingsManager::Options AutoBlurSettingsManager::load() const
 
 void AutoBlurSettingsManager::save(const Options& options)
 {
+    saveSensitiveCategories(options.sensitiveCategories);
     saveEnabled(options.enabled);
     saveDetectFaces(options.detectFaces);
     saveBlurIntensity(options.blurIntensity);
     saveBlurType(options.blurType);
+}
+
+QStringList AutoBlurSettingsManager::loadSensitiveCategories() const
+{
+    return SnapTray::getSettings().value(kKeySensitiveCategories).toStringList();
+}
+
+void AutoBlurSettingsManager::saveSensitiveCategories(const QStringList& categories)
+{
+    SnapTray::getSettings().setValue(kKeySensitiveCategories, categories);
 }
 
 bool AutoBlurSettingsManager::loadEnabled() const

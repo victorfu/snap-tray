@@ -1,5 +1,6 @@
 #pragma once
 
+#include "detection/SensitiveCategory.h"
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -52,6 +53,11 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
     Q_PROPERTY(int fullScreenCaptureAction READ fullScreenCaptureAction WRITE setFullScreenCaptureAction NOTIFY fullScreenCaptureActionChanged)
+    Q_PROPERTY(bool blurEmail READ blurEmail WRITE setBlurEmail NOTIFY sensitiveCategoriesChanged)
+    Q_PROPERTY(bool blurUrl READ blurUrl WRITE setBlurUrl NOTIFY sensitiveCategoriesChanged)
+    Q_PROPERTY(bool blurIpv4 READ blurIpv4 WRITE setBlurIpv4 NOTIFY sensitiveCategoriesChanged)
+    Q_PROPERTY(bool blurPhone READ blurPhone WRITE setBlurPhone NOTIFY sensitiveCategoriesChanged)
+    Q_PROPERTY(bool blurCard READ blurCard WRITE setBlurCard NOTIFY sensitiveCategoriesChanged)
     Q_PROPERTY(int blurIntensity READ blurIntensity WRITE setBlurIntensity NOTIFY blurIntensityChanged)
     Q_PROPERTY(int blurType READ blurType WRITE setBlurType NOTIFY blurTypeChanged)
     Q_PROPERTY(int pinDefaultOpacity READ pinDefaultOpacity WRITE setPinDefaultOpacity NOTIFY pinDefaultOpacityChanged)
@@ -170,6 +176,18 @@ public:
     void setShortcutHintsEnabled(bool v);
     int fullScreenCaptureAction() const;
     void setFullScreenCaptureAction(int v);
+    bool blurEmail() const { return m_sensitiveCategories.contains(SensitiveCategory::Email); }
+    void setBlurEmail(bool enabled) { setSensitiveCategory(SensitiveCategory::Email, enabled); }
+    bool blurUrl() const { return m_sensitiveCategories.contains(SensitiveCategory::Url); }
+    void setBlurUrl(bool enabled) { setSensitiveCategory(SensitiveCategory::Url, enabled); }
+    bool blurIpv4() const { return m_sensitiveCategories.contains(SensitiveCategory::Ipv4); }
+    void setBlurIpv4(bool enabled) { setSensitiveCategory(SensitiveCategory::Ipv4, enabled); }
+    bool blurPhone() const { return m_sensitiveCategories.contains(SensitiveCategory::Phone); }
+    void setBlurPhone(bool enabled) { setSensitiveCategory(SensitiveCategory::Phone, enabled); }
+    bool blurCard() const { return m_sensitiveCategories.contains(SensitiveCategory::Card); }
+    void setBlurCard(bool enabled) { setSensitiveCategory(SensitiveCategory::Card, enabled); }
+    QStringList sensitiveCategories() const;
+    void setSensitiveCategories(const QStringList& categories);
     int blurIntensity() const;
     void setBlurIntensity(int v);
     int blurType() const;
@@ -342,6 +360,7 @@ signals:
     void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
     void fullScreenCaptureActionChanged();
+    void sensitiveCategoriesChanged();
     void blurIntensityChanged();
     void blurTypeChanged();
     void pinDefaultOpacityChanged();
@@ -452,6 +471,8 @@ private:
     int m_cursorCompanionStyle = 2;
     bool m_shortcutHintsEnabled = true;
     int m_fullScreenCaptureAction = 0;
+    void setSensitiveCategory(const QString& category, bool enabled);
+    QStringList m_sensitiveCategories;
     int m_blurIntensity = 50;
     int m_blurType = 0;
     int m_pinDefaultOpacity = 100;

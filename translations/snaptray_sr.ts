@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Адресе е-поште</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Веб-адресе</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 адресе</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Бројеви телефона</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Платне картице</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Снимак екрана</translation>
@@ -2774,6 +2794,51 @@ Size: %2</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>Претходна слика се још увек извози</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Уклони позадину</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Уклањање позадине није подржано на овом систему</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Слика је превелика за уклањање позадине</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Није пронађен објекат који треба задржати</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Није пронађена позадина за уклањање</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Није могуће уклонити позадину</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Зауставите ажурирање уживо пре уклањања позадине</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Позадина тренутно не може да се уклони</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Слика је промењена, па позадина није уклоњена</translation>
     </message>
 </context>
 <context>
@@ -8921,6 +8986,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>Повећај текст</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Преглед аутоматског замућења</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Изаберите области за скривање. Препознавање текста може пропустити осетљив текст.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Област %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Замућена лица: %1 · Области текста: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Нису откривена лица ни осетљив текст</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Откажи</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Примени</translation>
     </message>
 </context>
 </TS>

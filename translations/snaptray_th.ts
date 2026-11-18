@@ -290,6 +290,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>ที่อยู่อีเมล</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>ที่อยู่เว็บ</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>ที่อยู่ IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>หมายเลขโทรศัพท์</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>บัตรชำระเงิน</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>จับภาพ</translation>
@@ -2623,6 +2643,51 @@ English is always included and cannot be removed.</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>ยังคงส่งออกภาพก่อนหน้าอยู่</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>ลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>ระบบนี้ไม่รองรับการลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>รูปภาพใหญ่เกินไปที่จะลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>ไม่พบวัตถุหลักที่จะเก็บไว้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>ไม่พบพื้นหลังที่จะลบ</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>ไม่สามารถลบพื้นหลังได้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>โปรดหยุดการอัปเดตสดก่อนลบพื้นหลัง</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>ไม่สามารถลบพื้นหลังได้ในขณะนี้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>รูปภาพมีการเปลี่ยนแปลง จึงไม่ได้ลบพื้นหลัง</translation>
     </message>
 </context>
 <context>
@@ -8598,6 +8663,39 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <source>Increase text size</source>
         <translation>เพิ่มขนาดข้อความ</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>ตรวจสอบการเบลออัตโนมัติ</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>เลือกบริเวณที่ต้องการซ่อน OCR อาจตรวจไม่พบข้อความที่ละเอียดอ่อน</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>บริเวณ %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>ใบหน้าที่เบลอ: %1 · บริเวณข้อความ: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>ไม่พบใบหน้าหรือข้อความที่ละเอียดอ่อน</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>นำไปใช้</translation>
     </message>
 </context>
 </TS>

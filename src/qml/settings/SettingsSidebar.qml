@@ -102,6 +102,15 @@ Rectangle {
             e("updates", "UpdatesSettings", QT_TRANSLATE_NOOP("UpdatesSettings", "Auto-check updates"), "autoCheckUpdates", QT_TRANSLATE_NOOP("UpdatesSettings", "Automatic Updates")),
             e("updates", "UpdatesSettings", QT_TRANSLATE_NOOP("UpdatesSettings", "Check frequency"), "checkFrequencyHours", QT_TRANSLATE_NOOP("UpdatesSettings", "Automatic Updates"))
         ]
+        if (settingsBackend.ocrSupported) {
+            entries = entries.concat([
+                e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Email addresses"), "blurEmail", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur")),
+                e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Web addresses"), "blurUrl", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur")),
+                e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "IPv4 addresses"), "blurIpv4", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur")),
+                e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Phone numbers"), "blurPhone", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur")),
+                e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Payment cards"), "blurCard", QT_TRANSLATE_NOOP("CaptureSettings", "Auto Blur"))
+            ])
+        }
         if (settingsBackend.isMacOS) {
             entries.push(e("general", "GeneralSettings", QT_TRANSLATE_NOOP("GeneralSettings", "Screen Recording"), "screenRecordingPermissionRow", QT_TRANSLATE_NOOP("GeneralSettings", "Permissions")))
             entries.push(e("general", "GeneralSettings", QT_TRANSLATE_NOOP("GeneralSettings", "Accessibility"), "accessibilityPermissionRow", QT_TRANSLATE_NOOP("GeneralSettings", "Permissions")))

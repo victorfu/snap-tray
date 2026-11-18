@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-mailové adresy</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webové adresy</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Adresy IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefonní čísla</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Platební karty</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Zachycení</translation>
@@ -2774,6 +2794,51 @@ Velikost: %2</translation>
     <message>
         <source>Still exporting the previous image</source>
         <translation>Předchozí obrázek se stále exportuje</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Odstranit pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Odstranění pozadí není v tomto systému podporováno</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Obrázek je příliš velký na odstranění pozadí</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Nebyl nalezen žádný objekt k zachování</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Nebylo nalezeno žádné pozadí k odstranění</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Pozadí nelze odstranit</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Před odstraněním pozadí zastavte živou aktualizaci</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Pozadí teď nelze odstranit</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Obrázek se změnil, a proto pozadí nebylo odstraněno</translation>
     </message>
 </context>
 <context>
@@ -8921,6 +8986,39 @@ Může být používána jinou aplikací.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Zvětšit text</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Kontrola automatického rozmazání</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Vyberte oblasti ke skrytí. OCR může citlivý text přehlédnout.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Oblast %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rozmazané obličeje: %1 · Textové oblasti: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nebyly nalezeny obličeje ani citlivý text</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Použít</translation>
     </message>
 </context>
 </TS>

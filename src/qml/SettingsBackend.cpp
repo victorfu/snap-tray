@@ -134,6 +134,11 @@ const ResettableSetting kResettableSettings[] = {
     {"cursorCompanionStyle", [] { return QVariant(cursorCompanionStyleToUiValue(RegionCaptureSettingsManager::kDefaultCursorCompanionStyle)); }},
     {"shortcutHintsEnabled", [] { return QVariant(RegionCaptureSettingsManager::kDefaultShortcutHintsEnabled); }},
     {"blurType", [] { return QVariant(blurTypeToUiIndex(AutoBlurSettingsManager::kDefaultBlurType)); }},
+    {"blurEmail", [] { return QVariant(false); }},
+    {"blurUrl", [] { return QVariant(false); }},
+    {"blurIpv4", [] { return QVariant(false); }},
+    {"blurPhone", [] { return QVariant(false); }},
+    {"blurCard", [] { return QVariant(false); }},
     {"blurIntensity", [] { return QVariant(AutoBlurSettingsManager::kDefaultBlurIntensity); }},
     // Pin Windows and Library
     {"pinDefaultOpacity", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacity * 100.0)); }},
@@ -403,6 +408,7 @@ void SettingsBackend::loadAllSettings()
         static_cast<int>(RegionCaptureSettingsManager::instance().fullScreenCaptureAction());
 
     auto blurOpts = AutoBlurSettingsManager::instance().load();
+    m_sensitiveCategories = blurOpts.sensitiveCategories;
     m_blurIntensity = blurOpts.blurIntensity;
     m_blurType = blurTypeToUiIndex(blurOpts.blurType);
 
@@ -703,6 +709,29 @@ void SettingsBackend::setFullScreenCaptureAction(int v)
     RegionCaptureSettingsManager::instance().setFullScreenCaptureAction(
         static_cast<FullScreenCaptureAction>(v));
     emit fullScreenCaptureActionChanged();
+}
+
+void SettingsBackend::setSensitiveCategory(const QString& category, bool enabled)
+{
+    auto categories = m_sensitiveCategories;
+    categories.removeAll(category);
+    if (enabled)
+        categories.append(category);
+    setSensitiveCategories(categories);
+}
+
+QStringList SettingsBackend::sensitiveCategories() const
+{
+    return m_sensitiveCategories;
+}
+
+void SettingsBackend::setSensitiveCategories(const QStringList& categories)
+{
+    if (m_sensitiveCategories == categories)
+        return;
+    m_sensitiveCategories = categories;
+    AutoBlurSettingsManager::instance().saveSensitiveCategories(categories);
+    emit sensitiveCategoriesChanged();
 }
 
 int SettingsBackend::blurIntensity() const { return m_blurIntensity; }

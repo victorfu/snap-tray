@@ -1,4 +1,5 @@
 #include "utils/ImageSaveUtils.h"
+#include "utils/ImageExportOptions.h"
 
 #include <QColorSpace>
 #include <QFile>
@@ -44,6 +45,30 @@ bool isSupportedFormat(const QByteArray& format)
     }();
 
     return supported.contains(normalizeFormat(format));
+}
+
+// JPEG has no alpha. Left to the encoder, see-through pixels turn black or
+// show their hidden colour; compose them onto the same background as Export
+// As instead (#363: a pin whose background was removed, saved as .jpg).
+QImage imageForFormat(const QImage& image, const QByteArray& format)
+{
+    if (format != "jpeg" || !ImageExport::hasTransparency(image)) {
+        return image;
+    }
+    ImageExportOptions options;
+    options.format = ImageExportOptions::Format::Jpeg;
+    QImage flattened = ImageExport::render(image, options);
+    if (flattened.isNull()) {
+        return flattened;
+    }
+    // Only the background changes: keep what the writer stores from the
+    // source, its print size and its text keys (such as a description).
+    flattened.setDotsPerMeterX(image.dotsPerMeterX());
+    flattened.setDotsPerMeterY(image.dotsPerMeterY());
+    for (const QString& key : image.textKeys()) {
+        flattened.setText(key, image.text(key));
+    }
+    return flattened;
 }
 
 QString formatListForError()
@@ -125,7 +150,7 @@ ImageSaveUtils::UniqueSaveResult ImageSaveUtils::saveImageUniqueWithHooks(
         temporary.path = file.fileName();
         QImageWriter writer(&file, format);
         applyEncodeOptions(writer, format, encodeOptions);
-        if (!writer.write(image)) {
+        if (!writer.write(imageForFormat(image, format))) {
             setError(&result.error, QStringLiteral("write"), writer.errorString());
             return result;
         }
@@ -196,7 +221,7 @@ bool ImageSaveUtils::saveImageAtomically(const QImage& image,
 
     QImageWriter writer(&saveFile, format);
     applyEncodeOptions(writer, format, encodeOptions);
-    if (!writer.write(image)) {
+    if (!writer.write(imageForFormat(image, format))) {
         saveFile.cancelWriting();
         const QString writeError = writer.errorString().trimmed();
         setError(error, QStringLiteral("write"),

@@ -133,6 +133,7 @@ public:
      * @brief Check if layout mode is currently active.
      */
     bool isActive() const;
+    bool hasPendingChanges() const;
 
     // ========================================================================
     // Region Data Access

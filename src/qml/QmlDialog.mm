@@ -65,6 +65,12 @@ QmlDialog::~QmlDialog()
     }
 }
 
+bool QmlDialog::prepare()
+{
+    ensureView();
+    return m_view && m_view->status() == QQuickView::Ready && m_view->rootObject();
+}
+
 void QmlDialog::ensureView()
 {
     if (m_view)
@@ -214,18 +220,13 @@ void QmlDialog::showPreparedView()
 
 void QmlDialog::close()
 {
-    if (m_view) {
+    if (m_view && m_view->isVisible()) {
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
         m_view->close(); // triggers QQuickView::closing -> emit closed()
     } else {
         emit closed();
     }
     deleteLater();
-}
-
-bool QmlDialog::hasContent() const
-{
-    return m_view && m_view->status() == QQuickView::Ready;
 }
 
 void QmlDialog::setModal(bool modal)

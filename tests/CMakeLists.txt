@@ -211,6 +211,12 @@ target_sources(Qml_ImageExportDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resou
 add_test(NAME Qml_ImageExportDialog COMMAND Qml_ImageExportDialog)
 set_tests_properties(Qml_ImageExportDialog PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
 
+add_executable(Qml_RedactionReview Qml/tst_RedactionReview.cpp)
+target_link_libraries(Qml_RedactionReview PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
+target_sources(Qml_RedactionReview PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RedactionReview COMMAND Qml_RedactionReview)
+set_tests_properties(Qml_RedactionReview PROPERTIES TIMEOUT 60 LABELS "unit;integration" ENVIRONMENT "QT_QUICK_BACKEND=software")
+
 add_executable(Qml_PinLayoutDialog Qml/tst_PinLayoutDialog.cpp)
 target_link_libraries(Qml_PinLayoutDialog PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Qml Qt6::Quick Qt6::Test)
 target_sources(Qml_PinLayoutDialog PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
@@ -920,6 +926,16 @@ add_executable(PinWindow_StripCutOut PinWindow/tst_StripCutOut.cpp)
 target_link_libraries(PinWindow_StripCutOut PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_StripCutOut COMMAND PinWindow_StripCutOut)
 set_tests_properties(PinWindow_StripCutOut PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
+add_executable(PinWindow_ForegroundCutout PinWindow/tst_ForegroundCutout.cpp)
+target_link_libraries(PinWindow_ForegroundCutout PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_ForegroundCutout COMMAND PinWindow_ForegroundCutout)
+set_tests_properties(PinWindow_ForegroundCutout PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(PinWindow_RemoveBackground PinWindow/tst_RemoveBackground.cpp)
+target_link_libraries(PinWindow_RemoveBackground PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+add_test(NAME PinWindow_RemoveBackground COMMAND PinWindow_RemoveBackground)
+set_tests_properties(PinWindow_RemoveBackground PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
 add_executable(PinWindow_CropUndo PinWindow/tst_CropUndo.cpp)
 target_link_libraries(PinWindow_CropUndo PRIVATE snaptray_ui Qt6::Test)

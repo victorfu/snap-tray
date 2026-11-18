@@ -59,7 +59,7 @@ A short badge names each change, for example "Zoom 150%" or "Opacity 80%".
 The right-click menu (also **⋯** on the hover bar) is grouped by task:
 
 - Arrange (only while an annotation is selected): Bring Forward, Send Backward, Bring to Front, Send to Back
-- View: Show Toolbar, Show Border, Zoom (in/out, presets, Reset to 100%, smoothing), Opacity (up/down, Reset to 100%), Image processing (rotate, flip, crop)
+- View: Show Toolbar, Show Border, Zoom (in/out, presets, Reset to 100%, smoothing), Opacity (up/down, Reset to 100%), Image processing (rotate, flip, crop, remove background on macOS)
 - Output: Copy, Save, Export As, Watermark, Info, Open History Folder
 - Modes: Click-through, Live Update (start/stop, pause/resume, frame rate), Adjust Region Layout
 - Pins: Move to Screen, Merge Pins, Close All Pins
@@ -132,9 +132,23 @@ Annotations entirely on one side keep their place or move with the pixels, and a
 
 Applying is one undo step that restores the image, its size, the annotations and the region layout together. Cut Out is not available during Live Update or while auto-blur is still running.
 
+### Remove the background (macOS)
+
+**Image processing > Remove Background** in the context menu keeps the subjects of the image (people, animals, objects) and makes everything else transparent. It uses the on-device foreground segmentation of macOS 14 and later; nothing is uploaded. Windows and Linux have no supported backend yet, so the item is not shown there.
+
+- A spinner shows while it runs; `Esc` cancels it and leaves the pin as it was. If the image changes in the meantime (a crop, an undo, Live Update), the result is discarded.
+- The canvas keeps its size, so nothing moves. Annotations stay editable on top of the image. A mosaic over the removed background has no original pixels left to sample, so nothing it hid comes back.
+- The result replaces the image as one undo step on the annotation toolbar, which opens so that you can undo it. On a merged pin, Save and Copy keep the full resolution, but Adjust Region Layout is unavailable until you undo the removal, because the regions still hold the old background.
+- When no subject is found, or the whole image is the subject, a message says so and nothing changes.
+- Save, copy and PNG export keep the transparency; JPEG export fills it with the export background as usual.
+
+It is not available during Live Update, while auto-blur is still running or while you are drawing; if one of these starts before it finishes, the result is discarded. Images are limited to 40 megapixels (a full 8K screen).
+
 ## Protect edited pins when closing
 
 Enable **Confirm before closing edited pins** in **Settings → Pin Windows** to choose Save, Discard, or Cancel before closing a pin with unsaved edits. The setting is off by default. Moving or zooming a pin does not require saving. Save and Beautify Save protect the snapshot written to disk. Copying or exporting a derived image leaves the pin's edit state intact.
+
+If you rearrange or resize regions in **Adjust Region Layout**, closing the pin, choosing **Close All**, or exiting SnapTray also prompts before you lose those changes. **Cancel** keeps the layout open for editing. **Save** applies the layout and writes the rearranged image before closing the pin.
 
 To check the behavior on your desktop:
 

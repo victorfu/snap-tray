@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Adresses e-mail</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Adresses web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Adresses IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Numéros de téléphone</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Cartes de paiement</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Capture</translation>
@@ -2773,6 +2793,51 @@ Taille : %2</translation>
     <message>
         <source>Still exporting the previous image</source>
         <translation>L’image précédente est encore en cours d’exportation</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>La suppression de l’arrière-plan n’est pas prise en charge sur ce système</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>L’image est trop grande pour en supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Aucun sujet à conserver n’a été trouvé</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Aucun arrière-plan à supprimer n’a été trouvé</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Impossible de supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Arrêtez la mise à jour en direct avant de supprimer l’arrière-plan</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>L’arrière-plan ne peut pas être supprimé pour le moment</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>L’image a changé, son arrière-plan n’a donc pas été supprimé</translation>
     </message>
 </context>
 <context>
@@ -8917,6 +8982,39 @@ Il est peut-être utilisé par une autre application.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Augmenter la taille du texte</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Vérifier le floutage automatique</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Sélectionnez les zones à masquer. La reconnaissance de texte peut manquer des données sensibles.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Zone %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Visages floutés : %1 · Zones de texte : %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Aucun visage ni texte sensible détecté</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Appliquer</translation>
     </message>
 </context>
 </TS>

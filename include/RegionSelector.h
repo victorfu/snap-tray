@@ -446,13 +446,17 @@ private:
 
     AutoBlurManager *m_autoBlurManager;
     bool m_autoBlurInProgress;
+    QPointer<SnapTray::QmlDialog> m_redactionReview;
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
     quint64 m_autoBlurGeneration = 0;
     quint64 m_activeAutoBlurGeneration = 0;
 
     void performAutoBlur();
     bool isAutoBlurRequestCurrent(const AutoBlurRequestSnapshot& request) const;
-    void addAutoBlurRegions(const AutoBlurRequestSnapshot& request,
+    void reviewAutoBlurResult(const AutoBlurRequestSnapshot& request, const QImage& image,
+                              const QVector<QRect>& faces, const QVector<QRect>& text,
+                              const QString& warning);
+    int addAutoBlurRegions(const AutoBlurRequestSnapshot& request,
                             const QVector<QRect>& regions);
     void clearAutoBlurProgress(quint64 generation);
     void onAutoBlurComplete(quint64 generation, bool success, int faceCount,

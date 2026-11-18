@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>El. pašto adresai</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Žiniatinklio adresai</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 adresai</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefono numeriai</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Mokėjimo kortelės</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Fiksavimas</translation>
@@ -2774,6 +2794,51 @@ Dydis: %2</translation>
     <message>
         <source>Still exporting the previous image</source>
         <translation>Ankstesnis vaizdas dar eksportuojamas</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Pašalinti foną</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Fono šalinimas šioje sistemoje nepalaikomas</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Vaizdas per didelis, kad būtų galima pašalinti foną</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Nerasta objekto, kurį reikėtų išsaugoti</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Nerasta fono, kurį būtų galima pašalinti</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Nepavyko pašalinti fono</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Prieš šalindami foną sustabdykite tiesioginį atnaujinimą</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Šiuo metu fono pašalinti negalima</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Vaizdas pasikeitė, todėl fonas nebuvo pašalintas</translation>
     </message>
 </context>
 <context>
@@ -8921,6 +8986,39 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Padidinti tekstą</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Peržiūrėti automatinį suliejimą</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Pasirinkite slepiamas sritis. Teksto atpažinimo sistema gali nepastebėti neskelbtino teksto.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Sritis %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Sulieti veidai: %1 · Teksto sritys: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Veidų ar neskelbtino teksto neaptikta</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Atšaukti</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Taikyti</translation>
     </message>
 </context>
 </TS>

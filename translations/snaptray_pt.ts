@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Endereços de e-mail</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Endereços da web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Endereços IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Números de telefone</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Cartões de pagamento</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Captura</translation>
@@ -2773,6 +2793,51 @@ Tamanho: %2</translation>
     <message>
         <source>Still exporting the previous image</source>
         <translation>A imagem anterior ainda está sendo exportada</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Remover fundo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Remover fundo não é compatível com este sistema</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>A imagem é grande demais para remover o fundo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Nenhum objeto principal encontrado para manter</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Nenhum fundo encontrado para remover</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Não foi possível remover o fundo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Pare a atualização ao vivo antes de remover o fundo</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Não é possível remover o fundo agora</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>A imagem mudou, então o fundo não foi removido</translation>
     </message>
 </context>
 <context>
@@ -8917,6 +8982,39 @@ Ele pode estar em uso por outro aplicativo.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Aumentar texto</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Revisar desfoque automático</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Selecione as regiões a ocultar. O OCR pode deixar de detectar texto sensível.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Região %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rostos desfocados: %1 · Regiões de texto: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nenhum rosto ou texto sensível detectado</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Aplicar</translation>
     </message>
 </context>
 </TS>

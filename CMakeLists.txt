@@ -346,6 +346,7 @@ add_library(snaptray_core STATIC
     src/tools/CropDraftModel.cpp
     src/tools/StripDraftModel.cpp
     src/pinwindow/ImageStripTransform.cpp
+    src/pinwindow/ForegroundCutout.cpp
     src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
@@ -602,6 +603,7 @@ add_library(snaptray_platform STATIC
     >
     $<$<NOT:$<PLATFORM_ID:Darwin>>:
         src/ImageColorSpaceHelper.cpp
+        src/platform/ForegroundSegmentation_stub.cpp
     >
     # Headers with Q_OBJECT for MOC processing
     include/IVideoEncoder.h
@@ -637,6 +639,7 @@ add_library(snaptray_platform STATIC
         src/scrollcapture/ScrollCapturePlatform_mac.mm
         src/WindowDetector.mm
         src/OCRManager.mm
+        src/platform/ForegroundSegmentation_mac.mm
         src/AutoLaunchManager_mac.mm
         src/capture/SCKCaptureEngine_mac.mm
         src/capture/CoreAudioCaptureEngine_mac.mm
@@ -723,6 +726,7 @@ endif()
 set_source_files_properties(
     src/platform/WindowLevel_mac.mm
     src/OCRManager.mm
+    src/platform/ForegroundSegmentation_mac.mm
     src/capture/SCKCaptureEngine_mac.mm
     src/capture/CoreAudioCaptureEngine_mac.mm
     src/AVFoundationEncoder.mm
@@ -961,6 +965,7 @@ add_library(snaptray_ui STATIC
     src/pinwindow/PinMergeHelper.cpp
     src/pinwindow/PinLayoutGeometry.cpp
     src/pinwindow/PinExportJob.cpp
+    src/pinwindow/ForegroundCutoutRunner.cpp
 
     # Screen canvas
     include/ScreenCanvas.h
@@ -1051,6 +1056,7 @@ add_library(snaptray_ui STATIC
     include/pinwindow/PinLayoutGeometry.h
     include/pinwindow/PinClosePrompt.h
     include/pinwindow/PinExportJob.h
+    include/pinwindow/ForegroundCutoutRunner.h
     include/ScreenCanvas.h
     include/ScreenCanvasManager.h
     include/LaserPointerRenderer.h
@@ -1188,6 +1194,7 @@ set_source_files_properties(src/qml/dialogs/UpdateDialog.qml PROPERTIES QT_RESOU
 set_source_files_properties(src/qml/dialogs/QRCodeResultDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/QRCodeResultDialog.qml)
 set_source_files_properties(src/qml/dialogs/PinLayoutDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinLayoutDialog.qml)
 set_source_files_properties(src/qml/dialogs/PinCloseDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/PinCloseDialog.qml)
+set_source_files_properties(src/qml/dialogs/RedactionReview.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/RedactionReview.qml)
 set_source_files_properties(src/qml/dialogs/ImageExportDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ImageExportDialog.qml)
 set_source_files_properties(src/qml/recording/RecordingPrompterView.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingPrompterView.qml)
 set_source_files_properties(src/qml/dialogs/ScreenPickerDialog.qml PROPERTIES QT_RESOURCE_ALIAS dialogs/ScreenPickerDialog.qml)
@@ -1301,6 +1308,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/dialogs/ScreenPickerDialog.qml
         src/qml/dialogs/PinLayoutDialog.qml
         src/qml/dialogs/PinCloseDialog.qml
+        src/qml/dialogs/RedactionReview.qml
         src/qml/dialogs/ImageExportDialog.qml
         src/qml/dialogs/RecordingRecoveryDialog.qml
         src/qml/toolbar/FloatingToolbar.qml
@@ -1405,7 +1413,9 @@ qt_add_qml_module(snaptray_qml
         src/qml/UpdateDialogViewModel.cpp
         include/qml/UpdateDialogViewModel.h
         src/qml/QRCodeResultViewModel.cpp
+        src/qml/RedactionReview.cpp
         include/qml/QRCodeResultViewModel.h
+        include/qml/RedactionReview.h
         include/qml/QmlOverlayPanel.h
         src/qml/ShortcutHintsViewModel.cpp
         include/qml/ShortcutHintsViewModel.h

@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-postadresser</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webbadresser</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4-adresser</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefonnummer</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Betalkort</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Fångst</translation>
@@ -2773,6 +2793,51 @@ Storlek: %2</translation>
     <message>
         <source>Still exporting the previous image</source>
         <translation>Den föregående bilden exporteras fortfarande</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Ta bort bakgrund</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Att ta bort bakgrunden stöds inte på det här systemet</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Bilden är för stor för att ta bort bakgrunden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Inget motiv att behålla hittades</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Ingen bakgrund att ta bort hittades</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Det gick inte att ta bort bakgrunden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Stoppa liveuppdateringen innan du tar bort bakgrunden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Bakgrunden kan inte tas bort just nu</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Bilden har ändrats, så bakgrunden togs inte bort</translation>
     </message>
 </context>
 <context>
@@ -8917,6 +8982,39 @@ Den kan användas av ett annat program.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Öka textstorleken</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Granska automatisk oskärpa</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Välj de områden som ska döljas. Textigenkänningen kan missa känslig text.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Område %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Oskarpa ansikten: %1 · Textområden: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Inga ansikten eller känsliga texter upptäcktes</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Tillämpa</translation>
     </message>
 </context>
 </TS>

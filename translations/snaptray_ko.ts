@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>이메일 주소</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>웹 주소</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 주소</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>전화번호</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>결제 카드</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>캡처</translation>
@@ -2772,6 +2792,51 @@ Size: %2</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>이전 이미지를 아직 내보내는 중입니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>배경 제거</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>이 시스템에서는 배경 제거를 지원하지 않습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>이미지가 너무 커서 배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>남길 피사체를 찾을 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>제거할 배경을 찾을 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>배경을 제거하기 전에 실시간 업데이트를 중지하세요</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>지금은 배경을 제거할 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>이미지가 변경되어 배경을 제거하지 않았습니다</translation>
     </message>
 </context>
 <context>
@@ -8913,6 +8978,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>글자 크기 늘리기</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>자동 흐림 검토</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>숨길 영역을 선택하세요. OCR이 민감한 텍스트를 놓칠 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>영역 %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>흐리게 처리한 얼굴: %1개 · 텍스트 영역: %2개</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>얼굴이나 민감한 텍스트가 감지되지 않았습니다</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>적용</translation>
     </message>
 </context>
 </TS>

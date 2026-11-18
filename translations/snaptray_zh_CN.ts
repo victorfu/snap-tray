@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>电子邮箱地址</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>网址</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 地址</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>电话号码</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>支付卡号</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>截图</translation>
@@ -2772,6 +2792,51 @@ Size: %2</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>仍在导出上一张图片</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>此系统不支持移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>图片太大，无法移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>未找到要保留的主体</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>未找到可移除的背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>无法移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>请先停止实时更新再移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>当前无法移除背景</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>图片已更改，因此未移除背景</translation>
     </message>
 </context>
 <context>
@@ -8913,6 +8978,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>放大文字</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>确认自动模糊范围</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>选择要遮盖的区域。OCR 可能漏掉敏感文字。</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>区域 %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>已模糊 %1 张人脸、%2 处文字</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>未检测到人脸或敏感文字</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>应用</translation>
     </message>
 </context>
 </TS>

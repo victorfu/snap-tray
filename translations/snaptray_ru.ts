@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Адреса электронной почты</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Веб-адреса</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Адреса IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Номера телефонов</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Платёжные карты</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Захват</translation>
@@ -2774,6 +2794,51 @@ Size: %2</source>
     <message>
         <source>Still exporting the previous image</source>
         <translation>Предыдущее изображение ещё экспортируется</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background</source>
+        <translation>Удалить фон</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Remove Background is not supported on this system</source>
+        <translation>Удаление фона не поддерживается в этой системе</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image is too large to remove its background</source>
+        <translation>Изображение слишком большое для удаления фона</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No subject found to keep</source>
+        <translation>Не найден объект, который нужно сохранить</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>No background found to remove</source>
+        <translation>Не найден фон для удаления</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to remove the background</source>
+        <translation>Не удалось удалить фон</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Stop Live Update before removing the background</source>
+        <translation>Остановите живое обновление перед удалением фона</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The background cannot be removed right now</source>
+        <translation>Сейчас нельзя удалить фон</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>The image changed, so its background was not removed</source>
+        <translation>Изображение изменилось, поэтому фон не был удалён</translation>
     </message>
 </context>
 <context>
@@ -8921,6 +8986,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>Увеличить текст</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Проверка автоматического размытия</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Выберите области, которые нужно скрыть. Распознавание может пропустить конфиденциальный текст.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Область %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Размыто лиц: %1 · Областей текста: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Лица и конфиденциальный текст не обнаружены</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Применить</translation>
     </message>
 </context>
 </TS>

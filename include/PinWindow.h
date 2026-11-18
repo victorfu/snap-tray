@@ -13,6 +13,7 @@
 #include <QHash>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -24,6 +25,7 @@ using SharedPixmap = std::shared_ptr<const QPixmap>;
 #include "LoadingSpinnerRenderer.h"
 #include "pinwindow/ResizeHandler.h"
 #include "pinwindow/PinLayoutGeometry.h"
+#include "pinwindow/ForegroundCutout.h"
 #include "tools/ToolId.h"
 #include "annotation/AnnotationHostAdapter.h"
 #include "region/ShapeAnnotationEditor.h"
@@ -54,6 +56,7 @@ class QmlFloatingSubToolbar;
 class QmlEmojiPickerPopup;
 class QmlBeautifyPanel;
 class PinExportRunner;
+class ForegroundCutoutRunner;
 struct PinExportRequest;
 class QmlDialog;
 class ImageExportDialogController;
@@ -205,6 +208,7 @@ protected:
 private:
     friend class TestPinWindowCropUndo;
     friend class TestPinWindowStripCutOut;
+    friend class TestPinWindowRemoveBackground;
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
     friend class TestPinWindowTransform;
@@ -246,6 +250,20 @@ private:
     void saveToFile();
     void copyToClipboard();
     bool ensureAutoBlurReadyForExport();
+    // Remove Background (#363): segments the base image off the GUI thread
+    // and replaces it with the cut-out as one crop-undo step. Annotations
+    // stay editable on top; mosaics resample the new image.
+    void removeBackground();
+    // Any task the loading spinner stands for; one place for its timer and
+    // its painting, so the two cannot disagree.
+    bool hasSpinnerTask() const;
+    // Esc while it runs: drops the job, the pin stays as it was.
+    bool cancelBackgroundRemoval();
+    void onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Result& result,
+                                     qint64 sourceCacheKey);
+    // Why the image cannot be replaced right now, or an empty string.
+    QString backgroundRemovalBlocker() const;
+    bool applyForegroundCutout(const QImage& image);
     // While an earlier save, Beautify save or Beautify copy of this pin is
     // still running, tells the user and returns true; otherwise false.
     bool rejectIfExportInProgress();
@@ -654,6 +672,7 @@ private:
         bool flipV;
         QVector<LayoutRegion> storedRegions;
         bool hasMultiRegionData = false;
+        bool nativeResolutionExport = false;
         QPixmap croppedPixmap;
         QSize croppedContentLogicalSize;
         QRectF croppedSourceSampleRect;
@@ -662,6 +681,7 @@ private:
         bool croppedFlipV = false;
         QVector<LayoutRegion> croppedStoredRegions;
         bool croppedHasMultiRegionData = false;
+        bool croppedNativeResolutionExport = false;
         QPointF annotationOffsetDisplay;
         std::uint64_t annotationHistoryState = 0;
         bool isLayout = false;
@@ -685,6 +705,10 @@ private:
     // AutoBlur
     AutoBlurManager* m_autoBlurManager = nullptr;
     bool m_autoBlurInProgress = false;
+    using ApplyRedactions = std::function<void(QVector<QRect>, QVector<QRect>)>;
+    void reviewAutoBlurCandidates(quint64 generation, const QImage& image, const QVector<QRect>& faces,
+                                  const QVector<QRect>& text, const QString& warning, ApplyRedactions apply);
+    QPointer<SnapTray::QmlDialog> m_redactionReview;
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
     quint64 m_autoBlurContentGeneration = 0;
 
@@ -701,6 +725,10 @@ private:
     SnapTray::ImageExportDialogController* m_imageExport = nullptr;   // child of this
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
+    // Save and Copy use the image's own resolution instead of the zoomed
+    // window size. Set for a merged pin and kept when Remove Background
+    // drops its regions; a crop or strip clears it with the regions.
+    bool m_nativeResolutionExport = false;
     QPoint m_layoutModeMousePos;  // Widget/view coordinates for layout chrome hover
     QPoint m_regionLayoutOriginalWindowPos;
     bool m_hasRegionLayoutOriginalWindowPos = false;
@@ -740,6 +768,10 @@ private:
         const QPixmap& source, const BeautifySettings& settings) const;
     // The pin's save, Beautify save and Beautify copy, one at a time (#353).
     std::unique_ptr<SnapTray::PinExportRunner> m_exportRunner;
+    // Remove Background (#363); created on first use.
+    std::unique_ptr<SnapTray::ForegroundCutoutRunner> m_cutoutRunner;
+    SnapTray::ForegroundCutout::MaskProvider m_foregroundMaskProvider;
+    bool m_backgroundRemovalInProgress = false;
     std::unique_ptr<SnapTray::QmlBeautifyPanel> m_beautifyPanel;
     // This pin's own Beautify settings once it has any; the panel opens with
     // them rather than with the global last-used ones.
