@@ -718,6 +718,9 @@ void PinWindow::setZoomLevel(qreal zoom)
 void PinWindow::setOpacity(qreal opacity)
 {
     m_opacity = qBound(0.1, opacity, 1.0);
+    // Opacity and the watermark are baked into what Save, Copy and Export
+    // write, so an open Export dialog now holds an out-of-date picture.
+    closeStaleImageExport();
     setWindowOpacity(m_opacity);
     if (m_currentOpacityAction) {
         m_currentOpacityAction->setText(QString("%1%").arg(qRound(m_opacity * 100)));
@@ -1055,6 +1058,7 @@ void PinWindow::compensateNewestStepBadgeIfNeeded(const AnnotationItem* previous
 void PinWindow::setWatermarkSettings(const WatermarkRenderer::Settings& settings)
 {
     m_watermarkSettings = settings;
+    closeStaleImageExport();
     update();
 }
 
@@ -1392,6 +1396,7 @@ void PinWindow::createContextMenu()
     enableWatermarkAction->setChecked(m_watermarkSettings.enabled);
     connect(enableWatermarkAction, &QAction::toggled, this, [this](bool checked) {
         m_watermarkSettings.enabled = checked;
+        closeStaleImageExport();
         update();
         });
 
@@ -1431,6 +1436,7 @@ void PinWindow::createContextMenu()
 
     connect(positionGroup, &QActionGroup::triggered, this, [this](QAction* action) {
         m_watermarkSettings.position = static_cast<WatermarkRenderer::Position>(action->data().toInt());
+        closeStaleImageExport();
         update();
         });
 

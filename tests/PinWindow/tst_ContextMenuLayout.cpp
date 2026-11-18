@@ -173,6 +173,45 @@ void TestPinContextMenuLayout::exportOpensWithComposedImageAndLeavesPinAlone()
     QVERIFY(controller->isOpen());
     window.rotateRight();
     QVERIFY(!controller->isOpen());
+
+    // Opacity and the watermark are part of the exported pixels as well
+    // (Codex review on #388), whichever way they are changed.
+    exportAction->trigger();
+    QVERIFY(controller->isOpen());
+    window.setOpacity(0.5);
+    QVERIFY(!controller->isOpen());
+
+    exportAction->trigger();
+    WatermarkRenderer::Settings watermark = window.m_watermarkSettings;
+    watermark.enabled = !watermark.enabled;
+    window.setWatermarkSettings(watermark);
+    QVERIFY(!controller->isOpen());
+
+    QMenu* watermarkMenu = findAction(window.m_contextMenu, "pinMenuWatermark")->menu();
+    QVERIFY(watermarkMenu);
+    QAction* enableWatermark = nullptr;
+    QList<QAction*> positions;
+    for (QAction* action : watermarkMenu->findChildren<QAction*>()) {
+        if (action->isSeparator() || action->menu()) continue;
+        if (action->isCheckable() && !action->actionGroup() && !enableWatermark) enableWatermark = action;
+        if (action->actionGroup()) positions.append(action);
+    }
+    QVERIFY(enableWatermark);
+    exportAction->trigger();
+    QVERIFY(controller->isOpen());
+    enableWatermark->toggle();
+    QVERIFY(!controller->isOpen());
+
+    QVERIFY(!positions.isEmpty());
+    exportAction->trigger();
+    QVERIFY(controller->isOpen());
+    for (QAction* position : positions) {
+        if (!position->isChecked()) {
+            position->trigger();
+            break;
+        }
+    }
+    QVERIFY(!controller->isOpen());
 }
 
 void TestPinContextMenuLayout::beautifyExportUsesTheBeautifiedImage()
