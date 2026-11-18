@@ -55,6 +55,17 @@ class tst_CredentialDetector : public QObject
     Q_OBJECT
 
 private slots:
+    void cardAfterNumericField() {
+        const QSize size(1000, 500);
+        const auto prefix = makeBlock("123", .05, .20, .04);
+        const auto card = makeBlock("4111 1111 1111 1111", .11, .20, .40);
+        const auto expiry = makeBlock("12/27", .53, .20, .08);
+        const auto hits = CredentialDetector::detect({prefix, card, expiry}, size, {"card"});
+        QCOMPARE(hits.size(), 1);
+        QVERIFY(hits.front().contains(expectedPixelRect(card.boundingRect, size)));
+        QVERIFY(!hits.front().intersects(expectedPixelRect(prefix.boundingRect, size)));
+        QVERIFY(!hits.front().intersects(expectedPixelRect(expiry.boundingRect, size)));
+    }
     void separateUrlColumn() {
         const QSize size(1000, 500);
         const auto url = makeBlock("https://example.org/a", .05, .20, .25);
@@ -155,6 +166,7 @@ void tst_CredentialDetector::optionalCategories_data()
     QTest::newRow("version") << QStringLiteral("v2026.11.18") << QStringLiteral("phone") << false;
     QTest::newRow("card") << QStringLiteral("4111 1111 1111 1111") << QStringLiteral("card") << true;
     QTest::newRow("card-line-break") << QStringLiteral("4111 1111\n1111 1111") << QStringLiteral("card") << true;
+    QTest::newRow("card-after-code") << QStringLiteral("123 4111 1111 1111 1111") << QStringLiteral("card") << true;
     QTest::newRow("card-expiry") << QStringLiteral("4111 1111 1111 1111 12/27") << QStringLiteral("card") << true;
     QTest::newRow("card-cvv") << QStringLiteral("4111 1111 1111 1111 123") << QStringLiteral("card") << true;
     QTest::newRow("card-repeated") << QStringLiteral("0000000000000000") << QStringLiteral("card") << false;

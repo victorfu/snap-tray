@@ -544,12 +544,18 @@ void appendSensitiveRegions(const QVector<PreparedBlock>& blocks, const QStringL
     for (const auto& rule : sensitiveRules()) {
         if (!categories.contains(rule.category))
             continue;
-        auto matches = rule.pattern.globalMatch(row);
-        while (matches.hasNext()) {
-            const auto match = matches.next();
+        qsizetype offset = 0;
+        while (offset < row.size()) {
+            const auto match = rule.pattern.match(row, offset);
+            if (!match.hasMatch())
+                break;
             const qsizetype length = rule.category == SensitiveCategory::Card
                 ? cardMatchLength(match.captured()) : match.capturedLength();
             const qsizetype matchEnd = match.capturedStart() + length;
+            // A rejected card may start with an unrelated numeric field. The
+            // digit lookbehind makes the next retry start at a field boundary.
+            // On success, leave any trimmed trailing fields available to match.
+            offset = length ? matchEnd : match.capturedStart() + 1;
             if (!length || (wrapOffset >= 0 && (match.capturedStart() >= wrapOffset || matchEnd <= wrapOffset)))
                 continue;
             if (rule.validate && !rule.validate(match.captured()))
