@@ -189,6 +189,8 @@ private slots:
     void testReleaseOverFloatingToolbarFinishesWindowDrag();
     void testAutoBlurMapsRotatedDisplayRectToAnnotationSpace();
     void testNativeRedactionReviewAndExport();
+    void reviewOutcome_data();
+    void reviewOutcome();
     void testAutoBlurGaussianCoversMappedHiDpiRegion();
     void testAutomaticSavesPreserveEarlierImage_data();
     void testAutomaticSavesPreserveEarlierImage();
@@ -706,6 +708,49 @@ void TestPinWindowStyleSync::testQuittingFinishesASaveInFlight()
     delete window.data();
 }
 
+void TestPinWindowStyleSync::reviewOutcome_data()
+{
+    QTest::addColumn<QString>("action");
+    for (const auto* action : {"apply", "cancel", "empty", "stale", "destroy"})
+        QTest::newRow(action) << QString::fromLatin1(action);
+}
+
+void TestPinWindowStyleSync::reviewOutcome()
+{
+    QFETCH(QString, action);
+    const auto image = createTestPixmap();
+    auto window = std::make_unique<PinWindow>(image, QPoint(0, 0));
+    window->m_autoBlurInProgress = true;
+    const QVector<QRect> text{{50, 10, 40, 20}};
+    int applied = 0;
+    window->reviewAutoBlurCandidates(window->m_autoBlurContentGeneration, image.toImage(),
+        {{5, 10, 20, 10}}, text, {}, [&](QVector<QRect> acceptedFaces, QVector<QRect> acceptedText) {
+            ++applied;
+            QVERIFY(acceptedFaces.isEmpty());
+            QCOMPARE(acceptedText, text);
+        });
+    QPointer<SnapTray::RedactionReview> model = window->findChild<SnapTray::RedactionReview*>();
+    QVERIFY(model);
+    if (action == "destroy") {
+        window.reset();
+        QVERIFY(!model);
+        QCOMPARE(applied, 0);
+        return;
+    }
+    model->select(0, false);
+    if (action == "empty")
+        model->select(1, false);
+    if (action == "stale")
+        window->invalidateAutoBlurRequest();
+    if (action == "cancel")
+        emit model->cancel();
+    else
+        emit model->apply();
+    QCOMPARE(applied, action == "apply" ? 1 : 0);
+    if (!applied)
+        QVERIFY(!window->m_autoBlurInProgress);
+}
+
 void TestPinWindowStyleSync::testNativeRedactionReviewAndExport()
 {
     if (!qEnvironmentVariableIsSet("SNAPTRAY_TEST_NATIVE_OCR"))
@@ -744,6 +789,14 @@ void TestPinWindowStyleSync::testNativeRedactionReviewAndExport()
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     auto& files = FileSettingsManager::instance();
+    const QString previousPath = files.loadScreenshotPath();
+    const QString previousTemplate = files.loadFilenameTemplate();
+    const bool previousAutoSave = files.loadAutoSaveScreenshots();
+    const auto restoreFiles = qScopeGuard([&] {
+        files.saveScreenshotPath(previousPath);
+        files.saveFilenameTemplate(previousTemplate);
+        files.saveAutoSaveScreenshots(previousAutoSave);
+    });
     files.saveScreenshotPath(dir.path());
     files.saveAutoSaveScreenshots(true);
     files.saveFilenameTemplate("review.png");

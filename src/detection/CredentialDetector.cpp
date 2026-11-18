@@ -1,3 +1,4 @@
+#include "detection/SensitiveCategory.h"
 #include "detection/CredentialDetector.h"
 
 #include <QRegularExpression>
@@ -432,11 +433,14 @@ QRect subRectByTextSpan(const PreparedBlock& block, int spanStart, int spanLengt
     return result;
 }
 
+constexpr int kMinCardDigits = 13;
+constexpr int kMaxCardDigits = 19;
+
 bool validCard(const QString& text)
 {
     QString digits = text;
     digits.remove(' ').remove('-').remove('\n');
-    if (digits.size() < 13 || digits.size() > 19 || digits.count(digits.front()) == digits.size())
+    if (digits.size() < kMinCardDigits || digits.size() > kMaxCardDigits || digits.count(digits.front()) == digits.size())
         return false;
     int sum = 0;
     bool doubleDigit = false;
@@ -451,6 +455,21 @@ bool validCard(const QString& text)
         doubleDigit = !doubleDigit;
     }
     return sum % 10 == 0;
+}
+
+// A following expiry or security code can extend the numeric match. Only
+// shorten at a field boundary, never inside a contiguous run of digits.
+qsizetype cardMatchLength(QString text)
+{
+    while (text.size() >= kMinCardDigits) {
+        if (validCard(text))
+            return text.size();
+        const qsizetype boundary = text.lastIndexOf(QRegularExpression(QStringLiteral("[ \n-]")));
+        if (boundary < 0)
+            break;
+        text.truncate(boundary);
+    }
+    return 0;
 }
 
 bool validAddress(const QString& text)
@@ -477,11 +496,11 @@ struct SensitiveRule {
 const QVector<SensitiveRule>& sensitiveRules()
 {
     static const QVector<SensitiveRule> rules{
-        {"email", QRegularExpression(QStringLiteral(R"([A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})"))},
-        {"url", QRegularExpression(QStringLiteral(R"(https?://[^\s<>"，。]+)"), QRegularExpression::CaseInsensitiveOption), validWebUrl},
-        {"ipv4", QRegularExpression(QStringLiteral(R"((?<![A-Za-z0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![A-Za-z0-9.]))")), validAddress},
-        {"phone", QRegularExpression(QStringLiteral(R"((?<![\w+])(?<![0-9][ -])(?:\+[0-9]{1,3}[ -]?)?(?:\([0-9]{2,4}\)|[0-9]{2,4})[ -]?[0-9]{3,4}[- ][0-9]{3,4}(?![0-9 -]*[0-9]))"))},
-        {"card", QRegularExpression(QStringLiteral(R"((?<![0-9])(?:[0-9][ \n-]?){12,18}[0-9](?![0-9]))")), validCard}
+        {SensitiveCategory::Email, QRegularExpression(QStringLiteral(R"([A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})"))},
+        {SensitiveCategory::Url, QRegularExpression(QStringLiteral(R"(https?://[^\s\x{2029}<>"，。]+)"), QRegularExpression::CaseInsensitiveOption), validWebUrl},
+        {SensitiveCategory::Ipv4, QRegularExpression(QStringLiteral(R"((?<![A-Za-z0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?!\.?[A-Za-z0-9]))")), validAddress},
+        {SensitiveCategory::Phone, QRegularExpression(QStringLiteral(R"((?<![\w+])(?<![0-9][ -])(?:\+[0-9]{1,3}[ -]?)?(?:\([0-9]{2,4}\)|[0-9]{2,4})[ -]?[0-9]{3,4}[- ][0-9]{3,4}(?![0-9 -]*[0-9]))"))},
+        {SensitiveCategory::Card, QRegularExpression(QStringLiteral(R"((?<![0-9])(?:[0-9][ \n-]?){12,18}[0-9](?![0-9]))"))}
     };
     return rules;
 }
@@ -528,7 +547,10 @@ void appendSensitiveRegions(const QVector<PreparedBlock>& blocks, const QStringL
         auto matches = rule.pattern.globalMatch(row);
         while (matches.hasNext()) {
             const auto match = matches.next();
-            if (wrapOffset >= 0 && (match.capturedStart() >= wrapOffset || match.capturedEnd() <= wrapOffset))
+            const qsizetype length = rule.category == SensitiveCategory::Card
+                ? cardMatchLength(match.captured()) : match.capturedLength();
+            const qsizetype matchEnd = match.capturedStart() + length;
+            if (!length || (wrapOffset >= 0 && (match.capturedStart() >= wrapOffset || matchEnd <= wrapOffset)))
                 continue;
             if (rule.validate && !rule.validate(match.captured()))
                 continue;
@@ -539,7 +561,7 @@ void appendSensitiveRegions(const QVector<PreparedBlock>& blocks, const QStringL
                     rect = {};
                 }
                 const int start = qMax<int>(match.capturedStart(), starts[i]);
-                const int end = qMin<int>(match.capturedEnd(), starts[i] + blocks[i].text.size());
+                const int end = qMin<int>(matchEnd, starts[i] + blocks[i].text.size());
                 if (end > start)
                     rect = rect.united(subRectByTextSpan(blocks[i], start - starts[i], end - start));
             }
@@ -863,7 +885,7 @@ QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, c
         }
     }
 
-    if (categories.contains("card")) {
+    if (categories.contains(SensitiveCategory::Card)) {
         for (qsizetype i = 1; i < rows.size(); ++i) {
             const auto& previous = rows[i - 1].blocks;
             const auto& next = rows[i].blocks;
@@ -874,7 +896,7 @@ QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, c
                 first.left() > last.right() + lineHeight ||
                 first.right() < previous.front().pixelRect.left() - lineHeight)
                 continue;
-            appendSensitiveRegions(previous + next, {"card"}, optionalRegions, previous.size());
+            appendSensitiveRegions(previous + next, {SensitiveCategory::Card}, optionalRegions, previous.size());
         }
     }
     auto candidates = mergeNearbyRects(detectedRegions, imageSize);

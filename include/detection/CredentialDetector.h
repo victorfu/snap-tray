@@ -22,6 +22,7 @@ public:
      * @brief Detect credential regions from OCR output.
      * @param blocks OCR text blocks with normalized geometry.
      * @param imageSize Source image size in pixels.
+     * @param categories Optional SensitiveCategory identifiers. An empty list detects only credentials.
      * @return Pixel-space rectangles relative to the input image.
      */
     static QVector<QRect> detect(const QVector<OCRTextBlock>& blocks, const QSize& imageSize,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "detection/SensitiveCategory.h"
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -174,16 +175,16 @@ public:
     void setShortcutHintsEnabled(bool v);
     int fullScreenCaptureAction() const;
     void setFullScreenCaptureAction(int v);
-    bool blurEmail() const { return m_sensitiveCategories.contains("email"); }
-    void setBlurEmail(bool enabled) { setSensitiveCategory("email", enabled); }
-    bool blurUrl() const { return m_sensitiveCategories.contains("url"); }
-    void setBlurUrl(bool enabled) { setSensitiveCategory("url", enabled); }
-    bool blurIpv4() const { return m_sensitiveCategories.contains("ipv4"); }
-    void setBlurIpv4(bool enabled) { setSensitiveCategory("ipv4", enabled); }
-    bool blurPhone() const { return m_sensitiveCategories.contains("phone"); }
-    void setBlurPhone(bool enabled) { setSensitiveCategory("phone", enabled); }
-    bool blurCard() const { return m_sensitiveCategories.contains("card"); }
-    void setBlurCard(bool enabled) { setSensitiveCategory("card", enabled); }
+    bool blurEmail() const { return m_sensitiveCategories.contains(SensitiveCategory::Email); }
+    void setBlurEmail(bool enabled) { setSensitiveCategory(SensitiveCategory::Email, enabled); }
+    bool blurUrl() const { return m_sensitiveCategories.contains(SensitiveCategory::Url); }
+    void setBlurUrl(bool enabled) { setSensitiveCategory(SensitiveCategory::Url, enabled); }
+    bool blurIpv4() const { return m_sensitiveCategories.contains(SensitiveCategory::Ipv4); }
+    void setBlurIpv4(bool enabled) { setSensitiveCategory(SensitiveCategory::Ipv4, enabled); }
+    bool blurPhone() const { return m_sensitiveCategories.contains(SensitiveCategory::Phone); }
+    void setBlurPhone(bool enabled) { setSensitiveCategory(SensitiveCategory::Phone, enabled); }
+    bool blurCard() const { return m_sensitiveCategories.contains(SensitiveCategory::Card); }
+    void setBlurCard(bool enabled) { setSensitiveCategory(SensitiveCategory::Card, enabled); }
     QStringList sensitiveCategories() const;
     void setSensitiveCategories(const QStringList& categories);
     int blurIntensity() const;

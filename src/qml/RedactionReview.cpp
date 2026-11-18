@@ -7,50 +7,60 @@
 #include <QWidget>
 
 namespace SnapTray {
-RedactionReview::RedactionReview(const QImage& image, const QVector<QRect>& rects)
-    : m_selected(rects.size(), true)
+RedactionReview::RedactionReview(const QImage& image, const QVector<QRect>& faces,
+                                 const QVector<QRect>& text, const QString& warning)
+    : m_warning(warning)
 {
+    constexpr QSize kThumbnailBounds(320, 64);
     const QString prefix = QUuid::createUuid().toString(QUuid::WithoutBraces);
-    for (const auto& rect : rects) {
-        const QString id = prefix + '-' + QString::number(m_ids.size());
-        const QImage crop = image.copy(rect.intersected(image.rect()));
-        const QSize thumbnail = crop.size().boundedTo(QSize(320, 64));
-        DialogImageProvider::setImage(id, crop.scaled(thumbnail, Qt::KeepAspectRatio,
-                                                      Qt::SmoothTransformation));
-        m_ids.append(id);
-        m_origins.append(rect.topLeft());
-    }
+    const auto append = [&](const QVector<QRect>& regions, bool face) {
+        for (const auto& rect : regions) {
+            const QRect clipped = rect.intersected(image.rect());
+            if (clipped.isEmpty())
+                continue;
+            const QString id = prefix + '-' + QString::number(m_entries.size());
+            const QImage crop = image.copy(clipped);
+            DialogImageProvider::setImage(id, crop.scaled(crop.size().boundedTo(kThumbnailBounds),
+                                                         Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            m_entries.append({id, clipped, face});
+        }
+    };
+    append(faces, true);
+    append(text, false);
 }
 
 RedactionReview::~RedactionReview()
 {
-    for (const auto& id : m_ids)
-        DialogImageProvider::removeImage(id);
+    for (const auto& entry : m_entries)
+        DialogImageProvider::removeImage(entry.imageId);
 }
 
 QStringList RedactionReview::thumbnails() const
 {
     QStringList urls;
-    for (const auto& id : m_ids)
-        urls.append("image://dialog/" + id);
+    for (const auto& entry : m_entries)
+        urls.append("image://dialog/" + entry.imageId);
     return urls;
 }
 
 void RedactionReview::select(int index, bool selected)
 {
-    if (index >= 0 && index < m_selected.size())
-        m_selected[index] = selected;
+    if (index >= 0 && index < m_entries.size())
+        m_entries[index].selected = selected;
 }
 
-QVector<QRect> RedactionReview::selected(const QVector<QRect>& regions, int offset) const
+QVector<QRect> RedactionReview::selected(bool faces) const
 {
     QVector<QRect> result;
-    for (int i = 0; i < regions.size(); ++i) {
-        if (m_selected.value(offset + i))
-            result.append(regions[i]);
+    for (const auto& entry : m_entries) {
+        if (entry.selected && entry.face == faces)
+            result.append(entry.rect);
     }
     return result;
 }
+
+QVector<QRect> RedactionReview::selectedFaces() const { return selected(true); }
+QVector<QRect> RedactionReview::selectedText() const { return selected(false); }
 
 QString redactionSummary(int faces, int textRegions)
 {
@@ -61,16 +71,22 @@ QString redactionSummary(int faces, int textRegions)
 }
 
 QmlDialog* reviewRedactions(QWidget* owner, const QImage& image, const QVector<QRect>& faces,
-                            const QVector<QRect>& text, ReviewCallback callback)
+                            const QVector<QRect>& text, ReviewCallback callback, const QString& warning)
 {
-    auto* review = new RedactionReview(image, faces + text);
+    auto* review = new RedactionReview(image, faces, text, warning);
     auto* dialog = new QmlDialog(QUrl("qrc:/SnapTrayQml/dialogs/RedactionReview.qml"),
                                  review, "viewModel", owner);
     dialog->setModal(true);
-    QObject::connect(review, &RedactionReview::apply, dialog, [dialog, review, faces, text, callback] {
+    if (!dialog->prepare()) {
+        delete dialog;
+        return nullptr;
+    }
+    QObject::connect(review, &RedactionReview::apply, dialog, [dialog, review, callback] {
         QObject::disconnect(dialog, &QmlDialog::closed, review, nullptr);
+        auto selectedFaces = review->selectedFaces();
+        auto selectedText = review->selectedText();
         dialog->close();
-        callback(true, review->selected(faces, 0), review->selected(text, faces.size()));
+        callback(true, std::move(selectedFaces), std::move(selectedText));
     });
     QObject::connect(review, &RedactionReview::cancel, dialog, &QmlDialog::close);
     QObject::connect(dialog, &QmlDialog::closed, review, [dialog, callback] {
@@ -78,5 +94,15 @@ QmlDialog* reviewRedactions(QWidget* owner, const QImage& image, const QVector<Q
         callback(false, {}, {});
     }, Qt::SingleShotConnection);
     return dialog;
+}
+
+void abandonRedactionReview(QPointer<QmlDialog>& dialog)
+{
+    if (dialog) {
+        // The owner is closing. Release the modal window without invoking a
+        // completion callback that still refers to its widgets.
+        dialog->blockSignals(true);
+        delete dialog.data();
+    }
 }
 }

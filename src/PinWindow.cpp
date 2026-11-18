@@ -656,6 +656,7 @@ PinWindow::PinWindow(const QPixmap& screenshot,
 
 PinWindow::~PinWindow()
 {
+    SnapTray::abandonRedactionReview(m_redactionReview);
     m_isDestructing = true;
 
     if (m_autoBlurWatcher) {
@@ -3784,6 +3785,7 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
 void PinWindow::closeEvent(QCloseEvent* event)
 {
+    SnapTray::abandonRedactionReview(m_redactionReview);
     invalidateAutoBlurRequest();
     if (m_colorPickOverlay) {
         m_colorPickOverlay->cancel();
@@ -6121,6 +6123,36 @@ void PinWindow::onFontFamilySelected(const QString& family)
     }
 }
 
+void PinWindow::reviewAutoBlurCandidates(quint64 generation, const QImage& image, const QVector<QRect>& faces,
+                                        const QVector<QRect>& text, const QString& warning, ApplyRedactions apply)
+{
+    const auto clearProgress = [this] {
+        m_autoBlurInProgress = false;
+        updateToolbarAutoBlurState();
+        updateLoadingSpinnerState();
+        update();
+    };
+    m_redactionReview = SnapTray::reviewRedactions(this, image, faces, text,
+        [this, generation, clearProgress, apply](bool accepted, QVector<QRect> chosenFaces, QVector<QRect> chosenText) {
+            if (!accepted || (chosenFaces.isEmpty() && chosenText.isEmpty())) {
+                clearProgress();
+                return;
+            }
+            if (!isAutoBlurRequestCurrent(generation)) {
+                clearProgress();
+                m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Image changed; auto-blur result discarded"));
+                return;
+            }
+            apply(std::move(chosenFaces), std::move(chosenText));
+        }, warning);
+    if (!m_redactionReview) {
+        clearProgress();
+        m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Detection failed"));
+        return;
+    }
+    m_redactionReview->showCenteredOnScreen(screen());
+}
+
 void PinWindow::onAutoBlurRequested()
 {
     if (m_autoBlurInProgress) {
@@ -6267,9 +6299,7 @@ void PinWindow::onAutoBlurRequested()
             return;
         }
 
-        const int faceCount = aggregated->faceRegions.size();
-        const int credentialCount = aggregated->credentialRegions.size();
-        if (faceCount > 0 || credentialCount > 0) {
+        if (!aggregated->faceRegions.isEmpty() || !aggregated->credentialRegions.isEmpty()) {
             QString warningMessage;
             if (!aggregated->faceError.isEmpty() && !aggregated->ocrError.isEmpty()) {
                 warningMessage = QStringLiteral("%1; %2").arg(aggregated->faceError, aggregated->ocrError);
@@ -6284,6 +6314,7 @@ void PinWindow::onAutoBlurRequested()
             const auto blurType = options.blurType;
 
             auto addRegions = [&](const QVector<QRect>& regions) {
+                int count = 0;
                 for (const QRect& rect : regions) {
                     const QRect annotationRect = PinWindow::mapAutoBlurDetectionRect(
                         rect,
@@ -6301,11 +6332,13 @@ void PinWindow::onAutoBlurRequested()
                         annotationRect, sharedAnnotationSource, blockSize, blurType
                     );
                     safeThis->m_annotationLayer->addItem(std::move(mosaic));
+                    ++count;
                 }
+                return count;
             };
 
-            addRegions(aggregated->faceRegions);
-            addRegions(aggregated->credentialRegions);
+            const int faceCount = addRegions(aggregated->faceRegions);
+            const int credentialCount = addRegions(aggregated->credentialRegions);
             safeThis->updateUndoRedoState();
             if (warningMessage.isEmpty()) {
                 complete(true, faceCount, credentialCount, QString());
@@ -6341,22 +6374,15 @@ void PinWindow::onAutoBlurRequested()
             applyReviewed();
             return;
         }
-        auto* dialog = SnapTray::reviewRedactions(safeThis, image, aggregated->faceRegions,
-            aggregated->credentialRegions, [safeThis, aggregated, applyReviewed](
-                bool accepted, QVector<QRect> faces, QVector<QRect> text) {
-                if (!safeThis)
-                    return;
-                if (!accepted || (faces.isEmpty() && text.isEmpty())) {
-                    safeThis->m_autoBlurInProgress = false;
-                    safeThis->updateToolbarAutoBlurState();
-                    safeThis->updateLoadingSpinnerState();
-                    return;
-                }
+        QStringList warnings{aggregated->faceError, aggregated->ocrError};
+        warnings.removeAll(QString());
+        safeThis->reviewAutoBlurCandidates(requestGeneration, image, aggregated->faceRegions,
+            aggregated->credentialRegions, warnings.join("; "),
+            [aggregated, applyReviewed](QVector<QRect> faces, QVector<QRect> text) {
                 aggregated->faceRegions = std::move(faces);
                 aggregated->credentialRegions = std::move(text);
                 applyReviewed();
             });
-        dialog->showCenteredOnScreen(safeThis->screen());
     };
 
     m_autoBlurWatcher = nullptr;

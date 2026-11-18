@@ -13,6 +13,7 @@
 #include <QHash>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -664,6 +665,10 @@ private:
     // AutoBlur
     AutoBlurManager* m_autoBlurManager = nullptr;
     bool m_autoBlurInProgress = false;
+    using ApplyRedactions = std::function<void(QVector<QRect>, QVector<QRect>)>;
+    void reviewAutoBlurCandidates(quint64 generation, const QImage& image, const QVector<QRect>& faces,
+                                  const QVector<QRect>& text, const QString& warning, ApplyRedactions apply);
+    QPointer<SnapTray::QmlDialog> m_redactionReview;
     QPointer<QFutureWatcherBase> m_autoBlurWatcher;
     quint64 m_autoBlurContentGeneration = 0;
 

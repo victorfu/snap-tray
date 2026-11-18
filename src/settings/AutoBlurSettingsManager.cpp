@@ -31,12 +31,12 @@ void AutoBlurSettingsManager::save(const Options& options)
 
 QStringList AutoBlurSettingsManager::loadSensitiveCategories() const
 {
-    return SnapTray::getSettings().value("detection/sensitiveCategories").toStringList();
+    return SnapTray::getSettings().value(kKeySensitiveCategories).toStringList();
 }
 
 void AutoBlurSettingsManager::saveSensitiveCategories(const QStringList& categories)
 {
-    SnapTray::getSettings().setValue("detection/sensitiveCategories", categories);
+    SnapTray::getSettings().setValue(kKeySensitiveCategories, categories);
 }
 
 bool AutoBlurSettingsManager::loadEnabled() const

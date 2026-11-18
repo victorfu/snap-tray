@@ -47,12 +47,20 @@ private slots:
         QCOMPARE(calls, 1);
     }
 
+    void unavailableComponent()
+    {
+        QWidget owner;
+        auto* model = new QObject;
+        SnapTray::QmlDialog dialog(QUrl("qrc:/missing-review.qml"), model, "viewModel", &owner);
+        QVERIFY(!dialog.prepare());
+    }
+
     void selectionAndCancel()
     {
         const QVector<QRect> regions{{0, 0, 20, 30}, {30, 20, 30, 20}};
         QImage input(100, 100, QImage::Format_RGB32);
         input.fill(Qt::green);
-        SnapTray::RedactionReview model(input, regions);
+        SnapTray::RedactionReview model(input, {QRect(), QRect(200, 300, 10, 10)}, regions, "OCR failed");
         QQuickView view;
         view.engine()->addImageProvider("dialog", new SnapTray::DialogImageProvider);
         view.setInitialProperties({{"viewModel", QVariant::fromValue(&model)}});
@@ -60,10 +68,12 @@ private slots:
         QCOMPARE(view.status(), QQuickView::Ready);
         QCOMPARE(model.thumbnails().size(), 2);
         model.select(0, false);
-        QCOMPARE(model.selected(regions, 0), QVector<QRect>{regions[1]});
+        QCOMPARE(model.selectedText(), QVector<QRect>{regions[1]});
         QSignalSpy cancel(&model, &SnapTray::RedactionReview::cancel);
         QSignalSpy apply(&model, &SnapTray::RedactionReview::apply);
-        QVERIFY(QMetaObject::invokeMethod(view.rootObject(), "closeRequested"));
+        auto* button = view.rootObject()->findChild<QObject*>("cancelReview");
+        QVERIFY(button);
+        QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
         QCOMPARE(cancel.count(), 1);
         QCOMPARE(apply.count(), 0);
     }

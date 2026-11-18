@@ -122,6 +122,7 @@ void tst_SettingsBackend::initTestCase()
     const QStringList keys = {
         QStringLiteral("recording/audioDevice"),
         QStringLiteral("detection/blurType"),
+        QStringLiteral("detection/sensitiveCategories"),
         QStringLiteral("general/startOnLogin"),
         QStringLiteral("regionCapture/cursorCompanionStyle"),
         QStringLiteral("regionCapture/fullScreenCaptureAction"),
@@ -169,6 +170,7 @@ void tst_SettingsBackend::clearTestSettings()
     auto settings = SnapTray::getSettings();
     settings.remove("recording/audioDevice");
     settings.remove("detection/blurType");
+    settings.remove("detection/sensitiveCategories");
     settings.remove("general/startOnLogin");
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/fullScreenCaptureAction");

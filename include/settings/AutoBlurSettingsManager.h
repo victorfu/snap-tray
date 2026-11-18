@@ -61,6 +61,7 @@ private:
     AutoBlurSettingsManager& operator=(const AutoBlurSettingsManager&) = delete;
 
     // Settings keys - preserving existing keys for migration
+    static constexpr const char* kKeySensitiveCategories = "detection/sensitiveCategories";
     static constexpr const char* kKeyEnabled = "detection/autoBlurEnabled";
     static constexpr const char* kKeyDetectFaces = "detection/detectFaces";
     static constexpr const char* kKeyBlurIntensity = "detection/blurIntensity";

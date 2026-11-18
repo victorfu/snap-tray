@@ -55,17 +55,30 @@ class tst_CredentialDetector : public QObject
     Q_OBJECT
 
 private slots:
+    void separateUrlColumn() {
+        const QSize size(1000, 500);
+        const auto url = makeBlock("https://example.org/a", .05, .20, .25);
+        const auto owner = makeBlock("Owner", .70, .20, .15);
+        const auto hits = CredentialDetector::detect({url, owner}, size, {"url"});
+        QCOMPARE(hits.size(), 1);
+        QVERIFY(hits.front().contains(expectedPixelRect(url.boundingRect, size)));
+        QVERIFY(!hits.front().intersects(expectedPixelRect(owner.boundingRect, size)));
+    }
+    void sharedBlockHasOneReviewRegion() {
+        const auto mixed = makeBlock("person@example.org 202-555-0142", .1, .2);
+        QCOMPARE(CredentialDetector::detect({mixed}, {800, 400}, {"email", "phone"}).size(), 1);
+    }
     void wrappedPaymentCard() {
         const QVector<OCRTextBlock> blocks{
             makeBlock("public note", .05, .10), makeBlock("4111 1111", .70, .10),
-            makeBlock("1111 1111", .05, .16), makeBlock("other note", .50, .16)
+            makeBlock("1111 1111", .05, .16), makeBlock("12/27", .20, .16, .07), makeBlock("other note", .50, .16)
         };
         const QSize image(1000, 800);
         const auto regions = CredentialDetector::detect(blocks, image, {"card"});
         QCOMPARE(regions.size(), 2);
         for (int i : {1, 2})
             QVERIFY(containsRectCenter(regions, expectedPixelRect(blocks[i].boundingRect, image)));
-        for (int i : {0, 3}) {
+        for (int i : {0, 4}) {
             for (const auto& region : regions)
                 QVERIFY(!region.intersects(expectedPixelRect(blocks[i].boundingRect, image)));
         }
@@ -142,6 +155,15 @@ void tst_CredentialDetector::optionalCategories_data()
     QTest::newRow("version") << QStringLiteral("v2026.11.18") << QStringLiteral("phone") << false;
     QTest::newRow("card") << QStringLiteral("4111 1111 1111 1111") << QStringLiteral("card") << true;
     QTest::newRow("card-line-break") << QStringLiteral("4111 1111\n1111 1111") << QStringLiteral("card") << true;
+    QTest::newRow("card-expiry") << QStringLiteral("4111 1111 1111 1111 12/27") << QStringLiteral("card") << true;
+    QTest::newRow("card-cvv") << QStringLiteral("4111 1111 1111 1111 123") << QStringLiteral("card") << true;
+    QTest::newRow("card-repeated") << QStringLiteral("0000000000000000") << QStringLiteral("card") << false;
+    QTest::newRow("card-too-short") << QStringLiteral("123456789012") << QStringLiteral("card") << false;
+    QTest::newRow("card-too-long") << QStringLiteral("12345678901234567890") << QStringLiteral("card") << false;
+    QTest::newRow("ipv4-terminal") << QStringLiteral("Connect to 192.168.1.10.") << QStringLiteral("ipv4") << true;
+    QTest::newRow("ipv4-leading-zero") << QStringLiteral("192.168.01.1") << QStringLiteral("ipv4") << false;
+    QTest::newRow("ipv4-five-components") << QStringLiteral("192.168.0.1.2") << QStringLiteral("ipv4") << false;
+    QTest::newRow("phone-id") << QStringLiteral("1234 5678 9012") << QStringLiteral("phone") << true;
     QTest::newRow("card-checksum") << QStringLiteral("4111 1111 1111 1112") << QStringLiteral("card") << false;
 }
 
