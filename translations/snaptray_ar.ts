@@ -2515,6 +2515,16 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>حفظ لقطة الشاشة المُجمَّلة</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>تعذّر اقتصاص هذا التحديد</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>أوقف التحديث المباشر مؤقتًا للاقتصاص</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

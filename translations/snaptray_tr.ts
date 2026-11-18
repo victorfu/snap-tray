@@ -2510,6 +2510,16 @@ Boyut: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Güzelleştirilmiş Ekran Görüntüsünü Kaydet</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Bu seçim kırpılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Kırpmak için canlı güncellemeyi duraklatın</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -390,6 +390,8 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         {"CropSection", "Cancel crop"},
         {"CropSection", "Apply"},
         {"CropSection", "Apply crop"},
+        {"PinWindow", "Unable to crop this selection"},
+        {"PinWindow", "Pause Live Update to crop"},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

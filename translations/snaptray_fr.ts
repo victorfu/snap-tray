@@ -2511,6 +2511,16 @@ Taille : %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Enregistrer la capture d'écran embellie</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Impossible de rogner cette sélection</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Mettez la mise à jour en direct en pause pour rogner</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

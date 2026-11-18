@@ -122,7 +122,7 @@ void CropToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos) {
 
     m_pressToolPos = pos;
     m_pressSourcePos = toSource(pos);
-    m_rectBeforeGesture = m_model.rect();
+    m_model.beginGesture();
     m_dragExceededThreshold = false;
 
     m_activeHandle = hitTest(pos);
@@ -156,10 +156,10 @@ void CropToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos) {
         m_model.setRectFromDrag(m_pressSourcePos, sourcePos);
         break;
     case Mode::Moving:
-        m_model.moveRect(m_rectBeforeGesture, sourcePos - m_pressSourcePos);
+        m_model.moveBy(sourcePos - m_pressSourcePos);
         break;
     case Mode::Resizing:
-        m_model.resizeRect(m_rectBeforeGesture, m_activeHandle, sourcePos);
+        m_model.dragHandle(m_activeHandle, sourcePos);
         break;
     case Mode::Idle:
         break;
@@ -176,10 +176,12 @@ void CropToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos) {
     if (m_dragExceededThreshold) {
         onMouseMoveF(ctx, pos);
     }
-    // A click, or a drag that ended with nothing selectable, keeps the
-    // previous draft instead of silently dropping it.
-    if (!m_dragExceededThreshold || !m_model.hasRect()) {
-        m_model.restoreRect(m_rectBeforeGesture);
+    // A click keeps the draft as it was; so does a drag that ended with
+    // nothing selectable (endGesture), instead of silently dropping it.
+    if (m_dragExceededThreshold) {
+        m_model.endGesture();
+    } else {
+        m_model.cancelGesture();
     }
 
     m_mode = Mode::Idle;
@@ -272,7 +274,7 @@ void CropToolHandler::cancelDrawing() {
         return;
     }
     // Abandon the drag only; the draft from before it stays.
-    m_model.restoreRect(m_rectBeforeGesture);
+    m_model.cancelGesture();
     m_mode = Mode::Idle;
     m_activeHandle = Handle::None;
     notifyDraftChanged();
@@ -356,6 +358,16 @@ void CropToolHandler::setSource(const QSize& pixelSize, qreal devicePixelRatio, 
 }
 
 void CropToolHandler::setViewOrientation(int rotationAngle, bool flipHorizontal, bool flipVertical) {
+    const int normalized = ((rotationAngle % 360) + 360) % 360;
+    if (normalized == m_rotationAngle && flipHorizontal == m_flipHorizontal
+        && flipVertical == m_flipVertical) {
+        return;
+    }
+    // The press position of a drag in progress was mapped with the old
+    // orientation; carrying it on would move the draft somewhere unrelated.
+    if (m_mode != Mode::Idle) {
+        cancelDrawing();
+    }
     m_rotationAngle = ((rotationAngle % 360) + 360) % 360;
     m_flipHorizontal = flipHorizontal;
     m_flipVertical = flipVertical;
@@ -370,8 +382,19 @@ void CropToolHandler::setAspect(Aspect aspect) {
     if (m_mode != Mode::Idle) {
         cancelDrawing();
     }
-    m_model.setAspect(aspect);
+    m_model.setAspect(aspect);   // keeps the old preset if the draft cannot take it
     notifyDraftChanged();
+}
+
+void CropToolHandler::setPositionStep(const QSize& sourceStep) {
+    if (sourceStep == m_model.positionStep()) {
+        return;
+    }
+    const QRect before = m_model.rect();
+    m_model.setPositionStep(sourceStep);
+    if (m_model.rect() != before) {
+        notifyDraftChanged();
+    }
 }
 
 bool CropToolHandler::nudgeDraft(const QPoint& sourceDelta) {
@@ -391,9 +414,13 @@ bool CropToolHandler::commitDraft() {
         qWarning() << "CropToolHandler::commitDraft: Crop callback not set. Crop action discarded.";
         return false;
     }
-    // The host replaces the image on success, which drops the draft through
-    // setSource(); a refused crop leaves it in place for another try.
-    return m_cropCallback(m_model.rect());
+    if (!m_cropCallback(m_model.rect())) {
+        return false;   // refused: the draft stays for another try
+    }
+    // Applied. The host normally leaves the tool, which already dropped the
+    // draft; do not depend on that.
+    discardDraft();
+    return true;
 }
 
 void CropToolHandler::discardDraft() {

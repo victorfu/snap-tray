@@ -2512,6 +2512,16 @@ Velikost: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Uložit zkrášlený snímek obrazovky</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Tento výběr nelze oříznout</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pro oříznutí pozastavte živou aktualizaci</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

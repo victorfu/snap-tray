@@ -2511,6 +2511,16 @@ Storlek: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Spara förskönad skärmbild</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Det går inte att beskära den här markeringen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pausa liveuppdateringen för att beskära</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

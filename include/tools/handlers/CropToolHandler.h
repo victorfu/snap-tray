@@ -72,8 +72,13 @@ public:
     Aspect aspect() const { return m_model.aspect(); }
     void setAspect(Aspect aspect);
 
-    // Moves the draft by whole source pixels. False without a draft.
-    bool nudgeDraft(const QPoint& sourceDelta);
+    // See CropDraftModel::setPositionStep().
+    void setPositionStep(const QSize& sourceStep);
+    QSize positionStep() const { return m_model.positionStep(); }
+
+    // Moves the draft by position steps (one source pixel each unless the
+    // host asked for a coarser grid). False without a draft.
+    bool nudgeDraft(const QPoint& steps);
     // Applies the draft through the crop callback. False when there is no
     // draft, a drag is in progress, or the host refused.
     bool commitDraft();
@@ -96,7 +101,6 @@ private:
     Handle m_hoverHandle = Handle::None;
     QPointF m_pressToolPos;
     QPoint m_pressSourcePos;
-    QRect m_rectBeforeGesture;
     bool m_dragExceededThreshold = false;
 
     QSize m_imageSize;

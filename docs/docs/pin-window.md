@@ -100,11 +100,11 @@ Choose **Crop** on the annotation toolbar, or **Image processing > Crop** in the
 - Drag inside the draft to move it, or drag one of its eight handles to resize it. Dragging outside starts a new selection.
 - Pick an aspect ratio in the options strip: Free, Original, 1:1, 16:9, 9:16, 4:3 or 3:2. The draft is re-fitted at once and stays inside the image. On a rotated pin the ratio applies to the image as you see it.
 - Arrow keys move the draft by one pixel of the image, `Shift` + arrow by ten.
-- `Enter`, **Apply**, or a double-click inside the draft crops. `Esc` or **Cancel** discards the draft; a second `Esc` hides the toolbar as before.
+- `Enter`, **Apply**, or a double-click inside the draft crops. `Esc` or **Cancel** discards the draft; a second `Esc` hides the toolbar as before. While Crop is active a double-click outside the draft does nothing; it does not close the pin as it otherwise would. Choosing Crop again keeps a draft that is waiting.
 
-The size shown next to the draft and in the options strip is in pixels of the image itself, not of the zoomed pin, so a pin from a 2x display reports twice its on-screen size. Positions move pixel by pixel; sizes are limited to those the pin shows without resampling (any size at 1x, even sizes at 2x, or the full width or height).
+The size shown next to the draft and in the options strip is in pixels of the image itself, not of the zoomed pin, so a pin from a 2x display reports twice its on-screen size. Positions move pixel by pixel; sizes are whole logical pixels, or the full width or height. At 1x that is any size and at 2x even sizes, which the pin shows without resampling; at a fractional scale such as 1.5x it is the closest fit. When the pin has annotations the draft moves in steps that shift them exactly (two pixels at 2x, for example), so a redaction stays on what it covers.
 
-Applying adds one undo step, like before. Adjusting the draft adds none. Switching to another tool, hiding the toolbar or undoing to another image discards the draft.
+Applying adds one undo step, like before. Adjusting the draft adds none. Switching to another tool, hiding the toolbar or undoing to another image discards the draft. Crop needs a still image: pause Live Update first.
 
 ## Next step
 

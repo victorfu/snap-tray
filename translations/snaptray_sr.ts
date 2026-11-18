@@ -2512,6 +2512,16 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>Сачувај улепшани снимак екрана</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Није могуће опсећи ову селекцију</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Паузирајте ажурирање уживо да бисте опсекли</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

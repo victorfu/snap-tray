@@ -2510,6 +2510,16 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>保存美化截图</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>无法裁剪此选区</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>请先暂停实时更新再裁剪</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

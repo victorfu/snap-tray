@@ -346,8 +346,20 @@ private:
     // both end in commitCropGeometry().
     void applyCrop(const QRect& cropRect);
     // Crops to a rect in source pixels (the crop draft's units, #358).
-    // Returns false, changing nothing, when the rect cannot be applied.
+    // Returns false, leaving the image and annotations as they are, when the
+    // rect cannot be applied (an annotation drag in progress is cancelled
+    // either way). A rect covering the whole image returns true: it leaves
+    // the crop tool without changing the image or adding an undo entry.
     bool applyCropSourcePixels(const QRect& sourcePixelRect);
+    // Enter, Apply and double-click: applies the crop draft, or tells the
+    // user that it could not be applied.
+    bool commitCropDraft();
+    // Abandons a crop drag whose release may never come.
+    void cancelImageEditGesture();
+    // Any annotation, shown or kept in undo/redo history.
+    bool hasOwnedAnnotations() const;
+    // Grid for the crop draft's corner; see CropDraftModel::setPositionStep().
+    QSize cropPositionStep() const;
     bool commitCropGeometry(const QRectF& exactPhysicalCropRect,
                             const QSize& croppedLogicalSize,
                             const QPointF& annotationOffsetDisplay);

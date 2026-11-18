@@ -2512,6 +2512,16 @@ Dydis: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Išsaugoti pagražintą ekrano nuotrauką</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Šios srities apkirpti nepavyko</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Norėdami apkirpti, pristabdykite tiesioginį atnaujinimą</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

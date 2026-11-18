@@ -2512,6 +2512,16 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>Сохранить украшенный снимок экрана</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Не удалось обрезать выделенную область</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Приостановите живое обновление, чтобы обрезать</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

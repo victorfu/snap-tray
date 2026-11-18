@@ -2511,6 +2511,16 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>Αποθήκευση ομορφοποιημένου στιγμιοτύπου</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Δεν είναι δυνατή η περικοπή αυτής της επιλογής</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Κάντε παύση της ζωντανής ενημέρωσης για περικοπή</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>
