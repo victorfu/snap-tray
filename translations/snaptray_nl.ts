@@ -1736,6 +1736,18 @@ Bestandsgrootte: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (bewerkt)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Opnieuw proberen als verticale tekst</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Origineel tonen</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1753,6 +1765,22 @@ Bestandsgrootte: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (bewerkt)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Herkennen als verticale tekst...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Geen tekst gevonden voor verticale poging</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Geen enkele kolom verticale tekst</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Verticale poging vond geen tekst</translation>
     </message>
 </context>
 <context>

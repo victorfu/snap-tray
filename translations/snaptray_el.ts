@@ -1736,6 +1736,18 @@ File size: %3</source>
         <source>%1 (edited)</source>
         <translation>%1 (επεξεργασμένο)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Επανάληψη ως κάθετο κείμενο</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Εμφάνιση αρχικού</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Ακύρωση</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1753,6 +1765,22 @@ File size: %3</source>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (επεξεργασμένο)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Αναγνώριση ως κάθετο κείμενο...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Δεν βρέθηκε κείμενο για κάθετη επανάληψη</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Δεν είναι μία στήλη κάθετου κειμένου</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Η κάθετη επανάληψη δεν βρήκε κείμενο</translation>
     </message>
 </context>
 <context>

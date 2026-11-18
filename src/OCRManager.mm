@@ -334,7 +334,7 @@ void OCRManager::recognizeText(const QPixmap &pixmap, const OCRCallback &callbac
                     result.success = !result.text.isEmpty();
 
                     if (!result.success) {
-                        result.error = QStringLiteral("No text detected");
+                        result.error = ocrNoTextDetectedError();
                     }
 
                     qDebug() << "OCRManager: Recognition complete, found"

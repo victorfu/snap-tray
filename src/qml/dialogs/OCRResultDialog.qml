@@ -15,10 +15,15 @@ DialogBase {
 
     contentItem: Component {
         Item {
+            readonly property bool showVerticalRow: viewModel ? viewModel.verticalRetryAvailable : false
             implicitHeight: Math.min(Math.max(180, textArea.contentHeight + 28), 340)
+                            + (showVerticalRow ? verticalRow.height + 4 : 0)
 
             ScrollView {
-                anchors.fill: parent
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: showVerticalRow ? verticalRow.top : parent.bottom
                 anchors.margins: 14
 
                 TextArea {
@@ -50,6 +55,50 @@ DialogBase {
                     }
                 }
             }
+
+            // Opt-in retry for a single column of upright CJK glyphs. It only
+            // replaces text; the original result can always be restored.
+            Item {
+                id: verticalRow
+                visible: showVerticalRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.leftMargin: 14
+                anchors.rightMargin: 14
+                height: 32
+
+                Text {
+                    anchors.left: parent.left
+                    anchors.right: verticalButton.left
+                    anchors.rightMargin: 8
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: viewModel ? viewModel.verticalStatusText : ""
+                    color: SemanticTokens.textSecondary
+                    font.pixelSize: SemanticTokens.fontSizeCaption
+                    font.family: SemanticTokens.fontFamily
+                    elide: Text.ElideRight
+                }
+
+                DialogButton {
+                    id: verticalButton
+                    objectName: "verticalRetryButton"
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: 32
+                    style: "ghost"
+                    text: !viewModel ? ""
+                        : viewModel.verticalRetryInProgress ? qsTr("Cancel")
+                        : viewModel.showingVerticalResult ? qsTr("Show Original")
+                        : qsTr("Retry as Vertical Text")
+                    onClicked: {
+                        if (!viewModel) return
+                        if (viewModel.verticalRetryInProgress) viewModel.cancelVerticalRetry()
+                        else if (viewModel.showingVerticalResult) viewModel.showOriginalResult()
+                        else viewModel.retryAsVerticalText()
+                    }
+                }
+            }
         }
     }
 
@@ -72,6 +121,8 @@ DialogBase {
 
                 DialogButton {
                     id: copyBtn
+                    // An empty result (e.g. before a vertical retry) has nothing to copy.
+                    enabled: viewModel ? viewModel.text.length > 0 : false
                     text: qsTr("Copy")
                     style: "secondary"
                     feedbackText: qsTr("\u2713 Copied!")

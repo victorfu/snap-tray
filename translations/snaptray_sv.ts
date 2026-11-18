@@ -1736,6 +1736,18 @@ Filstorlek: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (redigerad)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Försök igen som lodrät text</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Visa original</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Avbryt</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1753,6 +1765,22 @@ Filstorlek: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (redigerad)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Känner igen som lodrät text...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Ingen text hittades för det lodräta försöket</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Inte en enda kolumn lodrät text</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Det lodräta försöket hittade ingen text</translation>
     </message>
 </context>
 <context>

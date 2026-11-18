@@ -1735,6 +1735,18 @@ Kích thước tệp: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (đã chỉnh sửa)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Thử lại dưới dạng chữ dọc</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Hiện bản gốc</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1752,6 +1764,22 @@ Kích thước tệp: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (đã chỉnh sửa)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Đang nhận dạng dưới dạng chữ dọc...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Không tìm thấy chữ để thử lại theo chiều dọc</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Không phải một cột chữ dọc</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Lần thử theo chiều dọc không tìm thấy chữ</translation>
     </message>
 </context>
 <context>

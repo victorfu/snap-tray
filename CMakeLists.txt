@@ -392,6 +392,7 @@ add_library(snaptray_core STATIC
     src/recording/RecordingFrameFilter.cpp
     src/recording/RecordingArea.cpp
     src/utils/OCRImageUtils.cpp
+    src/utils/VerticalCJKNormalizer.cpp
     src/utils/OCRTextUtils.cpp
     src/utils/TextLayoutUtils.cpp
     # Headers with Q_OBJECT for MOC processing

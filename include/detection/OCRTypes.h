@@ -36,6 +36,9 @@ struct OCRResult {
     QVector<OCRTextBlock> blocks;  ///< Structured block output for layout analysis
 };
 
+/// OCRResult::error when recognition ran but found no text (not an engine failure).
+inline QString ocrNoTextDetectedError() { return QStringLiteral("No text detected"); }
+
 Q_DECLARE_METATYPE(OCRTextBlock)
 Q_DECLARE_METATYPE(OCRResult)
 

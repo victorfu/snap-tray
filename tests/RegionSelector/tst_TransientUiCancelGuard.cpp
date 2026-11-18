@@ -16,6 +16,8 @@
 #include "colorwidgets/ColorPickerDialogCompat.h"
 #include "detection/OCRTypes.h"
 #include "qml/OCRResultViewModel.h"
+#include <QScopeGuard>
+#include "settings/OCRSettingsManager.h"
 #include "qml/QmlDialog.h"
 #include "qml/QmlEmojiPickerPopup.h"
 #include "qml/QRCodeResultViewModel.h"
@@ -218,6 +220,7 @@ private slots:
     void testEmojiPickerIsNotBlockingTransientUi();
     void testOCRResultCloseKeepsCaptureSession();
     void testOCRResultCopyTextClosesViewModel();
+    void testOCRNoTextOpensEditorWithVerticalRetry();
     void testOCRResultCopyAsTsvClosesViewModel();
     void testQRCodeResultCloseKeepsCaptureSession();
     void testWidgetEscapeCancelsWithoutBlockingUi();
@@ -413,6 +416,43 @@ void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCloseKeepsCaptureSes
 
     QCOMPARE(cancelledSpy.count(), 0);
     QCOMPARE(selector.m_openBlockingDialogCount, 0);
+}
+
+void tst_RegionSelectorTransientUiCancelGuard::testOCRNoTextOpensEditorWithVerticalRetry()
+{
+    auto& settings = OCRSettingsManager::instance();
+    const OCRBehavior previous = settings.behavior();
+    settings.setBehavior(OCRBehavior::ShowEditor);
+    auto restore = qScopeGuard([&]() { settings.setBehavior(previous); });
+
+    OCRResult noText;
+    noText.error = ocrNoTextDetectedError();
+
+    {
+        // Without the source image there is nothing to retry: keep the toast.
+        RegionSelector selector;
+        selector.setAttribute(Qt::WA_DeleteOnClose, false);
+        installHeadlessTransientUi(selector);
+        selector.onOCRComplete(noText);
+        QCoreApplication::processEvents();
+        QVERIFY(!findHeadlessDialog(selector, QStringLiteral("OCRResultDialog.qml")));
+    }
+
+    RegionSelector selector;
+    selector.setAttribute(Qt::WA_DeleteOnClose, false);
+    installHeadlessTransientUi(selector);
+    QPixmap source(40, 120);
+    source.fill(Qt::white);
+    selector.onOCRComplete(noText, source);
+    QCoreApplication::processEvents();
+
+    QVERIFY(findHeadlessDialog(selector, QStringLiteral("OCRResultDialog.qml")));
+    auto* vm = selector.findChild<OCRResultViewModel*>();
+    QVERIFY(vm);
+    QVERIFY(vm->text().isEmpty());
+    QVERIFY(vm->verticalRetryAvailable());
+    vm->close();
+    QCoreApplication::processEvents();
 }
 
 void tst_RegionSelectorTransientUiCancelGuard::testOCRResultCopyTextClosesViewModel()

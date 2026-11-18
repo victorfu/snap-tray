@@ -1735,6 +1735,18 @@ Dosya boyutu: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (düzenlendi)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Dikey metin olarak yeniden dene</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Orijinali göster</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1752,6 +1764,22 @@ Dosya boyutu: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (düzenlendi)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Dikey metin olarak tanınıyor...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Dikey deneme için metin bulunamadı</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Tek sütunlu dikey metin değil</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Dikey deneme metin bulamadı</translation>
     </message>
 </context>
 <context>

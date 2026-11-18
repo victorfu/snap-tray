@@ -276,8 +276,8 @@ private:
     OCRManager* ensureOCRManager();
     void updateLoadingSpinnerState();
     void performOCR();
-    void onOCRComplete(const OCRResult& result);
-    void showOCRResultDialog(const OCRResult& result);
+    void onOCRComplete(const OCRResult& result, const QPixmap& source = QPixmap());
+    void showOCRResultDialog(const OCRResult& result, const QPixmap& source = QPixmap());
 
     // QR Code methods
     void performQRCodeScan();

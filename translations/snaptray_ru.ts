@@ -1737,6 +1737,18 @@ File size: %3</source>
         <source>%1 (edited)</source>
         <translation>%1 (изменено)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Повторить как вертикальный текст</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Показать исходный</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1754,6 +1766,22 @@ File size: %3</source>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (изменено)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Распознавание как вертикального текста...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Не найден текст для вертикальной попытки</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Это не одна колонка вертикального текста</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Вертикальная попытка не нашла текст</translation>
     </message>
 </context>
 <context>

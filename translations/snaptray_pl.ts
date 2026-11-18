@@ -1737,6 +1737,18 @@ Rozmiar pliku: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (edytowano)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Spróbuj ponownie jako tekst pionowy</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Pokaż oryginał</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Anuluj</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1754,6 +1766,22 @@ Rozmiar pliku: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (edytowano)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Rozpoznawanie jako tekst pionowy...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Nie znaleziono tekstu do pionowej próby</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>To nie jest pojedyncza kolumna tekstu pionowego</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Pionowa próba nie znalazła tekstu</translation>
     </message>
 </context>
 <context>

@@ -5138,23 +5138,31 @@ void RegionSelector::performOCR()
 
     QPointer<RegionSelector> safeThis = this;
     ocrMgr->recognizeText(selectedRegion,
-        [safeThis](const OCRResult& result) {
+        [safeThis, selectedRegion](const OCRResult& result) {
             if (safeThis) {
-                safeThis->onOCRComplete(result);
+                safeThis->onOCRComplete(result, selectedRegion);
             }
         });
 }
 
-void RegionSelector::onOCRComplete(const OCRResult& result)
+void RegionSelector::onOCRComplete(const OCRResult& result, const QPixmap& source)
 {
     m_ocrInProgress = false;
     if (m_loadingSpinner) {
         m_loadingSpinner->stop();
     }
 
+    const bool showEditor = OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor;
+    // Native OCR often finds nothing in vertical CJK text; the editor still
+    // opens so the vertical retry stays reachable.
+    if (showEditor && !source.isNull() && result.error == ocrNoTextDetectedError()) {
+        showOCRResultDialog(result, source);
+        return;
+    }
+
     if (result.success && !result.text.isEmpty()) {
-        if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
-            showOCRResultDialog(result);
+        if (showEditor) {
+            showOCRResultDialog(result, source);
             return;  // Dialog will handle the rest
         }
 
@@ -5172,10 +5180,22 @@ void RegionSelector::onOCRComplete(const OCRResult& result)
     update();
 }
 
-void RegionSelector::showOCRResultDialog(const OCRResult& result)
+void RegionSelector::showOCRResultDialog(const OCRResult& result, const QPixmap& source)
 {
     auto* vm = new OCRResultViewModel(this);
     vm->setOCRResult(result);
+    if (!source.isNull()) {
+        QPointer<RegionSelector> safeThis = this;
+        vm->setVerticalRetrySource(source,
+            [safeThis](const QImage& image, const OCRResultViewModel::OCRResultCallback& done) {
+                OCRManager* manager = safeThis ? safeThis->ensureOCRManager() : nullptr;
+                if (!manager) {
+                    done(OCRResult{});
+                    return;
+                }
+                manager->recognizeText(QPixmap::fromImage(image), done);
+            });
+    }
 
     auto* dialog = createTransientDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
@@ -5491,7 +5511,7 @@ void RegionSelector::performAutoBlur()
                     aggregated->credentialRegions =
                         CredentialDetector::detect(result.blocks, selectedImageSize);
                 } else if (!result.success && !result.error.isEmpty()
-                           && result.error != QStringLiteral("No text detected")) {
+                           && result.error != ocrNoTextDetectedError()) {
                     aggregated->ocrError = result.error;
                 }
 

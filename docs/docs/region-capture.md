@@ -73,6 +73,8 @@ After the selection is complete, the toolbar supports:
 - `Auto Blur` (faces + credentials)
 - `Pin`, `Save`, and `Copy`
 
+When OCR is set to show the editor, the result window also offers **Retry as Vertical Text** for one column of upright Chinese or Japanese characters read top to bottom. The window opens even when OCR finds no text, because that often happens with vertical text. SnapTray lays the characters out in one row and recognizes them again. **Show Original** brings back the first result, with any edits you made to it. A selection that is not a single vertical column, such as horizontal text, a list, code or several columns, is not retried, and the first result stays. The retry gives text only, so **Copy as TSV** is off while its result is shown. The same window opens from a pin's OCR.
+
 ## Useful shortcuts
 
 | Action | Shortcut |
