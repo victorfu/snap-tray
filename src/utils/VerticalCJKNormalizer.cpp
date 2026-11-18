@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <utility>
 #include <vector>
 
 namespace VerticalCJKNormalizer {
@@ -34,9 +35,11 @@ constexpr int kMinColumnGapPixels = 3;
 // than about one column width, which is the merge limit for row bands.
 constexpr double kMaxMergedGlyphFraction = 1.05;
 constexpr double kGlyphLikeMinFraction = 0.5;
-constexpr double kGlyphLikeMaxFraction = 1.15;
+// Narrow glyphs (日, 月) are taller than the column they set, so a column made
+// only of them has bands up to about 1.5 widths tall.
+constexpr double kGlyphLikeMaxFraction = 1.5;
 // Anything taller than this is not one glyph (e.g. a rotated Latin word).
-constexpr double kMaxBandFraction = 1.3;
+constexpr double kMaxBandFraction = 1.7;
 constexpr double kRequiredGlyphLikeShare = 0.65;
 // A thin row run split into many horizontal pieces is a line of letters (UI
 // list items, code), not a CJK stroke. Glyph strokes (三, 二, 六's dot) are
@@ -50,6 +53,9 @@ constexpr double kSharedEdgeMinOffsetFraction = 0.15;
 constexpr double kSharedEdgeToleranceFraction = 0.04;
 constexpr double kSharedEdgeMinShare = 0.4;
 constexpr double kSharedEdgeMinRunFraction = 0.25;
+// A shared edge needs several letters to agree; two or three glyphs of similar
+// width (日本, 日月) are ordinary short columns, not a sideways word.
+constexpr int kSharedEdgeMinRuns = 4;
 
 constexpr int kCropBleedPixels = 2;
 constexpr int kMinGlyphGap = 4;
@@ -197,7 +203,8 @@ bool hasSharedInteriorEdge(const std::vector<unsigned char>& mask, int imageWidt
     }
     const int minOffset = static_cast<int>(std::ceil(columnWidth * kSharedEdgeMinOffsetFraction));
     const int tolerance = std::max(1, static_cast<int>(std::lround(columnWidth * kSharedEdgeToleranceFraction)));
-    const auto required = static_cast<std::ptrdiff_t>(std::ceil(runs.size() * kSharedEdgeMinShare));
+    const auto required = std::max<std::ptrdiff_t>(
+        kSharedEdgeMinRuns, static_cast<std::ptrdiff_t>(std::ceil(runs.size() * kSharedEdgeMinShare)));
     const double minLetterHeight = columnWidth * kSharedEdgeMinRunFraction;
     // Only letter-sized runs count: thin CJK strokes (三, 二) can share edges
     // by symmetry, while a sideways letter is as tall as its advance width.
@@ -206,19 +213,64 @@ bool hasSharedInteriorEdge(const std::vector<unsigned char>& mask, int imageWidt
             if (offsets[c] < minOffset || runs[c].height() < minLetterHeight) {
                 continue;
             }
-            std::ptrdiff_t near = 0;
+            std::ptrdiff_t agreeing = 0;
             for (size_t i = 0; i < offsets.size(); ++i) {
                 if (runs[i].height() >= minLetterHeight && std::abs(offsets[i] - offsets[c]) <= tolerance) {
-                    ++near;
+                    ++agreeing;
                 }
             }
-            if (near >= required) {
+            if (agreeing >= required) {
                 return true;
             }
         }
         return false;
     };
     return shared(leftOffsets) || shared(rightOffsets);
+}
+
+// An empty vertical strip separates columns only when the ink on every side
+// could itself be a column of glyphs. Separated strokes (小川, 川川) leave
+// full-height strips too, but each side is then a tall, thin stroke.
+bool splitsIntoGlyphColumns(const std::vector<unsigned char>& mask, int imageWidth,
+                            const std::vector<int>& columnInk, int left, int right,
+                            int top, int bottom, int minGap)
+{
+    std::vector<std::pair<int, int>> segments;
+    int gap = 0;
+    for (int x = left; x <= right; ++x) {
+        if (columnInk[x] == 0) {
+            ++gap;
+            continue;
+        }
+        if (segments.empty() || gap >= minGap) {
+            segments.push_back({x, x});
+        } else {
+            segments.back().second = x;
+        }
+        gap = 0;
+    }
+    if (segments.size() < 2) {
+        return false;
+    }
+    for (const auto& [segmentLeft, segmentRight] : segments) {
+        const int segmentWidth = segmentRight - segmentLeft + 1;
+        if (segmentWidth < kMinColumnWidth) {
+            return false;
+        }
+        int longestRun = 0;
+        int run = 0;
+        for (int y = top; y <= bottom; ++y) {
+            const unsigned char* row = mask.data() + static_cast<size_t>(y) * imageWidth;
+            const bool ink = std::any_of(row + segmentLeft, row + segmentRight + 1,
+                                         [](unsigned char m) { return m != 0; });
+            run = ink ? run + 1 : 0;
+            longestRun = std::max(longestRun, run);
+        }
+        if (longestRun > segmentWidth * kMaxBandFraction) {
+            return false;
+        }
+    }
+    return true;
 }
 
 std::vector<Band> mergeDetachedStrokes(const std::vector<Band>& runs, int columnWidth)
@@ -283,13 +335,9 @@ Result normalize(const QImage& source)
 
     const int maxColumnGap = std::max(kMinColumnGapPixels,
                                       static_cast<int>(std::ceil(columnWidth * kColumnGapFraction)));
-    int gap = 0;
-    for (int x = left; x <= right; ++x) {
-        gap = columnInk[x] == 0 ? gap + 1 : 0;
-        if (gap >= maxColumnGap) {
-            result.rejection = Rejection::MultipleColumns;
-            return result;
-        }
+    if (splitsIntoGlyphColumns(mask, w, columnInk, left, right, top, bottom, maxColumnGap)) {
+        result.rejection = Rejection::MultipleColumns;
+        return result;
     }
 
     if (columnWidth < kMinColumnWidth || inkHeight < columnWidth * kMinTallAspect) {

@@ -12,6 +12,7 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QTextStream>
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -156,6 +157,15 @@ void TestVerticalCJKOCRBenchmark::compareNativeAndVerticalRetry()
         const qint64 prepareMs = prepareTimer.elapsed();
         QVERIFY2(normalized.isValid(), sample.name);
         const Timed retry = recognize(manager, normalized.image);
+
+        // Only "no text" counts as an empty reading. A timeout or engine error
+        // is not an accuracy result and must not enter the mean.
+        for (const Timed* timed : {&native, &retry}) {
+            const OCRResult& r = timed->result;
+            QVERIFY2(r.success || r.error == ocrNoTextDetectedError(),
+                     qPrintable(QStringLiteral("%1: OCR failed: %2")
+                                    .arg(QLatin1String(sample.name), r.error)));
+        }
 
         const double nativeCer = characterErrorRate(native.result.text, sample.text);
         const double retryCer = characterErrorRate(retry.result.text, sample.text);

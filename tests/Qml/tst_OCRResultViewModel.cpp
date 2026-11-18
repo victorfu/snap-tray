@@ -97,6 +97,7 @@ private slots:
     void verticalRetryIgnoredAfterNewResult();
     void verticalRetryCancel();
     void verticalRetryButtonOnlyWhenAvailable();
+    void copyDisabledWhileTextEmpty();
 };
 
 void TestOCRResultViewModel::textAvailableBeforeAnalysis()
@@ -374,6 +375,37 @@ void TestOCRResultViewModel::verticalRetryButtonOnlyWhenAvailable()
     QTRY_COMPARE(fake.calls, 1);
     fake.pending(textResult(QStringLiteral("直排")));
     QCOMPARE(button->property("text").toString(), QStringLiteral("Show Original"));
+}
+
+void TestOCRResultViewModel::copyDisabledWhileTextEmpty()
+{
+    OCRResultViewModel model;
+    model.setOCRResult(OCRResult{}); // A "no text" result opens the editor empty
+    QQmlEngine engine;
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml")));
+    std::unique_ptr<QObject> root(component.createWithInitialProperties(
+        {{QStringLiteral("viewModel"), QVariant::fromValue(&model)}}));
+    QVERIFY2(root, qPrintable(component.errorString()));
+    QQuickItem* copy = nullptr;
+    for (auto* item : root->findChildren<QQuickItem*>()) {
+        if (item->property("text").toString() == QStringLiteral("Copy")
+            && item->property("style").isValid()) {
+            copy = item;
+            break;
+        }
+    }
+    QVERIFY(copy);
+    QVERIFY(!copy->isEnabled());
+
+    // A retry result (or a manual edit) supplies text and re-enables Copy.
+    FakeRecognizer fake;
+    model.setVerticalRetrySource(verticalColumnPixmap(), deferredRecognizer(&fake));
+    model.retryAsVerticalText();
+    QTRY_COMPARE(fake.calls, 1);
+    fake.pending(textResult(QStringLiteral("直排")));
+    QVERIFY(copy->isEnabled());
+    model.setText(QString());
+    QVERIFY(!copy->isEnabled());
 }
 
 QTEST_MAIN(TestOCRResultViewModel)

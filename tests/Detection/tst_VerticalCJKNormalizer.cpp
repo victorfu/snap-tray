@@ -3,6 +3,7 @@
 #include <QFontMetrics>
 #include <QPainter>
 #include <QTransform>
+#include <cstdlib>
 
 #include "utils/VerticalCJKNormalizer.h"
 #include "VerticalCJKSamples.h"
@@ -60,6 +61,11 @@ void TestVerticalCJKNormalizer::acceptsSingleUprightColumn_data()
     QTest::newRow("ja-kana") << QStringLiteral("ひらがなのしくみといろは") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
     QTest::newRow("ja-mixed") << QStringLiteral("吾輩は猫である。名前はまだ無い。") << 32 << QColor(Qt::black) << QColor(Qt::white) << 0;
     QTest::newRow("zh-Hant-poem") << QStringLiteral("春眠不覺曉處處聞啼鳥") << 24 << QColor(Qt::black) << QColor(Qt::white) << 0;
+    // Short columns and separated strokes are ordinary single columns.
+    QTest::newRow("two-chars-ri-ben") << QStringLiteral("日本") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
+    QTest::newRow("two-chars-ri-yue") << QStringLiteral("日月") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
+    QTest::newRow("separated-strokes-xiao-chuan") << QStringLiteral("小川") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
+    QTest::newRow("separated-strokes-chuan-chuan") << QStringLiteral("川川") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
     QTest::newRow("detached-strokes") << QStringLiteral("三川小六二") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
     QTest::newRow("punctuation") << QStringLiteral("你好，世界。") << 40 << QColor(Qt::black) << QColor(Qt::white) << 0;
     QTest::newRow("dark-background") << QStringLiteral("直排文字測試") << 40 << QColor(235, 235, 235) << QColor(30, 30, 30) << 0;
@@ -90,7 +96,8 @@ void TestVerticalCJKNormalizer::acceptsSingleUprightColumn()
     QCOMPARE(result.rejection, Rejection::None);
     QVERIFY(result.isValid());
     QCOMPARE(result.glyphCount, static_cast<int>(text.size()));
-    QVERIFY2(result.image.width() > result.image.height() * 2,
+    // Glyphs now sit side by side; even two of them make a wide row.
+    QVERIFY2(result.image.width() > result.image.height(),
              qPrintable(QStringLiteral("%1x%2").arg(result.image.width()).arg(result.image.height())));
 }
 
@@ -166,6 +173,12 @@ void TestVerticalCJKNormalizer::rejectsOutOfScopeLayouts_data()
         twoColumns.columns = 2;
         QTest::newRow("multi-column-vertical")
             << renderVertical(vertical + vertical, family, twoColumns) << Rejection::MultipleColumns;
+        // The 小川 counterpart: separated strokes in each of two real columns.
+        const QString strokes = QStringLiteral("小川三川小川");
+        if (!cjkFamily(strokes).isEmpty()) {
+            QTest::newRow("multi-column-separated-strokes")
+                << renderVertical(strokes + strokes, cjkFamily(strokes), twoColumns) << Rejection::MultipleColumns;
+        }
     }
 }
 

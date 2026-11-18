@@ -121,6 +121,8 @@ DialogBase {
 
                 DialogButton {
                     id: copyBtn
+                    // An empty result (e.g. before a vertical retry) has nothing to copy.
+                    enabled: viewModel ? viewModel.text.length > 0 : false
                     text: qsTr("Copy")
                     style: "secondary"
                     feedbackText: qsTr("\u2713 Copied!")
