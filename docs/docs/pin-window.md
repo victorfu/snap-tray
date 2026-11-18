@@ -138,11 +138,11 @@ Applying is one undo step that restores the image, its size, the annotations and
 
 - A spinner shows while it runs; `Esc` cancels it and leaves the pin as it was. If the image changes in the meantime (a crop, an undo, Live Update), the result is discarded.
 - The canvas keeps its size, so nothing moves. Annotations stay editable on top of the image. A mosaic over the removed background has no original pixels left to sample, so nothing it hid comes back.
-- The result replaces the image as one undo step on the annotation toolbar, which opens so that you can undo it. Region layout data of a merged pin is cleared, because it holds copies of the old pixels.
+- The result replaces the image as one undo step on the annotation toolbar, which opens so that you can undo it. On a merged pin each region is cut the same way, so Arrange and full-resolution export keep working and never bring the old background back.
 - When no subject is found, or the whole image is the subject, a message says so and nothing changes.
 - Save, copy and PNG export keep the transparency; JPEG export fills it with the export background as usual.
 
-It is not available during Live Update or while auto-blur is still running, and only for images up to 40 megapixels (a full 8K screen).
+It is not available during Live Update, while auto-blur is still running or while you are drawing; if one of these starts before it finishes, the result is discarded. Images are limited to 40 megapixels (a full 8K screen).
 
 ## Next step
 

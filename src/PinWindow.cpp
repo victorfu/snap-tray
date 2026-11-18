@@ -2054,8 +2054,17 @@ QString PinWindow::backgroundRemovalBlocker() const
     if (m_isLiveMode) {
         return tr("Stop Live Update before removing the background");
     }
-    // While an erase or a drag is open the history cannot take a new step.
+    // Auto-blur places its redactions asynchronously for the current image,
+    // and replacing the image discards a pass still running. Checked again
+    // when the result arrives: auto-blur may start while the worker runs.
+    if (m_autoBlurInProgress) {
+        return tr("Please wait for auto-blur to finish");
+    }
+    // While an erase, a drag or a new stroke is open the history cannot take
+    // a new step; a mosaic still being drawn holds the old pixels and would
+    // carry them past the removal.
     if (m_originalPixmap.isNull() || isRegionLayoutMode()
+        || (m_toolManager && m_toolManager->isDrawing())
         || (m_annotationLayer
             && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive()))) {
         return tr("The background cannot be removed right now");
@@ -2070,10 +2079,6 @@ void PinWindow::removeBackground()
     }
     if (const QString blocker = backgroundRemovalBlocker(); !blocker.isEmpty()) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, blocker);
-        return;
-    }
-    // Auto-blur places its redactions asynchronously; wait for them first.
-    if (!ensureAutoBlurReadyForExport()) {
         return;
     }
     if (const char* refusal = cutoutStatusText(
@@ -2141,14 +2146,14 @@ void PinWindow::onBackgroundRemovalFinished(const SnapTray::ForegroundCutout::Re
         m_toast->showToast(SnapTray::QmlToast::Level::Error, blocker);
         return;
     }
-    if (!applyForegroundCutout(result.image)) {
+    if (!applyForegroundCutout(result.image, result.mask)) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Unable to remove the background"));
     }
 }
 
-bool PinWindow::applyForegroundCutout(const QImage& image)
+bool PinWindow::applyForegroundCutout(const QImage& image, const QImage& mask)
 {
-    if (image.isNull() || image.size() != m_originalPixmap.size()) {
+    if (image.isNull() || image.size() != m_originalPixmap.size() || mask.size() != image.size()) {
         qWarning() << "PinWindow::applyForegroundCutout: result does not match the image."
                    << "result:" << image.size() << "source:" << m_originalPixmap.size();
         return false;
@@ -2157,7 +2162,31 @@ bool PinWindow::applyForegroundCutout(const QImage& image)
     if (newPixmap.isNull()) {
         return false;
     }
-    newPixmap.setDevicePixelRatio(m_originalPixmap.devicePixelRatio());
+    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
+        ? m_originalPixmap.devicePixelRatio() : 1.0;
+    newPixmap.setDevicePixelRatio(dpr);
+
+    // A merged pin keeps copies of its regions' pixels for Arrange and for
+    // native-resolution export. Cut them the same way instead of dropping
+    // them, so neither the old background nor the export size comes back.
+    QVector<LayoutRegion> cutRegions = m_storedRegions;
+    for (LayoutRegion& region : cutRegions) {
+        const QRect deviceRect = QRectF(region.rect.x() * dpr, region.rect.y() * dpr,
+                                        region.rect.width() * dpr, region.rect.height() * dpr)
+                                     .toAlignedRect()
+                                     .intersected(mask.rect());
+        if (region.image.isNull() || deviceRect.isEmpty()) {
+            qWarning() << "PinWindow::applyForegroundCutout: region outside the image" << region.rect;
+            return false;
+        }
+        const QImage regionMask = mask.copy(deviceRect)
+            .scaled(region.image.size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation)
+            .convertToFormat(QImage::Format_Grayscale8);
+        region.image = SnapTray::ForegroundCutout::applyCoverage(region.image, regionMask);
+        if (region.image.isNull()) {
+            return false;
+        }
+    }
 
     // The undo toolbar is where this step is taken back.
     if (!m_toolbar) {
@@ -2176,9 +2205,7 @@ bool PinWindow::applyForegroundCutout(const QImage& image)
     entry.hasMultiRegionData = m_hasMultiRegionData;
 
     m_originalPixmap = newPixmap;
-    // Region layout data holds copies of the old pixels, background included.
-    m_storedRegions.clear();
-    m_hasMultiRegionData = false;
+    m_storedRegions = std::move(cutRegions);
 
     entry.croppedPixmap = m_originalPixmap;
     entry.croppedContentLogicalSize = entry.contentLogicalSize;

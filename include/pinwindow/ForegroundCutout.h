@@ -37,6 +37,9 @@ struct MaskResult {
 
 struct Result {
     QImage image;
+    // The mask that produced `image` (Success only), for applying the same
+    // cut to other copies of these pixels, such as a merged pin's regions.
+    QImage mask;
     Status status = Status::Failed;
 };
 
@@ -50,6 +53,12 @@ Status validateSize(const QSize& size);
 // the source's size and device pixel ratio. A mask that keeps no pixel is
 // NoSubject; one that changes none is NothingRemoved. Neither returns an image.
 Result applyMask(const QImage& source, const QImage& mask);
+
+// The source with its alpha multiplied by the mask, whatever the outcome:
+// unlike applyMask, a mask that keeps nothing or changes nothing still gives
+// an image. Metadata (ratio, colour space, text) is kept. Null on a size or
+// format mismatch.
+QImage applyCoverage(const QImage& source, const QImage& mask);
 
 // validateSize, then the provider, then applyMask. Safe on any thread when
 // the provider is.

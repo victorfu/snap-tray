@@ -57,7 +57,18 @@ QImage imageForFormat(const QImage& image, const QByteArray& format)
     }
     ImageExportOptions options;
     options.format = ImageExportOptions::Format::Jpeg;
-    return ImageExport::render(image, options);
+    QImage flattened = ImageExport::render(image, options);
+    if (flattened.isNull()) {
+        return flattened;
+    }
+    // Only the background changes: keep what the writer stores from the
+    // source, its print size and its text keys (such as a description).
+    flattened.setDotsPerMeterX(image.dotsPerMeterX());
+    flattened.setDotsPerMeterY(image.dotsPerMeterY());
+    for (const QString& key : image.textKeys()) {
+        flattened.setText(key, image.text(key));
+    }
+    return flattened;
 }
 
 QString formatListForError()

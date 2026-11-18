@@ -15,6 +15,8 @@
 #include "pinwindow/ForegroundCutout.h"
 #include "pinwindow/ImageStripTransform.h"
 #include "pinwindow/RegionLayoutManager.h"
+#include "tools/ToolId.h"
+#include "tools/ToolManager.h"
 
 using SnapTray::ForegroundCutout::MaskResult;
 using SnapTray::ForegroundCutout::Status;
@@ -98,6 +100,9 @@ private slots:
     void failuresLeaveThePinUntouched_data();
     void failuresLeaveThePinUntouched();
     void staleResultIsDropped();
+    void strokeBeingDrawnHoldsTheResult();
+    void autoBlurStartedMeanwhileHoldsTheResult();
+    void mergedPinKeepsRegionsAndExportSize();
     void escapeCancelsWithoutClosing();
     void closingWhileRunningIsSafe();
     void refusedDuringLiveUpdateAndAutoBlur();
@@ -150,9 +155,9 @@ void TestPinWindowRemoveBackground::appliesAsOneUndoStep()
             }
         }
     }
-    // Layout data holds the old pixels, background included.
-    QVERIFY(!window.m_hasMultiRegionData);
-    QVERIFY(window.m_storedRegions.isEmpty());
+    // Layout data is cut the same way, never left with the old background.
+    QVERIFY(window.m_hasMultiRegionData);
+    QCOMPARE(window.m_storedRegions.size(), 1);
     QCOMPARE(window.m_cropUndoStack.size(), 1);
     QVERIFY(window.m_toolbarVisible);
 
@@ -262,6 +267,96 @@ void TestPinWindowRemoveBackground::staleResultIsDropped()
     QTRY_VERIFY(!window.m_backgroundRemovalInProgress);
     QCOMPARE(argb(window.m_originalPixmap.toImage()), stripped);
     QCOMPARE(window.m_cropUndoStack.size(), 1);
+}
+
+void TestPinWindowRemoveBackground::strokeBeingDrawnHoldsTheResult()
+{
+    const QPixmap source = patternPixmap(240, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.showToolbar();
+    Gate gate;
+    window.m_foregroundMaskProvider = gate.provider();
+
+    window.removeBackground();
+    QTRY_COMPARE(gate.calls->load(), 1);
+    // A freehand mosaic over the background, still held down when the
+    // removal finishes: it samples the old pixels until it is committed.
+    window.handleToolbarToolSelected(static_cast<int>(ToolId::Mosaic));
+    window.m_toolManager->handleMousePress(QPointF(150, 30));
+    window.m_toolManager->handleMouseMove(QPointF(200, 60));
+    QVERIFY(window.m_toolManager->isDrawing());
+
+    gate.semaphore->release();
+    QTRY_VERIFY(!window.m_backgroundRemovalInProgress);
+    QCOMPARE(argb(window.m_originalPixmap.toImage()), argb(source.toImage()));
+    QVERIFY(window.m_cropUndoStack.isEmpty());
+
+    // Nor can one start while the stroke is open.
+    window.removeBackground();
+    QVERIFY(!window.m_backgroundRemovalInProgress);
+    QCOMPARE(gate.calls->load(), 1);
+    window.m_toolManager->handleMouseRelease(QPointF(200, 60));
+}
+
+void TestPinWindowRemoveBackground::autoBlurStartedMeanwhileHoldsTheResult()
+{
+    const QPixmap source = patternPixmap(240, 120);
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    Gate gate;
+    window.m_foregroundMaskProvider = gate.provider();
+    const quint64 autoBlurGeneration = window.m_autoBlurContentGeneration;
+
+    window.removeBackground();
+    QTRY_COMPARE(gate.calls->load(), 1);
+    window.m_autoBlurInProgress = true;   // started while the worker runs
+    gate.semaphore->release();
+    QTRY_VERIFY(!window.m_backgroundRemovalInProgress);
+    // The auto-blur pass is still current and the pin unchanged.
+    QVERIFY(window.isAutoBlurRequestCurrent(autoBlurGeneration));
+    QCOMPARE(argb(window.m_originalPixmap.toImage()), argb(source.toImage()));
+    QVERIFY(window.m_cropUndoStack.isEmpty());
+    window.m_autoBlurInProgress = false;
+}
+
+void TestPinWindowRemoveBackground::mergedPinKeepsRegionsAndExportSize()
+{
+    const QPixmap source = patternPixmap(240, 120);
+    QVector<LayoutRegion> regions(2);
+    for (int i = 0; i < 2; ++i) {
+        regions[i].rect = QRect(i * 120, 0, 120, 120);
+        regions[i].originalRect = regions[i].rect;
+        regions[i].image = source.toImage().copy(regions[i].rect);
+        regions[i].index = i + 1;
+    }
+    PinWindow window(source, QPoint(0, 0), nullptr, false);
+    window.setMultiRegionData(regions);
+    window.setZoomLevel(0.5);
+    window.m_foregroundMaskProvider = halfMask;
+    const QSize exportBefore = window.getExportPixmapWithAnnotations().size();
+
+    window.removeBackground();
+    QTRY_VERIFY(!window.m_backgroundRemovalInProgress);
+    QCOMPARE(window.m_cropUndoStack.size(), 1);
+    // A merged pin still exports at native resolution...
+    QVERIFY(window.m_hasMultiRegionData);
+    QCOMPARE(window.getExportPixmapWithAnnotations().size(), exportBefore);
+    // ...and its regions carry the cut: the subject half is kept, the
+    // background half has no pixels left for Arrange to bring back.
+    QCOMPARE(window.m_storedRegions.size(), 2);
+    const QImage left = argb(window.m_storedRegions[0].image);
+    const QImage right = argb(window.m_storedRegions[1].image);
+    QCOMPARE(left, argb(regions[0].image));
+    for (int y = 0; y < right.height(); y += 9) {
+        for (int x = 0; x < right.width(); x += 7) {
+            QCOMPARE(qAlpha(right.pixel(x, y)), 0);
+        }
+    }
+
+    window.handleToolbarUndo();
+    QCOMPARE(argb(window.m_storedRegions[1].image), argb(regions[1].image));
+    QCOMPARE(window.getExportPixmapWithAnnotations().size(), exportBefore);
+    window.handleToolbarRedo();
+    QCOMPARE(argb(window.m_storedRegions[1].image), right);
 }
 
 void TestPinWindowRemoveBackground::escapeCancelsWithoutClosing()

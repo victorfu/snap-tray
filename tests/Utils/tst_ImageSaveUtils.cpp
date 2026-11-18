@@ -37,6 +37,7 @@ private slots:
     void testJpegQualityReachesEncoder();
     void testQualityLeavesPngLossless();
     void testJpegComposesTransparencyOntoWhite();
+    void testJpegFlatteningKeepsMetadata();
     void testUniqueSaveHonorsQuality();
     void testSaveEncodedWritesExactBytes();
     void testSaveEncodedFailureKeepsExistingFile();
@@ -421,6 +422,28 @@ void tst_ImageSaveUtils::testJpegComposesTransparencyOntoWhite()
     const QString pngPath = tempDir.filePath("transparent.png");
     QVERIFY(ImageSaveUtils::saveImageAtomically(transparent, pngPath));
     QCOMPARE(qAlpha(QImage(pngPath).pixel(4, 4)), 0);
+}
+
+void tst_ImageSaveUtils::testJpegFlatteningKeepsMetadata()
+{
+    QTemporaryDir tempDir;
+    QVERIFY(tempDir.isValid());
+    constexpr int k300Dpi = 11811; // dots per meter
+    for (const bool transparent : {false, true}) {
+        QImage image(16, 16, QImage::Format_ARGB32);
+        image.fill(transparent ? QColor(10, 20, 30, 0) : QColor(10, 20, 30));
+        image.setDotsPerMeterX(k300Dpi);
+        image.setDotsPerMeterY(k300Dpi);
+        image.setText(QStringLiteral("Description"), QStringLiteral("caption"));
+        const QString path =
+            tempDir.filePath(transparent ? QStringLiteral("t.jpg") : QStringLiteral("o.jpg"));
+        QVERIFY(ImageSaveUtils::saveImageAtomically(image, path));
+        // Flattening a transparent image keeps what an opaque one keeps.
+        const QImage written(path);
+        QVERIFY(qAbs(written.dotsPerMeterX() - k300Dpi) <= 40);
+        QVERIFY(qAbs(written.dotsPerMeterY() - k300Dpi) <= 40);
+        QCOMPARE(written.text(QStringLiteral("Description")), QStringLiteral("caption"));
+    }
 }
 
 void tst_ImageSaveUtils::testQualityLeavesPngLossless()

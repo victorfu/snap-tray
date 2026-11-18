@@ -12,6 +12,56 @@ inline uint scaleChannel(uint channel, uint coverage)
     return (product + (product >> 8)) >> 8;
 }
 
+struct Coverage {
+    QImage image;
+    bool anyKept = false;
+    bool anyChanged = false;
+};
+
+// Null image on a size or format mismatch.
+Coverage multiplyAlpha(const QImage& source, const QImage& mask)
+{
+    Coverage result;
+    if (source.isNull() || mask.isNull() || mask.size() != source.size()
+        || mask.format() != QImage::Format_Grayscale8) {
+        return result;
+    }
+
+    QImage image = source.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    if (image.isNull()) {
+        return result;
+    }
+
+    const int width = image.width();
+    for (int y = 0; y < image.height(); ++y) {
+        auto* row = reinterpret_cast<QRgb*>(image.scanLine(y));
+        const uchar* coverageRow = mask.constScanLine(y);
+        for (int x = 0; x < width; ++x) {
+            const QRgb pixel = row[x];
+            const uint alpha = qAlpha(pixel);
+            if (alpha == 0) {
+                continue;
+            }
+            const uint coverage = coverageRow[x];
+            if (coverage == 255) {
+                result.anyKept = true;
+                continue;
+            }
+            const QRgb scaled = qRgba(scaleChannel(qRed(pixel), coverage),
+                                      scaleChannel(qGreen(pixel), coverage),
+                                      scaleChannel(qBlue(pixel), coverage),
+                                      scaleChannel(alpha, coverage));
+            row[x] = scaled;
+            // Near-full coverage can round every channel back to its input.
+            result.anyChanged = result.anyChanged || scaled != pixel;
+            result.anyKept = result.anyKept || qAlpha(scaled) > 0;
+        }
+    }
+    image.setDevicePixelRatio(source.devicePixelRatio());
+    result.image = std::move(image);
+    return result;
+}
+
 } // namespace
 
 Status validateSize(const QSize& size)
@@ -26,57 +76,24 @@ Status validateSize(const QSize& size)
 Result applyMask(const QImage& source, const QImage& mask)
 {
     Result result;
-    if (source.isNull() || mask.isNull() || mask.size() != source.size()
-        || mask.format() != QImage::Format_Grayscale8) {
+    Coverage coverage = multiplyAlpha(source, mask);
+    if (coverage.image.isNull()) {
         result.status = Status::Failed;
-        return result;
-    }
-
-    QImage image = source.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-    if (image.isNull()) {
-        result.status = Status::Failed;
-        return result;
-    }
-
-    bool anyKept = false;
-    bool anyChanged = false;
-    const int width = image.width();
-    for (int y = 0; y < image.height(); ++y) {
-        auto* row = reinterpret_cast<QRgb*>(image.scanLine(y));
-        const uchar* coverageRow = mask.constScanLine(y);
-        for (int x = 0; x < width; ++x) {
-            const QRgb pixel = row[x];
-            const uint alpha = qAlpha(pixel);
-            if (alpha == 0) {
-                continue;
-            }
-            const uint coverage = coverageRow[x];
-            if (coverage == 255) {
-                anyKept = true;
-                continue;
-            }
-            const uint newAlpha = scaleChannel(alpha, coverage);
-            row[x] = qRgba(scaleChannel(qRed(pixel), coverage),
-                           scaleChannel(qGreen(pixel), coverage),
-                           scaleChannel(qBlue(pixel), coverage),
-                           newAlpha);
-            anyChanged = true;
-            anyKept = anyKept || newAlpha > 0;
-        }
-    }
-
-    if (!anyKept) {
+    } else if (!coverage.anyKept) {
         result.status = Status::NoSubject;
-        return result;
-    }
-    if (!anyChanged) {
+    } else if (!coverage.anyChanged) {
         result.status = Status::NothingRemoved;
-        return result;
+    } else {
+        result.image = std::move(coverage.image);
+        result.mask = mask;
+        result.status = Status::Success;
     }
-    image.setDevicePixelRatio(source.devicePixelRatio());
-    result.image = std::move(image);
-    result.status = Status::Success;
     return result;
+}
+
+QImage applyCoverage(const QImage& source, const QImage& mask)
+{
+    return multiplyAlpha(source, mask).image;
 }
 
 Result run(const QImage& source, const MaskProvider& provider)

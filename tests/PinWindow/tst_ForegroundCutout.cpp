@@ -69,6 +69,8 @@ private slots:
     void applyMask_MultipliesExistingAlpha();
     void applyMask_NoSubjectAndNothingRemovedAreNotResults();
     void applyMask_RejectsMismatchedMask();
+    void applyMask_RoundedBackIsNothingRemoved();
+    void applyCoverage_AlwaysGivesImageWithMetadata();
     void validateSize_Limit();
     void run_PassesProviderStatusThrough();
     void runner_DeliversOnGuiThreadOneAtATime();
@@ -162,6 +164,34 @@ void TestForegroundCutout::applyMask_RejectsMismatchedMask()
     QCOMPARE(Cutout::applyMask(QImage(), maskImage(source.size(), 255)).status, Status::Failed);
     const QImage rgbMask = maskImage(source.size(), 255).convertToFormat(QImage::Format_RGB32);
     QCOMPARE(Cutout::applyMask(source, rgbMask).status, Status::Failed);
+}
+
+void TestForegroundCutout::applyMask_RoundedBackIsNothingRemoved()
+{
+    // Coverage 254 rounds every channel of this pixel back to its input.
+    QImage source(1, 1, QImage::Format_ARGB32_Premultiplied);
+    source.setPixel(0, 0, qRgba(64, 32, 16, 100));
+    const Result result = Cutout::applyMask(source, maskImage(source.size(), 254));
+    QCOMPARE(result.status, Status::NothingRemoved);
+    QVERIFY(result.image.isNull());
+}
+
+void TestForegroundCutout::applyCoverage_AlwaysGivesImageWithMetadata()
+{
+    QImage source = opaqueImage(10, 10);
+    source.setDevicePixelRatio(2.0);
+    source.setText(QStringLiteral("SnapTraySourceLogicalSize"), QStringLiteral("5x5"));
+    const QImage none = Cutout::applyCoverage(source, maskImage(source.size(), 0));
+    QVERIFY(!none.isNull());
+    QCOMPARE(none.size(), source.size());
+    QCOMPARE(none.devicePixelRatio(), 2.0);
+    QCOMPARE(none.text(QStringLiteral("SnapTraySourceLogicalSize")), QStringLiteral("5x5"));
+    QCOMPARE(qAlpha(none.pixel(3, 3)), 0);
+    QVERIFY(!Cutout::applyCoverage(source, maskImage(source.size(), 255)).isNull());
+    QVERIFY(Cutout::applyCoverage(source, maskImage(QSize(9, 10), 255)).isNull());
+    // A successful applyMask hands its mask back for the regions.
+    const Result result = Cutout::applyMask(source, halfMask(source.size()));
+    QCOMPARE(result.mask.size(), source.size());
 }
 
 void TestForegroundCutout::validateSize_Limit()

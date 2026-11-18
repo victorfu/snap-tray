@@ -262,7 +262,7 @@ private:
                                      qint64 sourceCacheKey);
     // Why the image cannot be replaced right now, or an empty string.
     QString backgroundRemovalBlocker() const;
-    bool applyForegroundCutout(const QImage& image);
+    bool applyForegroundCutout(const QImage& image, const QImage& mask);
     // While an earlier save, Beautify save or Beautify copy of this pin is
     // still running, tells the user and returns true; otherwise false.
     bool rejectIfExportInProgress();
