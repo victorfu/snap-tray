@@ -28,6 +28,7 @@
 #include "SnapTrayApplication.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "pinwindow/PinExportJob.h"
+#include "pinwindow/PinClosePrompt.h"
 #include <QClipboard>
 #include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
@@ -171,6 +172,7 @@ private:
     static std::unique_ptr<PinWindow> arrowPin(QPixmap pixmap);
 
 private slots:
+    void closeChoiceBeforeWait();
     void cancelClosePreservesCroppedPinAndRemainder();
     void mergeInheritsUnsavedEdits_data();
     void mergeInheritsUnsavedEdits();
@@ -531,13 +533,35 @@ QObject* closeButton(const QString& name)
     return nullptr;
 }
 
+void whenCloseButtonShown(QObject* context, const QString& name,
+                          std::function<void(QObject*)> action)
+{
+    auto* timer = new QTimer(context);
+    QObject::connect(timer, &QTimer::timeout, timer, [timer, name, action] {
+        if (auto* button = closeButton(name)) {
+            timer->stop();
+            timer->deleteLater();
+            action(button);
+        }
+    });
+    timer->start(10);
+}
+
 void chooseCloseAction(QObject* context, const QString& name)
 {
-    QTimer::singleShot(0, context, [name] {
-        QVERIFY(QMetaObject::invokeMethod(closeButton(name), "clicked"));
+    whenCloseButtonShown(context, name, [](QObject* button) {
+        QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
     });
 }
 } // namespace
+
+void TestPinWindowStyleSync::closeChoiceBeforeWait()
+{
+    PinClosePrompt prompt;
+    prompt.save();
+    QTimer::singleShot(0, &prompt, &PinClosePrompt::cancel);
+    QCOMPARE(prompt.waitForChoice(), PinClosePrompt::Save);
+}
 
 void TestPinWindowStyleSync::cancelClosePreservesCroppedPinAndRemainder()
 {
@@ -553,21 +577,22 @@ void TestPinWindowStyleSync::cancelClosePreservesCroppedPinAndRemainder()
     edited->undoCrop();
     QVERIFY(!edited->hasUnsavedEdits());
     edited->redoCrop();
-    QTimer::singleShot(0, this, [&] {
+    whenCloseButtonShown(this, "cancelClose", [&](QObject* button) {
         QCloseEvent repeated;
         QApplication::sendEvent(edited, &repeated);
         QVERIFY(!repeated.isAccepted());
         QVERIFY(!manager.closeAllWindows());
-        QVERIFY(QMetaObject::invokeMethod(closeButton("cancelClose"), "clicked"));
+        QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
     });
     QVERIFY(!manager.closeAllWindows());
     QCOMPARE(manager.windowCount(), 2);
 
     static_cast<SnapTrayApplication*>(qApp)->setPinWindowManager(&manager);
     QEvent quit(QEvent::Quit);
-    QTimer::singleShot(0, this, [] {
-        auto* cancel = qobject_cast<QQuickItem*>(closeButton("cancelClose"));
+    whenCloseButtonShown(this, "cancelClose", [](QObject* button) {
+        auto* cancel = qobject_cast<QQuickItem*>(button);
         QVERIFY(cancel && cancel->window());
+        cancel->forceActiveFocus();
         QTest::keyClick(cancel->window(), Qt::Key_Escape);
     });
     QApplication::sendEvent(qApp, &quit);
@@ -634,14 +659,15 @@ void TestPinWindowStyleSync::saveOnCloseCanRetry()
     settings.saveScreenshotPath(blocker.fileName() + "/sub");
     QSignalSpy failed(&window, &PinWindow::saveFailed);
     settings.saveAutoSaveScreenshots(false);
-    QTimer::singleShot(0, this, [this] {
-        auto* saveButton = closeButton("saveEdits");
-        QVERIFY(saveButton);
-        QTimer::singleShot(0, this, [] {
-            auto* picker = qobject_cast<QFileDialog*>(QApplication::activeModalWidget());
-            QVERIFY(picker);
+    QTimer pickerPoll;
+    connect(&pickerPoll, &QTimer::timeout, this, [&] {
+        if (auto* picker = qobject_cast<QFileDialog*>(QApplication::activeModalWidget())) {
+            pickerPoll.stop();
             static_cast<QDialog*>(picker)->reject();
-        });
+        }
+    });
+    whenCloseButtonShown(this, "saveEdits", [&](QObject* saveButton) {
+        pickerPoll.start(10);
         QVERIFY(QMetaObject::invokeMethod(saveButton, "clicked"));
     });
     QVERIFY(!window.close());

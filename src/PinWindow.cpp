@@ -3902,7 +3902,7 @@ bool PinWindow::confirmClose()
         connect(&dialog, &SnapTray::QmlDialog::closed, &prompt, &PinClosePrompt::cancel);
         dialog.showCenteredOnScreen(screen());
         if (dialog.hasContent()) {
-            choice = prompt.exec();
+            choice = prompt.waitForChoice();
         }
     }
     if (choice == PinClosePrompt::Save) {
