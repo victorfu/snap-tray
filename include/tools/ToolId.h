@@ -48,6 +48,9 @@ enum class ToolId {
     // Panel / workflow actions
     Beautify,           // Open beautify panel for styled export / copy
 
+    // Appended, so the values above keep their numbers.
+    CutOut,             // Remove a band across the pinned image, or insert a blank one
+
     Count
 };
 

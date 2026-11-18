@@ -343,6 +343,9 @@ add_library(snaptray_core STATIC
     src/platform/AtomicFilePublish.cpp
     src/tools/ToolRegistry.cpp
     src/tools/ToolSectionConfig.cpp
+    src/tools/CropDraftModel.cpp
+    src/tools/StripDraftModel.cpp
+    src/pinwindow/ImageStripTransform.cpp
     src/tools/ToolWidthSlot.cpp
     src/cursor/CursorAuthority.cpp
     src/cursor/CursorPlatformApplier.cpp
@@ -901,6 +904,7 @@ add_library(snaptray_ui STATIC
     src/tools/handlers/TextToolHandler.cpp
     src/tools/handlers/SelectionToolHandler.cpp
     src/tools/handlers/CropToolHandler.cpp
+    src/tools/handlers/CutOutToolHandler.cpp
     src/tools/handlers/MeasureToolHandler.cpp
 
     # Hotkey management system
@@ -1132,6 +1136,8 @@ set_source_files_properties(src/qml/toolbar/ColorPaletteSection.qml PROPERTIES Q
 set_source_files_properties(src/qml/toolbar/WidthSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/WidthSection.qml)
 set_source_files_properties(src/qml/toolbar/TextFormattingSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/TextFormattingSection.qml)
 set_source_files_properties(src/qml/toolbar/ShapeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ShapeSection.qml)
+set_source_files_properties(src/qml/toolbar/CropSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/CropSection.qml)
+set_source_files_properties(src/qml/toolbar/CutOutSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/CutOutSection.qml)
 set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrowStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
@@ -1296,6 +1302,8 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/WidthSection.qml
         src/qml/toolbar/TextFormattingSection.qml
         src/qml/toolbar/ShapeSection.qml
+        src/qml/toolbar/CropSection.qml
+        src/qml/toolbar/CutOutSection.qml
         src/qml/toolbar/ArrowStyleSection.qml
         src/qml/toolbar/LineStyleSection.qml
         src/qml/toolbar/SizeSection.qml
