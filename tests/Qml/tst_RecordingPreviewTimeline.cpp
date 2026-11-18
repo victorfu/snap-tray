@@ -1,6 +1,8 @@
 #include <QtTest>
 
 #include <QGuiApplication>
+#include <QDataStream>
+#include <QFile>
 #include <QQuickItem>
 #include <QQuickView>
 #include <QTemporaryDir>
@@ -9,6 +11,7 @@
 
 #include "IVideoEncoder.h"
 #include "qml/RecordingPreviewBackend.h"
+#include "recording/AudioTracks.h"
 
 // Cuts and speed changes in the preview (#185) against the real QML.
 class tst_RecordingPreviewTimeline : public QObject
@@ -20,6 +23,8 @@ private slots:
     void playbackFollowsTheEdit();
     void splitFollowsTheWholeDrag();
     void overlaysAreShownAndReachable();
+    void deleteSelectedShapeOrAudioClip_data();
+    void deleteSelectedShapeOrAudioClip();
 
 private:
     static QQuickView* openPreview(RecordingPreviewBackend& backend);
@@ -222,6 +227,87 @@ void tst_RecordingPreviewTimeline::playbackFollowsTheEdit()
     QCOMPARE(backend.playbackTarget(backend.trimStart()), qint64(-1));
     QMetaObject::invokeMethod(player, "play");
     QTRY_VERIFY_WITH_TIMEOUT(!player->property("playing").toBool(), 3000);
+    backend.requestDiscard();
+}
+
+void tst_RecordingPreviewTimeline::deleteSelectedShapeOrAudioClip_data()
+{
+    QTest::addColumn<bool>("audio");
+    QTest::addColumn<int>("key");
+    QTest::addColumn<bool>("split");
+    for (bool audio : {false, true}) {
+        for (int key : {Qt::Key_Delete, Qt::Key_Backspace}) {
+            for (bool split : {false, true}) {
+                const QByteArray name = QByteArray(audio ? "audio" : "shape")
+                    + (key == Qt::Key_Delete ? "-delete" : "-backspace")
+                    + (split ? "-split" : "-whole");
+                QTest::newRow(name.constData()) << audio << key << split;
+            }
+        }
+    }
+}
+
+void tst_RecordingPreviewTimeline::deleteSelectedShapeOrAudioClip()
+{
+    QFETCH(bool, audio);
+    QFETCH(int, key);
+    QFETCH(bool, split);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString video = dir.filePath(QStringLiteral("recording.mp4"));
+    if (!writeRecording(video)) QSKIP("No native encoder for the fixture recording");
+    RecordingPreviewBackend backend(video);
+    backend.setSelectedFormat(RecordingPreviewBackend::MP4);
+    QQuickView* view = openPreview(backend);
+    QVERIFY(view);
+    QTRY_VERIFY_WITH_TIMEOUT(backend.duration() > 0, 10000);
+    QVERIFY(seek(view, 200));
+    if (split) QVERIFY(backend.splitAt(1000));
+
+    if (audio) {
+        // Import a real one-second PCM asset so the shortcut exercises the
+        // same selected clip and delegate as an audio import in the editor.
+        namespace AudioTracks = SnapTray::AudioTracks;
+        const QString wav = dir.filePath(QStringLiteral("audio.wav"));
+        QFile file(wav);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        const QByteArray pcm(AudioTracks::kSampleRate * AudioTracks::kBytesPerFrame, '\0');
+        QDataStream stream(&file);
+        stream.setByteOrder(QDataStream::LittleEndian);
+        stream.writeRawData("RIFF", 4);
+        stream << quint32(36 + pcm.size());
+        stream.writeRawData("WAVEfmt ", 8);
+        stream << quint32(16) << quint16(1) << quint16(AudioTracks::kChannels)
+               << quint32(AudioTracks::kSampleRate)
+               << quint32(AudioTracks::kSampleRate * AudioTracks::kBytesPerFrame)
+               << quint16(AudioTracks::kBytesPerFrame) << quint16(16);
+        stream.writeRawData("data", 4);
+        stream << quint32(pcm.size());
+        QCOMPARE(stream.writeRawData(pcm.constData(), pcm.size()), pcm.size());
+        QCOMPARE(stream.status(), QDataStream::Ok);
+        file.close();
+        backend.addAudioClip(QUrl::fromLocalFile(wav));
+        QTRY_VERIFY_WITH_TIMEOUT(!backend.importingAudio(), 20000);
+        QVERIFY2(backend.errorMessage().isEmpty(), qPrintable(backend.errorMessage()));
+        QCOMPARE(backend.audioClips().size(), 1);
+    } else {
+        QCOMPARE(backend.addShapeFromView(ShapeParameters::Rectangle,
+                     {20, 20}, {100, 60}, {0, 0, 160, 90}), 0);
+    }
+    QVERIFY(QMetaObject::invokeMethod(view->rootObject(), "selectEffect",
+                Q_ARG(QVariant, audio ? "audioClip" : "shape"), Q_ARG(QVariant, 0)));
+    QCOMPARE(audio ? backend.selectedAudioClip() : backend.selectedShape(), 0);
+    const auto timeline = backend.timelineEdit();
+    const qint64 duration = backend.outputDuration();
+    view->rootObject()->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key(key));
+    QVERIFY(backend.timelineEdit() == timeline);
+    QCOMPARE(backend.outputDuration(), duration);
+    QCOMPARE(audio ? backend.audioClips().size() : backend.shapes().size(), 0);
+    QCOMPARE(audio ? backend.selectedAudioClip() : backend.selectedShape(), -1);
+    backend.undo();
+    QCOMPARE(audio ? backend.audioClips().size() : backend.shapes().size(), 1);
+    QVERIFY(backend.timelineEdit() == timeline);
     backend.requestDiscard();
 }
 

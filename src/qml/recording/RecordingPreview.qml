@@ -5063,6 +5063,7 @@ Item {
         case Qt.Key_Delete:
         case Qt.Key_Backspace:
             if (backend.selectedMask >= 0 || backend.selectedZoom >= 0
+                    || backend.selectedShape >= 0 || backend.selectedAudioClip >= 0
                     || backend.selectedOverlay >= 0 || backend.selectedPointerHide >= 0) {
                 if (!root.commitInspector()) { event.accepted = true; break }
                 root.removeSelectedEffect()
