@@ -2457,6 +2457,10 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>꾸민 스크린샷 저장</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>이전 내보내기를 아직 저장하는 중입니다</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2458,6 +2458,10 @@ Taille : %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Enregistrer la capture d'écran embellie</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>L’exportation précédente est encore en cours d’enregistrement</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

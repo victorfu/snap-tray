@@ -2457,6 +2457,10 @@ Kích thước: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Lưu ảnh chụp đã làm đẹp</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Vẫn đang lưu bản xuất trước đó</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2457,6 +2457,10 @@ Boyut: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Güzelleştirilmiş Ekran Görüntüsünü Kaydet</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Önceki dışa aktarma hâlâ kaydediliyor</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

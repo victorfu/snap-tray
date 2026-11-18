@@ -2458,6 +2458,10 @@ Storlek: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Spara förskönad skärmbild</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Den föregående exporten sparas fortfarande</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

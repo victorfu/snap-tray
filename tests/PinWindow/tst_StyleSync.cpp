@@ -187,6 +187,8 @@ private slots:
     void testAutoBlurGaussianCoversMappedHiDpiRegion();
     void testAutomaticSavesPreserveEarlierImage_data();
     void testAutomaticSavesPreserveEarlierImage();
+    void testSaveIsWrittenOffTheGuiThreadFromItsSnapshot_data();
+    void testSaveIsWrittenOffTheGuiThreadFromItsSnapshot();
     void testAutoBlurMapsFlippedDisplayRectToAnnotationSpace();
     void testAutoBlurMapsCombinedRotationAndFlips_data();
     void testAutoBlurMapsCombinedRotationAndFlips();
@@ -474,13 +476,70 @@ void TestPinWindowStyleSync::testAutomaticSavesPreserveEarlierImage()
         first.saveToFile();
         second.saveToFile();
     }
-    QCOMPARE(a.count(), 1);
-    QCOMPARE(b.count(), 1);
+    // Saves finish off the GUI thread (#353).
+    QTRY_COMPARE(a.count(), 1);
+    QTRY_COMPARE(b.count(), 1);
     const QString firstPath = a.first().at(1).toString();
     const QString secondPath = b.first().at(1).toString();
     QVERIFY(firstPath != secondPath);
     QCOMPARE(QImage(firstPath).pixelColor(12, 12), QColor(Qt::red));
     QCOMPARE(QImage(secondPath).pixelColor(12, 12), QColor(Qt::blue));
+}
+
+void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot_data()
+{
+    QTest::addColumn<bool>("beautify");
+    QTest::newRow("pin") << false;
+    QTest::newRow("beautify") << true;
+}
+
+// #353: a pin's save returns before the file is written, writes the picture as
+// it was when Save was pressed, and a second press meanwhile starts nothing.
+void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot()
+{
+    QFETCH(bool, beautify);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveFilenameTemplate("snapshot.png");
+    QPixmap red(64, 64);
+    red.fill(Qt::red);
+    PinWindow window(red, QPoint(0, 0));
+    window.showToolbar();
+    QVERIFY(window.m_annotationLayer != nullptr);
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+    BeautifySettings style;
+    style.padding = 0;
+    style.cornerRadius = 0;
+    style.shadowEnabled = false;
+    const auto save = [&] {
+        if (beautify) {
+            window.onBeautifySave(style);
+        } else {
+            window.saveToFile();
+        }
+    };
+
+    save();
+    QCOMPARE(saved.count(), 0);
+    // An edit made while the file is written, and a second press.
+    window.m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(
+        QRect(0, 0, 64, 64), ShapeType::Rectangle, QColor(Qt::blue), 4, true));
+    save();
+
+    QTRY_COMPARE(saved.count(), 1);
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(QImage(saved.first().at(1).toString()).pixelColor(32, 32), QColor(Qt::red));
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files).size(), 1);
+
+    // Once it has finished, the next save takes the edited picture.
+    save();
+    QTRY_COMPARE(saved.count(), 2);
+    QCOMPARE(failed.count(), 0);
+    QCOMPARE(QImage(saved.last().at(1).toString()).pixelColor(32, 32), QColor(Qt::blue));
 }
 
 void TestPinWindowStyleSync::testAutoBlurGaussianCoversMappedHiDpiRegion()

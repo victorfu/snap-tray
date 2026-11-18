@@ -910,6 +910,11 @@ target_link_libraries(PinWindow_BeautifyHistory PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_BeautifyHistory COMMAND PinWindow_BeautifyHistory)
 set_tests_properties(PinWindow_BeautifyHistory PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_PinExportJob PinWindow/tst_PinExportJob.cpp)
+target_link_libraries(PinWindow_PinExportJob PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_PinExportJob COMMAND PinWindow_PinExportJob)
+set_tests_properties(PinWindow_PinExportJob PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(PinWindow_StyleSync PinWindow/tst_StyleSync.cpp)
 target_link_libraries(PinWindow_StyleSync PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 add_test(NAME PinWindow_StyleSync COMMAND PinWindow_StyleSync)

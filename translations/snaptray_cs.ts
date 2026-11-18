@@ -2459,6 +2459,10 @@ Velikost: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Uložit zkrášlený snímek obrazovky</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Předchozí export se stále ukládá</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

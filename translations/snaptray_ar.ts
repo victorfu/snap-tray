@@ -2462,6 +2462,10 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>حفظ لقطة الشاشة المُجمَّلة</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>لا يزال حفظ التصدير السابق جاريًا</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

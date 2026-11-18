@@ -2459,6 +2459,10 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>Сачувај улепшани снимак екрана</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Претходни извоз се још увек чува</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

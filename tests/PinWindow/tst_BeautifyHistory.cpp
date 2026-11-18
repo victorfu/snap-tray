@@ -125,7 +125,10 @@ private:
     // Saves through the same path as the panel's Save button.
     void beautifySave(PinWindow& window, const BeautifySettings& settings)
     {
+        // The export finishes off the GUI thread and submits the entry then.
+        QSignalSpy done(&window, &PinWindow::saveCompleted);
         window.onBeautifySave(settings);
+        QTRY_COMPARE(done.count(), 1);
         QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
     }
 

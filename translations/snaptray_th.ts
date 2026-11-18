@@ -2308,6 +2308,10 @@ English is always included and cannot be removed.</source>
         <source>Save Beautified Screenshot</source>
         <translation>บันทึกภาพหน้าจอที่ปรับแต่งแล้ว</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>ยังคงบันทึกการส่งออกก่อนหน้าอยู่</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

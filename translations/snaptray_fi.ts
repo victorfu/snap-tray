@@ -2458,6 +2458,10 @@ Koko: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Tallenna kaunistettu kuvakaappaus</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Edellistä vientiä tallennetaan yhä</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

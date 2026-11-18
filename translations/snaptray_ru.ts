@@ -2459,6 +2459,10 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>Сохранить украшенный снимок экрана</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Предыдущий экспорт ещё сохраняется</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -192,28 +192,18 @@ QImage convertImageForDisplay(const QImage& image)
     return target;
 }
 
+QColorSpace exportColorSpaceForScreen(const QScreen* sourceScreen)
+{
+    const QColorSpace screenColorSpace = colorSpaceFromNSScreen(sourceScreen);
+    return screenColorSpace.isValid() ? screenColorSpace : QColorSpace(QColorSpace::SRgb);
+}
+
 QImage tagImageWithScreenColorSpace(const QImage& image, const QScreen* sourceScreen)
 {
-    if (image.isNull()) {
+    if (image.isNull() || image.colorSpace().isValid()) {
         return image;
     }
-
-    if (image.colorSpace().isValid()) {
-        return image;
-    }
-
-    QColorSpace targetColorSpace = colorSpaceFromNSScreen(sourceScreen);
-    if (!targetColorSpace.isValid()) {
-        targetColorSpace = QColorSpace(QColorSpace::SRgb);
-    }
-
-    if (!targetColorSpace.isValid()) {
-        return image;
-    }
-
-    QImage taggedImage = image;
-    taggedImage.setColorSpace(targetColorSpace);
-    return taggedImage;
+    return tagImageWithColorSpace(image, exportColorSpaceForScreen(sourceScreen));
 }
 
 QImage normalizeImageForExport(const QImage& image, const QScreen* sourceScreen)

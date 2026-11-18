@@ -2459,6 +2459,10 @@ Rozmiar: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Zapisz upiększony zrzut ekranu</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Poprzedni eksport jest nadal zapisywany</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

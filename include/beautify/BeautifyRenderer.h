@@ -2,6 +2,7 @@
 #define BEAUTIFYRENDERER_H
 
 #include "beautify/BeautifySettings.h"
+#include <QImage>
 #include <QPixmap>
 #include <QPainter>
 #include <QSize>
@@ -9,6 +10,9 @@
 class BeautifyRenderer {
 public:
     static QPixmap applyToPixmap(const QPixmap& source, const BeautifySettings& settings);
+    // The same picture as applyToPixmap, drawn only with QImage so it can run
+    // off the GUI thread (#353).
+    static QImage applyToImage(const QImage& source, const BeautifySettings& settings);
     static QSize calculateOutputSize(const QSize& sourceSize, const BeautifySettings& settings);
     static void render(QPainter& painter, const QRect& targetRect,
                        const QPixmap& source, const BeautifySettings& settings);
@@ -25,10 +29,6 @@ public:
     static QRect calculateInsetRect(const QSize& outputSize, const QSize& sourceSize,
                                     const BeautifySettings& settings);
     static QSize applyAspectRatio(const QSize& baseSize, BeautifyAspectRatio ratio);
-
-private:
-    static void drawScreenshot(QPainter& painter, const QRect& insetRect,
-                               const QPixmap& source, const BeautifySettings& settings);
 };
 
 #endif // BEAUTIFYRENDERER_H

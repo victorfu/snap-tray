@@ -2459,6 +2459,10 @@ Dydis: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Išsaugoti pagražintą ekrano nuotrauką</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>Ankstesnis eksportas dar įrašomas</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -13,6 +13,12 @@ QImage tagImageWithScreenColorSpace(const QImage& image, const QScreen* sourceSc
     return image;
 }
 
+QColorSpace exportColorSpaceForScreen(const QScreen* sourceScreen)
+{
+    Q_UNUSED(sourceScreen);
+    return {};
+}
+
 QImage normalizeImageForExport(const QImage& image, const QScreen* sourceScreen)
 {
     if (image.isNull()) {

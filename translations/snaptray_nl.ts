@@ -2458,6 +2458,10 @@ Grootte: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Verfraaide schermafbeelding opslaan</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>De vorige export wordt nog opgeslagen</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

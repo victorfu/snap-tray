@@ -2457,6 +2457,10 @@ Size: %2</source>
         <source>Save Beautified Screenshot</source>
         <translation>美化スクリーンショットを保存</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>前回のエクスポートを保存しています</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

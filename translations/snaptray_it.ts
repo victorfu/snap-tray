@@ -2458,6 +2458,10 @@ Dimensione: %2</translation>
         <source>Save Beautified Screenshot</source>
         <translation>Salva schermata abbellita</translation>
     </message>
+    <message>
+        <source>Still saving the previous export</source>
+        <translation>L’esportazione precedente è ancora in fase di salvataggio</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>
