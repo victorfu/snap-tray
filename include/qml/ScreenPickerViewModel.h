@@ -18,6 +18,10 @@ class ScreenPickerViewModel : public QObject
     Q_PROPERTY(QVariantList screens READ screens NOTIFY screensChanged)
     Q_PROPERTY(int thumbnailCacheBuster READ thumbnailCacheBuster NOTIFY thumbnailCacheBusterChanged)
 
+    Q_PROPERTY(QString prompterScript MEMBER m_prompterScript NOTIFY prompterChanged)
+    Q_PROPERTY(int prompterDisplay MEMBER m_prompterDisplay NOTIFY prompterChanged)
+    Q_PROPERTY(QString prompterError READ prompterError NOTIFY prompterChanged)
+
     // Recording setup shown with the screens. Changes are saved through
     // RecordingSettingsManager, so the next quick recording reuses them.
     Q_PROPERTY(bool microphoneEnabled READ microphoneEnabled WRITE setMicrophoneEnabled NOTIFY audioSettingsChanged)
@@ -54,6 +58,11 @@ public:
 
     void setSources(const QVector<ScreenSourceInfo>& sources);
 
+    QString prompterError() const { return m_prompterError; }
+    QString prompterScript() const { return prompterScreen() ? m_prompterScript : QString(); }
+    QScreen* prompterScreen() const { return m_screenRefs.value(m_prompterDisplay).data(); }
+    bool editingScript() const { return m_editingScript; }
+    Q_INVOKABLE void setEditingScript(bool editing);
     Q_INVOKABLE void chooseScreen(int index);
     Q_INVOKABLE void cancel();
 
@@ -106,6 +115,8 @@ signals:
     void screenChosen(QScreen* screen);
     void cancelled();
     void screensChanged();
+    void prompterChanged();
+    void editingScriptChanged(bool editing);
     void thumbnailCacheBusterChanged();
     void audioSettingsChanged();
     void devicesChanged();
@@ -120,6 +131,10 @@ private:
     void loadAudioSettings();
     void saveAudioSettings();
 
+    int m_prompterDisplay = -1;
+    QString m_prompterScript;
+    QString m_prompterError;
+    bool m_editingScript = false;
     AudioLevelMonitor m_levelMonitor;
     AudioLevelMonitor::EngineFactory m_engineFactory;
     bool m_microphoneEnabled = false;

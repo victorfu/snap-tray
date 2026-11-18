@@ -3374,6 +3374,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>화면 캡처가 일시적으로 호환 모드를 사용합니다</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>프롬프터에는 별도의 화면이 필요합니다.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5970,6 +5974,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>오디오를 가져올 수 없습니다: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>녹화 편집 복구</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>저장하지 않은 녹화 편집 내용을 복원할까요?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>초안이 손상되었거나 호환되지 않거나 다른 녹화의 초안입니다.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>초안 버리기를 선택하면 마지막으로 저장한 버전을 엽니다. 취소하면 초안을 보관합니다.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>복원</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>초안 버리기</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>초안을 삭제할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>초안을 저장할 수 없습니다. 여유 공간과 파일 권한을 확인하고 다시 시도하세요.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6966,6 +7002,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>확대 자동 추가</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>프롬프터 화면</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>끔</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>프롬프터에는 별도의 화면이 필요합니다.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>이번 녹화의 대본을 입력하거나 붙여넣으세요</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7419,6 +7471,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>마이크 권한을 기다리는 중...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>대본을 입력하고 프롬프터와 다른 화면을 녹화 대상으로 선택하세요.</translation>
     </message>
 </context>
 <context>
@@ -8442,6 +8498,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>이전 저장본에서 복구됨</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>프롬프터</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>글자 크기 줄이기</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>글자 크기 늘리기</translation>
     </message>
 </context>
 </TS>

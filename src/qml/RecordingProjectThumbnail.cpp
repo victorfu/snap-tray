@@ -105,7 +105,7 @@ void RecordingProjectThumbnailQueue::request(const RecordingProject& project)
 {
     auto& s = *m_state;
     const QString revision = project.thumbnailPath();
-    if (s.stopped || !project.thumbnailUrl().isEmpty() || s.requested.value(project.dir) == revision) return;
+    if (s.stopped || RecordingProjects::hasDraft(project) || !project.thumbnailUrl().isEmpty() || s.requested.value(project.dir) == revision) return;
     s.requested.insert(project.dir, revision);
     s.pending.removeIf([&](const State::Job& job) { return job.project.dir == project.dir; });
     if (s.activeDir == project.dir && s.cancelled) s.cancelled->store(true);
@@ -136,7 +136,9 @@ void RecordingProjectThumbnailQueue::startNext()
         s.activeDir.clear();
         if (!s.stopped && !cancelled->load()) {
             const auto current = RecordingProjects::load(job.project.dir);
-            if (current && current->thumbnailPath() == job.project.thumbnailPath()
+            if (current && RecordingProjects::hasDraft(*current)) {
+                s.requested.remove(job.project.dir);
+            } else if (current && current->thumbnailPath() == job.project.thumbnailPath()
                 && !RecordingProjects::publishThumbnail(job.project, image)) {
                 qWarning() << "RecordingProjects: thumbnail generation/publication failed, attempt" << job.attempts
                            << "for" << job.project.dir;

@@ -1,5 +1,12 @@
 #include <QtTest>
+#include <QtQml/qqmlextensionplugin.h>
+Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 #include <QDir>
+#include <QProcess>
+#include <QMessageBox>
+#include <QPushButton>
+#include "recording/RecordingDraft.h"
+#include "recording/RecordingSession.h"
 #include <QFile>
 #include <QBuffer>
 #include <QImageReader>
@@ -64,6 +71,11 @@ private slots:
         RecordingSettingsManager::instance().setKeepProjects(m_keepProjects);
         RecordingSettingsManager::instance().setProjectCleanupDays(m_cleanupDays);
     }
+    void draftCrashWriter();
+    void recoverCommittedDraft_data();
+    void recoverCommittedDraft();
+    void draftFailureKeepsPreviousCommit();
+    void explicitProjectSaveClearsDraftOnlyAfterCommit();
     void missingBackgroundKeepsPreviewRetryable();
     void readableHeaderDoesNotMakeACompleteImage();
     void failedSave_data();
@@ -82,6 +94,215 @@ private:
     bool m_keepProjects = false;
     int m_cleanupDays = 0;
 };
+
+void tst_RecordingProjectSave::draftCrashWriter()
+{
+    const QString source = qEnvironmentVariable("SNAPTRAY_TEST_DRAFT_SOURCE");
+    if (source.isEmpty()) QSKIP("Run as the crash-test child");
+    RecordingPreviewBackend backend(source);
+    if (qEnvironmentVariableIsSet("SNAPTRAY_TEST_DRAFT_PROJECT")) {
+        const auto project = RecordingProjects::load(QFileInfo(source).absolutePath());
+        QVERIFY(project);
+        backend.setProject(*project);
+    }
+    backend.show();
+    QTRY_COMPARE(backend.videoSize(), QSize(160, 120));
+    QTRY_VERIFY(backend.duration() > 1000 && !backend.projectLoading());
+    QVERIFY(!backend.m_draftIdentity.isEmpty());
+    auto state = backend.currentEditState();
+    state.crop = QRect(16, 12, 124, 88);
+    state.trimStart = 100;
+    state.timeline.splits = {1000};
+    state.timeline.parts = {{false, 2.0, true}, {true, 1.0, true}};
+    state.redaction.masks.push_back({QRect(40, 30, 60, 40), 200, 900});
+    state.audio.microphoneGainDb = -6;
+    state.appearance.enabled = true;
+    state.appearance.background = RecordingAppearance::Background::Image;
+    state.appearance.imagePath = qEnvironmentVariable("SNAPTRAY_TEST_DRAFT_IMAGE");
+    backend.m_restoringProject = true;
+    backend.applyEditState(state);
+    backend.m_restoringProject = false;
+    backend.recordEdit();
+    QTRY_VERIFY(RecordingDraft::exists(source));
+    // The parent terminates this process without running preview teardown.
+    QTest::qWait(30000);
+    QFAIL("Parent did not terminate the writer");
+}
+
+void tst_RecordingProjectSave::recoverCommittedDraft_data()
+{
+    QTest::addColumn<bool>("project");
+    QTest::newRow("new session") << false;
+    QTest::newRow("existing project") << true;
+}
+
+void tst_RecordingProjectSave::recoverCommittedDraft()
+{
+    QFETCH(bool, project);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    RecordingProjects::setRootForTests(dir.filePath("projects"));
+    QString source = dir.filePath("recording.mp4");
+    const QString fixture = QFINDTESTDATA("../Video/fixtures/edit-vfr.mp4");
+    QVERIFY(!fixture.isEmpty());
+    QVERIFY(QFile::copy(fixture, source));
+    std::optional<RecordingProject> saved;
+    if (project) {
+        saved = RecordingProjects::create(source, false, RecordingRecipe::toJson({}, {}), {}, 5000, {});
+        QVERIFY(saved);
+        source = saved->videoPath();
+    } else {
+        RecordingSessionInfo session;
+        session.videoPath = source;
+        session.sessionId = QStringLiteral("crash-recovery");
+        session.format = QStringLiteral("mp4");
+        QVERIFY(RecordingSession::write(session));
+    }
+    const QString image = dir.filePath("external.png");
+    QVERIFY(background().save(image));
+    QProcess child;
+    auto env = QProcessEnvironment::systemEnvironment();
+    env.insert("SNAPTRAY_TEST_DRAFT_SOURCE", source);
+    env.insert("SNAPTRAY_TEST_DRAFT_IMAGE", image);
+    if (project) env.insert("SNAPTRAY_TEST_DRAFT_PROJECT", "1");
+    child.setProcessEnvironment(env);
+    child.setProcessChannelMode(QProcess::MergedChannels);
+    child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("draftCrashWriter")});
+    QVERIFY(child.waitForStarted());
+    QTRY_VERIFY_WITH_TIMEOUT(RecordingDraft::exists(source) || child.state() == QProcess::NotRunning, 15000);
+    QVERIFY2(RecordingDraft::exists(source), child.readAll().constData());
+    child.kill();
+    QVERIFY(child.waitForFinished());
+    QVERIFY(QFile::remove(image));
+    if (saved) {
+        QCOMPARE(RecordingProjects::load(saved->dir)->recipe, saved->recipe);
+        QVERIFY(saved->thumbnailUrl().isEmpty());
+        QCOMPARE(RecordingProjects::removeOlderThan(1, QDateTime::currentDateTimeUtc().addDays(4)), 0);
+    }
+    RecordingPreviewBackend restored(source);
+    if (saved) restored.setProject(*saved);
+    QTimer answer;
+    bool prompted = false;
+    connect(&answer, &QTimer::timeout, this, [&] {
+        auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget());
+        if (!box) return;
+        for (auto* button : box->buttons()) {
+            if (box->buttonRole(button) == QMessageBox::AcceptRole) {
+                prompted = !restored.m_view;
+                button->click();
+                return;
+            }
+        }
+        box->reject();
+    });
+    answer.start(25);
+    restored.show();
+    QTRY_VERIFY_WITH_TIMEOUT(prompted, 5000);
+    answer.stop();
+    QTRY_COMPARE(restored.videoSize(), QSize(160, 120));
+    QTRY_VERIFY(restored.duration() > 1000 && !restored.projectLoading());
+    const auto state = restored.currentEditState();
+    QCOMPARE(state.crop, QRect(16, 12, 124, 88));
+    QCOMPARE(state.trimStart, 100);
+    QCOMPARE(state.timeline.splits, std::vector<qint64>{1000});
+    QCOMPARE(state.timeline.parts.front().speed, 2.0);
+    QVERIFY(state.timeline.parts.back().deleted);
+    QCOMPARE(state.redaction.masks.size(), size_t(1));
+    QCOMPARE(state.redaction.masks.front().rect, QRect(40, 30, 60, 40));
+    QCOMPARE(state.audio.microphoneGainDb, -6);
+    QCOMPARE(QImage(state.appearance.imagePath).pixelColor(0, 0), QColor(Qt::magenta));
+    restored.undo();
+    QVERIFY(restored.flushDraft());
+    QVERIFY(!RecordingDraft::exists(source));
+    restored.setCropRect(QRect(20, 20, 120, 80));
+    restored.recordEdit();
+    restored.writeDraft();
+    QVERIFY(restored.clearDraft());
+    QCoreApplication::processEvents();
+    QVERIFY(!RecordingDraft::exists(source));
+}
+
+void tst_RecordingProjectSave::draftFailureKeepsPreviousCommit()
+{
+    QTemporaryDir dir;
+    const QString source = dir.filePath("source.mp4");
+    QVERIFY(writeFile(source, "source"));
+    RecordingPreviewBackend backend(source);
+    backend.m_draftIdentity = "identity";
+    backend.updateVideoSize({320, 240});
+    backend.setDraftBaseline();
+    backend.setCropRect(QRect(20, 20, 120, 80));
+    backend.recordEdit();
+    QVERIFY(backend.flushDraft());
+    const auto committed = readFile(RecordingDraft::pathFor(source));
+    QVERIFY(!committed.isEmpty());
+#ifdef Q_OS_UNIX
+    QVERIFY(!(QFileInfo(RecordingDraft::pathFor(source)).permissions()
+              & (QFileDevice::ReadGroup | QFileDevice::ReadOther)));
+#endif
+    backend.m_appearance.enabled = true;
+    backend.m_appearance.background = RecordingAppearance::Background::Image;
+    backend.m_appearance.imagePath = dir.filePath("missing.png");
+    backend.recordEdit();
+    QVERIFY(!backend.flushDraft());
+    QVERIFY(backend.canRetryDraft());
+    QCOMPARE(readFile(RecordingDraft::pathFor(source)), committed);
+    QVERIFY(background().save(backend.m_appearance.imagePath));
+    backend.retryDraft();
+    QVERIFY(backend.finishDraftWrite());
+    QVERIFY(!backend.canRetryDraft());
+    QVERIFY(RecordingDraft::read(source, "identity", dir.path()));
+    QVERIFY(!RecordingDraft::read(source, "other", dir.path()));
+    const QByteArray good = readFile(RecordingDraft::pathFor(source));
+    auto newer = QJsonDocument::fromJson(good).object();
+    newer["version"] = 300;
+    QVERIFY(writeFile(RecordingDraft::pathFor(source), QJsonDocument(newer).toJson()));
+    QVERIFY(!RecordingDraft::read(source, "identity", dir.path()));
+    QVERIFY(writeFile(RecordingDraft::pathFor(source), good));
+    QVERIFY(writeFile(source, "replaced"));
+    QVERIFY(!RecordingDraft::read(source, "identity", dir.path()));
+    QVERIFY(writeFile(RecordingDraft::pathFor(source), "{"));
+    QVERIFY(!RecordingDraft::read(source, "identity", dir.path()));
+}
+
+void tst_RecordingProjectSave::explicitProjectSaveClearsDraftOnlyAfterCommit()
+{
+    QTemporaryDir dir;
+    const auto wait = qScopeGuard([] { QThreadPool::globalInstance()->waitForDone(); });
+    RecordingProjects::setRootForTests(dir.filePath("projects"));
+    const QString source = dir.filePath("source.mp4");
+    QVERIFY(writeFile(source, "source"));
+    auto project = RecordingProjects::create(source, false, RecordingRecipe::toJson({}, {}), {}, 5000, {});
+    QVERIFY(project);
+    auto lock = RecordingProjects::lockEditor(project->dir);
+    QVERIFY(lock);
+    QVERIFY(!RecordingProjects::lockEditor(project->dir));
+    QVERIFY(!RecordingProjects::remove(*project));
+    RecordingPreviewBackend backend(project->videoPath());
+    backend.setProject(*project);
+    backend.identifyDraft();
+    backend.updateVideoSize({320, 240});
+    backend.updateDuration(5000);
+    backend.setCropRect({20, 20, 120, 80});
+    backend.recordEdit();
+    QVERIFY(backend.flushDraft());
+    const QString draft = RecordingDraft::pathFor(project->videoPath());
+    const auto committed = readFile(draft);
+    QVERIFY(!committed.isEmpty());
+    const QString output = dir.filePath("export.mp4");
+    handOff(backend, output);
+    RecordingProjects::failNextManifestWriteForTests();
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, output);
+    QCOMPARE(readFile(draft), committed);
+    QVERIFY(!backend.m_closeHandled);
+    handOff(backend, output);
+    backend.completeSave(RecordingPreviewBackend::SaveOutcome::Saved, output);
+    QVERIFY(backend.m_closeHandled);
+    QVERIFY(!QFile::exists(draft));
+    const auto saved = RecordingProjects::load(project->dir);
+    QVERIFY(saved);
+    QCOMPARE(RecordingRecipe::editState(saved->recipe)->crop, QRect(20, 20, 120, 80));
+}
 
 void tst_RecordingProjectSave::missingBackgroundKeepsPreviewRetryable()
 {

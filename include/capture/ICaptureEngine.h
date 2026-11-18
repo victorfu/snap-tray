@@ -90,6 +90,10 @@ public:
      */
     virtual void setExcludedWindows(const QList<WId> &windowIds) { Q_UNUSED(windowIds); }
 
+    // A reader that must remain outside the captured area. X11 watches its
+    // placement on the same connection that reads the output pixels.
+    virtual void setSeparateDisplayWindow(quintptr id) { Q_UNUSED(id); }
+
     // Pre-resolved native capture identifiers for asynchronous initialization.
     // Unlike Qt WId on macOS, these are CGWindowIDs, not NSView pointers.
     virtual void setExcludedCaptureWindowIds(const QList<quintptr>& ids) { Q_UNUSED(ids); }

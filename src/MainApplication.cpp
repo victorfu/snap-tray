@@ -1149,6 +1149,7 @@ SnapTray::QmlSettingsWindow* MainApplication::ensureSettingsWindow()
 
 void MainApplication::onHotkeyAction(SnapTray::HotkeyAction action)
 {
+    if (m_screenPickerViewModel && m_screenPickerViewModel->editingScript()) return;
     using namespace SnapTray;
 
     switch (action) {
@@ -1342,6 +1343,12 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
 void MainApplication::showRecordingPreview(const QString& videoPath, int defaultOutputFormat,
                                            bool recordedAsIntermediate)
 {
+    openRecordingPreview(videoPath, defaultOutputFormat, recordedAsIntermediate, nullptr);
+}
+
+void MainApplication::openRecordingPreview(const QString& videoPath, int defaultOutputFormat,
+                                            bool recordedAsIntermediate, const SnapTray::RecordingProject* project)
+{
     // Prevent multiple preview windows
     if (m_previewBackend)
         return;
@@ -1350,6 +1357,7 @@ void MainApplication::showRecordingPreview(const QString& videoPath, int default
     m_previewBackend->setDefaultOutputFormat(defaultOutputFormat);
     // The area chosen before recording (#194), also for a recovered recording.
     m_previewBackend->setInitialCrop(m_recordingManager->previewInitialCrop());
+    if (project) m_previewBackend->setProject(*project);
     if (m_recordingManager->previewIsNewRecording()) m_previewBackend->autoZoomNewRecording();
 
     // The save handler opens a native dialog. Keep it out of the QML click/key
@@ -1574,8 +1582,7 @@ void MainApplication::openRecordingProject(const QString& projectDir)
         return;
     }
     // A project is always the full-quality recording: Save re-encodes as needed.
-    showRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true);
-    if (m_previewBackend) m_previewBackend->setProject(*project);
+    openRecordingPreview(project->videoPath(), RecordingSettingsManager::instance().outputFormat(), true, &*project);
     if (m_previewBackend && recoveredSource) {
         qWarning() << "MainApplication: opened a separate recovery project without the original edits";
         SnapTray::QmlToast::screenToast().showToast(
@@ -1910,6 +1917,10 @@ void MainApplication::attachScreenPicker(SnapTray::QmlDialog* dialog,
         return;
     }
 
+    connect(viewModel, &SnapTray::ScreenPickerViewModel::editingScriptChanged, this, [](bool editing) {
+        if (editing) SnapTray::HotkeyManager::instance().suspendRegistration();
+        else SnapTray::HotkeyManager::instance().resumeRegistration();
+    });
     connect(viewModel, &SnapTray::ScreenPickerViewModel::screenChosen,
             this, &MainApplication::onScreenPickerChosen);
     connect(viewModel, &SnapTray::ScreenPickerViewModel::cancelled,
@@ -1922,6 +1933,8 @@ void MainApplication::attachScreenPicker(SnapTray::QmlDialog* dialog,
 
 void MainApplication::onScreenPickerChosen(QScreen* screen)
 {
+    const QString script = m_screenPickerViewModel ? m_screenPickerViewModel->prompterScript() : QString();
+    QPointer<QScreen> display = m_screenPickerViewModel ? m_screenPickerViewModel->prompterScreen() : nullptr;
     closeScreenPicker();
 
     if (!screen) {
@@ -1933,13 +1946,13 @@ void MainApplication::onScreenPickerChosen(QScreen* screen)
         return;
     }
 
-    startRecordingOn(screen);
+    startRecordingOn(screen, display, script);
 }
 
-void MainApplication::startRecordingOn(QScreen* screen)
+void MainApplication::startRecordingOn(QScreen* screen, QPointer<QScreen> promptDisplay, const QString& script)
 {
     if (!RecordingSettingsManager::instance().preselectArea() || !screen) {
-        m_recordingManager->startScreenRecording(screen);
+        m_recordingManager->startScreenRecording(screen, {}, promptDisplay, script);
         return;
     }
     // Choose an area of this screen first (#194); the capture stays full
@@ -1949,10 +1962,10 @@ void MainApplication::startRecordingOn(QScreen* screen)
     m_areaSelector = selector;
     const QPointer<QScreen> target(screen);
     connect(selector, &SnapTray::QmlRecordingAreaSelector::areaChosen, this,
-        [this, target](const QRectF& area) {
+        [this, target, promptDisplay, script](const QRectF& area) {
             closeAreaSelector();
             if (!target) return;
-            m_recordingManager->startScreenRecording(target.data(), area);
+            m_recordingManager->startScreenRecording(target.data(), area, promptDisplay, script);
         });
     connect(selector, &SnapTray::QmlRecordingAreaSelector::cancelled, this, [this]() { closeAreaSelector(); });
     selector->start(screen);

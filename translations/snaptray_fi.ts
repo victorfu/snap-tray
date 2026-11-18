@@ -3375,6 +3375,10 @@ Koko: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Näytön kaappaus käyttää tilapäisesti yhteensopivuustilaa</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Lukulaite tarvitsee erillisen näytön.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5974,6 +5978,38 @@ Koko: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Ääntä ei voi tuoda: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Palauta tallenteen muokkaukset</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Palautetaanko tallenteen tallentamattomat muokkaukset?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Luonnos on vioittunut, yhteensopimaton tai kuuluu toiseen tallenteeseen.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Hylkää luonnos avaa viimeksi tallennetun version. Peruuta säilyttää luonnoksen.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Palauta</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Hylkää luonnos</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Luonnosta ei voitu poistaa.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Luonnosta ei voitu tallentaa. Tarkista vapaa tila ja tiedoston käyttöoikeudet ja yritä uudelleen.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6970,6 +7006,22 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
         <source>Automatically add zooms</source>
         <translation>Lisää zoomaukset automaattisesti</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Lukulaitteen näyttö</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Pois</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Lukulaite tarvitsee erillisen näytön.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Kirjoita tai liitä tämän tallenteen käsikirjoitus</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7423,6 +7475,10 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Odotetaan mikrofonin käyttölupaa...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Kirjoita teksti ja valitse tallennettavaksi eri näyttö kuin lukulaitteelle.</translation>
     </message>
 </context>
 <context>
@@ -8446,6 +8502,21 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Palautettu edellisestä tallennuksesta</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Lukulaite</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Pienennä tekstiä</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Suurenna tekstiä</translation>
     </message>
 </context>
 </TS>

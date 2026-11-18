@@ -3374,6 +3374,10 @@ Size: %2</source>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>屏幕捕获暂时改用兼容模式</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>提词器需要单独的屏幕。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5970,6 +5974,38 @@ Size: %2</source>
         <source>Cannot import audio: %1</source>
         <translation>无法导入音频：%1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>恢复录制编辑</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>恢复尚未保存的录制编辑吗？</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>草稿已损坏、版本不兼容，或属于另一段录制。</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>“丢弃草稿”将打开上次保存的版本。“取消”将保留草稿。</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>恢复</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>丢弃草稿</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>无法删除草稿。</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>无法保存草稿。请检查可用空间和文件权限后重试。</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6966,6 +7002,22 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <source>Automatically add zooms</source>
         <translation>自动添加缩放</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>提词器屏幕</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>关闭</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>提词器需要单独的屏幕。</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>输入或粘贴本次录制的稿件</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7419,6 +7471,10 @@ It may be in use by another application.</source>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>正在等待麦克风权限...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>请输入稿件，并选择提词器以外的屏幕进行录制。</translation>
     </message>
 </context>
 <context>
@@ -8442,6 +8498,21 @@ It may be in use by another application.</source>
     <message>
         <source>Recovered from the previous save</source>
         <translation>已从上次保存恢复</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>提词器</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>缩小文字</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>放大文字</translation>
     </message>
 </context>
 </TS>

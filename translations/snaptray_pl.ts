@@ -3376,6 +3376,10 @@ Rozmiar: %2</translation>
         <source>Screen capture temporarily uses compatibility mode</source>
         <translation>Przechwytywanie ekranu tymczasowo używa trybu zgodności</translation>
     </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Prompter wymaga osobnego ekranu.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingPreview</name>
@@ -5978,6 +5982,38 @@ Rozmiar: %2</translation>
         <source>Cannot import audio: %1</source>
         <translation>Nie można zaimportować audio: %1</translation>
     </message>
+    <message>
+        <source>Recover recording edits</source>
+        <translation>Odzyskaj zmiany nagrania</translation>
+    </message>
+    <message>
+        <source>Restore your unsaved recording edits?</source>
+        <translation>Przywrócić niezapisane zmiany nagrania?</translation>
+    </message>
+    <message>
+        <source>The draft is damaged, incompatible, or belongs to a different recording.</source>
+        <translation>Szkic jest uszkodzony, niezgodny lub należy do innego nagrania.</translation>
+    </message>
+    <message>
+        <source>Discard Draft opens the last saved version. Cancel keeps the draft.</source>
+        <translation>Odrzucenie szkicu otwiera ostatnią zapisaną wersję. Anulowanie zachowuje szkic.</translation>
+    </message>
+    <message>
+        <source>Restore</source>
+        <translation>Przywróć</translation>
+    </message>
+    <message>
+        <source>Discard Draft</source>
+        <translation>Odrzuć szkic</translation>
+    </message>
+    <message>
+        <source>The draft could not be removed.</source>
+        <translation>Nie udało się usunąć szkicu.</translation>
+    </message>
+    <message>
+        <source>Draft could not be saved. Check free space and file permissions, then retry.</source>
+        <translation>Nie udało się zapisać szkicu. Sprawdź wolne miejsce i uprawnienia do pliku, a następnie spróbuj ponownie.</translation>
+    </message>
 </context>
 <context>
     <name>RecordingRecoveryDialog</name>
@@ -6974,6 +7010,22 @@ Tokeny daty: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} lub {date}</translation>
         <source>Automatically add zooms</source>
         <translation>Automatycznie dodawaj zbliżenia</translation>
     </message>
+    <message>
+        <source>Teleprompter display</source>
+        <translation>Ekran promptera</translation>
+    </message>
+    <message>
+        <source>Off</source>
+        <translation>Wyłączony</translation>
+    </message>
+    <message>
+        <source>The teleprompter requires a separate display.</source>
+        <translation>Prompter wymaga osobnego ekranu.</translation>
+    </message>
+    <message>
+        <source>Type or paste your script for this recording</source>
+        <translation>Wpisz lub wklej tekst do tego nagrania</translation>
+    </message>
 </context>
 <context>
     <name>SelectionDimensionLabel</name>
@@ -7427,6 +7479,10 @@ Może być używany przez inną aplikację.</translation>
         <location filename="../src/qml/ScreenPickerViewModel.cpp" line="56" />
         <source>Waiting for microphone permission...</source>
         <translation>Oczekiwanie na uprawnienie do mikrofonu...</translation>
+    </message>
+    <message>
+        <source>Enter a script and choose a recording screen separate from the teleprompter.</source>
+        <translation>Wpisz tekst i wybierz do nagrywania inny ekran niż ekran promptera.</translation>
     </message>
 </context>
 <context>
@@ -8450,6 +8506,21 @@ Może być używany przez inną aplikację.</translation>
     <message>
         <source>Recovered from the previous save</source>
         <translation>Przywrócono z poprzedniego zapisu</translation>
+    </message>
+</context>
+<context>
+    <name>RecordingPrompterView</name>
+    <message>
+        <source>Teleprompter</source>
+        <translation>Prompter</translation>
+    </message>
+    <message>
+        <source>Decrease text size</source>
+        <translation>Zmniejsz tekst</translation>
+    </message>
+    <message>
+        <source>Increase text size</source>
+        <translation>Powiększ tekst</translation>
     </message>
 </context>
 </TS>

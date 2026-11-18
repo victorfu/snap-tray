@@ -12,6 +12,7 @@ public:
     bool setRegion(const QRect&, QScreen*) override;
     bool setRegion(const QRect&, const CaptureScreenInfo&) override;
     void setFrameRate(int fps) override;
+    void setSeparateDisplayWindow(quintptr id) override { m_separateWindow = id; }
     bool start() override;
     void stop() override;
     bool isRunning() const override;
@@ -22,4 +23,5 @@ private:
     struct State;
     std::unique_ptr<State> d;
     CaptureScreenInfo m_info;
+    quintptr m_separateWindow = 0;
 };
