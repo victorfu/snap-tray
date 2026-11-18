@@ -1,11 +1,13 @@
 #include <QtTest>
 #include <QPaintEvent>
+#include <QPainter>
 #include <QScreen>
 #include <QBackingStore>
 #include <QElapsedTimer>
 #include <QtQml/qqmlextensionplugin.h>
 #include "RegionSelectorTestAccess.h"
 #include "PinWindow.h"
+#include "utils/CoordinateHelper.h"
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
 
@@ -30,19 +32,58 @@ public:
         auto* image = store ? dynamic_cast<QImage*>(store->paintDevice()) : nullptr;
         if (!image) {
             pixels = {};
+            m_validRegion = {};
             return;
         }
-        const qreal dpr = image->devicePixelRatio();
-        pixels = image->copy(QRect(qFloor(sampleBounds.x() * dpr),
-                                   qFloor(sampleBounds.y() * dpr),
-                                   qCeil(sampleBounds.width() * dpr),
-                                   qCeil(sampleBounds.height() * dpr)));
+        recordPixels(*image, region);
+    }
+
+    void recordPixels(const QImage& image, const QRegion& region)
+    {
+        const qreal dpr = image.devicePixelRatio();
+        const QRect sampleRect = CoordinateHelper::toPhysicalCoveringRect(sampleBounds, dpr);
+        if (!image.rect().contains(sampleRect)) {
+            pixels = {};
+            m_validRegion = {};
+            return;
+        }
+        if (m_sampledPixels.size() != sampleRect.size()
+                || m_sampledPixels.format() != image.format() || m_sampleDpr != dpr) {
+            m_sampledPixels = QImage(sampleRect.size(), image.format());
+            m_sampledPixels.fill(Qt::transparent);
+            m_sampleDpr = dpr;
+            m_validRegion = {};
+            pixels = {};
+        }
+        const QRegion painted = region.intersected(QRegion(sampleBounds));
+        if (painted.isEmpty()) return;
+        // Cocoa finalizes untouched back-buffer areas only at flush. Keep our
+        // own sample and copy just the pixels this paint event made valid.
+        {
+            QPainter painter(&m_sampledPixels); // physical pixels, DPR remains 1
+            painter.setCompositionMode(QPainter::CompositionMode_Source);
+            for (const QRect& rect : painted) {
+                const QRect source = CoordinateHelper::toPhysicalCoveringRect(rect, dpr)
+                    .intersected(sampleRect);
+                painter.drawImage(source.translated(-sampleRect.topLeft()), image, source);
+            }
+        }
+        m_validRegion += painted;
+        if (QRegion(sampleBounds).subtracted(m_validRegion).isEmpty()) {
+            pixels = m_sampledPixels;
+            pixels.setDevicePixelRatio(dpr);
+        }
     }
 
     QVector<QRegion> regions;
     QElapsedTimer sincePaint;
     QImage pixels;
     const QRect sampleBounds;
+
+private:
+    QImage m_sampledPixels;
+    QRegion m_validRegion;
+    qreal m_sampleDpr = 0;
 };
 
 class PaintTestApplication : public QApplication
@@ -118,9 +159,60 @@ class TestOCRBusyRepaint : public QObject
 {
     Q_OBJECT
 private slots:
+    void probeSamplesOnlyPaintedPixels_data();
+    void probeSamplesOnlyPaintedPixels();
     void animationRepaintsOnlySpinner();
     void pinAnimationRepaintsAndErases();
 };
+
+void TestOCRBusyRepaint::probeSamplesOnlyPaintedPixels_data()
+{
+    QTest::addColumn<int>("dpr");
+    QTest::newRow("normal") << 1;
+    QTest::newRow("retina") << 2;
+}
+
+void TestOCRBusyRepaint::probeSamplesOnlyPaintedPixels()
+{
+    QFETCH(int, dpr);
+    QWidget surface;
+    const QRect bounds(3, 5, 10, 8);
+    PaintProbe probe(&surface, bounds);
+    QImage buffer(QSize(40, 40) * dpr, QImage::Format_ARGB32_Premultiplied);
+    buffer.setDevicePixelRatio(dpr);
+    buffer.fill(Qt::white);
+    probe.recordPixels(buffer, QRegion(bounds));
+    const QImage idle = probe.pixels;
+    QCOMPARE(idle.size(), bounds.size() * dpr);
+
+    // Cocoa may provide a different, stale back buffer for each paint.
+    // Painting elsewhere must not replace a previously sampled spinner area.
+    buffer.fill(Qt::magenta);
+    probe.recordPixels(buffer, QRegion(QRect(25, 25, 2, 2)));
+    QCOMPARE(probe.pixels, idle);
+
+    const QRect left(bounds.topLeft(), QSize(bounds.width() / 2, bounds.height()));
+    const QRect right(left.topRight() + QPoint(1, 0), left.size());
+    const auto paintPart = [&](const QRect& part, QColor color) {
+        buffer.fill(Qt::magenta);
+        QPainter painter(&buffer);
+        painter.fillRect(part, color);
+        painter.end();
+        probe.recordPixels(buffer, QRegion(part));
+    };
+    paintPart(left, Qt::green);
+    QImage expected = idle;
+    { QPainter painter(&expected); painter.fillRect(QRect(QPoint(), left.size()), Qt::green); }
+    QCOMPARE(probe.pixels, expected);
+    paintPart(right, Qt::blue);
+    { QPainter painter(&expected); painter.fillRect(QRect(QPoint(left.width(), 0), right.size()), Qt::blue); }
+    QCOMPARE(probe.pixels, expected);
+    // Separate dirty regions can together erase the complete spinner.
+    paintPart(left, Qt::white);
+    QVERIFY(probe.pixels != idle);
+    paintPart(right, Qt::white);
+    QCOMPARE(probe.pixels, idle);
+}
 
 void TestOCRBusyRepaint::animationRepaintsOnlySpinner()
 {
