@@ -1591,6 +1591,18 @@ File size: %3</source>
         <source>%1 (edited)</source>
         <translation>%1 (편집됨)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>세로 텍스트로 다시 시도</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>원본 보기</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1608,6 +1620,22 @@ File size: %3</source>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (편집됨)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>세로 텍스트로 인식하는 중...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>세로 재시도에 사용할 텍스트가 없습니다</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>한 줄로 된 세로 텍스트가 아닙니다</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>세로 재시도에서 텍스트를 찾지 못했습니다</translation>
     </message>
 </context>
 <context>

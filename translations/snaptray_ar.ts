@@ -1596,6 +1596,18 @@ File size: %3</source>
         <source>%1 (edited)</source>
         <translation>%1 (معدّل)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>إعادة المحاولة كنص عمودي</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>عرض الأصل</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>إلغاء</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1613,6 +1625,22 @@ File size: %3</source>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (معدّل)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>جارٍ التعرف كنص عمودي...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>لم يُعثر على نص لإعادة المحاولة العمودية</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>ليس عمودًا واحدًا من النص العمودي</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>لم تعثر إعادة المحاولة العمودية على نص</translation>
     </message>
 </context>
 <context>

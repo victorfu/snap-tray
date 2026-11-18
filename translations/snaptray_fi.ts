@@ -1592,6 +1592,18 @@ Tiedoston koko: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (muokattu)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Yritä uudelleen pystytekstinä</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Näytä alkuperäinen</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1609,6 +1621,22 @@ Tiedoston koko: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (muokattu)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Tunnistetaan pystytekstinä...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Pystysuuntaiseen yritykseen ei löytynyt tekstiä</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Ei ole yksi pystytekstin sarake</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Pystysuuntainen yritys ei löytänyt tekstiä</translation>
     </message>
 </context>
 <context>

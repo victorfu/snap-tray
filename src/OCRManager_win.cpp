@@ -222,7 +222,7 @@ protected:
             m_result.blocks = std::move(blocks);
             m_result.success = !m_result.text.isEmpty();
             if (!m_result.success) {
-                m_result.error = QStringLiteral("No text detected");
+                m_result.error = ocrNoTextDetectedError();
             }
 
         } catch (const winrt::hresult_error& ex) {

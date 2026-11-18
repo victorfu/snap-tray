@@ -1272,11 +1272,22 @@ target_link_libraries(Detection_OCRImageUtils PRIVATE snaptray_algorithms Qt6::W
 add_test(NAME Detection_OCRImageUtils COMMAND Detection_OCRImageUtils)
 set_tests_properties(Detection_OCRImageUtils PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Detection_VerticalCJKNormalizer Detection/tst_VerticalCJKNormalizer.cpp)
+target_link_libraries(Detection_VerticalCJKNormalizer PRIVATE snaptray_algorithms Qt6::Widgets Qt6::Test)
+add_test(NAME Detection_VerticalCJKNormalizer COMMAND Detection_VerticalCJKNormalizer)
+set_tests_properties(Detection_VerticalCJKNormalizer PROPERTIES TIMEOUT 60 LABELS "unit")
+
 if(APPLE OR WIN32)
     add_executable(Detection_OCRCredentialGeometry Detection/tst_OCRCredentialGeometry.cpp)
     target_link_libraries(Detection_OCRCredentialGeometry PRIVATE snaptray_platform snaptray_algorithms Qt6::Test)
     add_test(NAME Detection_OCRCredentialGeometry COMMAND Detection_OCRCredentialGeometry)
     set_tests_properties(Detection_OCRCredentialGeometry PROPERTIES TIMEOUT 120 LABELS "integration")
+
+    # Opt-in (SNAPTRAY_TEST_NATIVE_OCR=1): native OCR vs vertical CJK retry.
+    add_executable(Detection_VerticalCJKOCRBenchmark Detection/tst_VerticalCJKOCRBenchmark.cpp)
+    target_link_libraries(Detection_VerticalCJKOCRBenchmark PRIVATE snaptray_platform snaptray_algorithms Qt6::Test)
+    add_test(NAME Detection_VerticalCJKOCRBenchmark COMMAND Detection_VerticalCJKOCRBenchmark)
+    set_tests_properties(Detection_VerticalCJKOCRBenchmark PROPERTIES TIMEOUT 300 LABELS "integration")
 endif()
 
 add_executable(Detection_CredentialDetector Detection/tst_CredentialDetector.cpp)

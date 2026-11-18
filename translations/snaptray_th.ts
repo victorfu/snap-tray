@@ -1500,6 +1500,18 @@ File size: %3</source>
         <source>Copy as TSV</source>
         <translation>คัดลอกเป็น TSV</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>ลองใหม่เป็นข้อความแนวตั้ง</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>แสดงต้นฉบับ</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1517,6 +1529,22 @@ File size: %3</source>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (แก้ไขแล้ว)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>กำลังจดจำเป็นข้อความแนวตั้ง...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>ไม่พบข้อความสำหรับการลองใหม่แนวตั้ง</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>ไม่ใช่ข้อความแนวตั้งคอลัมน์เดียว</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>การลองใหม่แนวตั้งไม่พบข้อความ</translation>
     </message>
 </context>
 <context>

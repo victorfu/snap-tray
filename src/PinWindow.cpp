@@ -2004,23 +2004,31 @@ void PinWindow::performOCR()
     update();
 
     QPointer<PinWindow> safeThis = this;
-    ocrManager->recognizeText(m_originalPixmap,
-        [safeThis](const OCRResult& result) {
+    const QPixmap source = m_originalPixmap;
+    ocrManager->recognizeText(source,
+        [safeThis, source](const OCRResult& result) {
             if (safeThis) {
-                safeThis->onOCRComplete(result);
+                safeThis->onOCRComplete(result, source);
             }
         });
 }
 
-void PinWindow::onOCRComplete(const OCRResult& result)
+void PinWindow::onOCRComplete(const OCRResult& result, const QPixmap& source)
 {
     m_ocrInProgress = false;
     updateLoadingSpinnerState();
 
+    const bool showEditor = OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor;
+    // Native OCR often finds nothing in vertical CJK text; the editor still
+    // opens so the vertical retry stays reachable.
+    if (showEditor && !source.isNull() && result.error == ocrNoTextDetectedError()) {
+        showOCRResultDialog(result, source);
+        return;
+    }
+
     if (result.success && !result.text.isEmpty()) {
-        // Check settings to determine behavior
-        if (OCRSettingsManager::instance().behavior() == OCRBehavior::ShowEditor) {
-            showOCRResultDialog(result);
+        if (showEditor) {
+            showOCRResultDialog(result, source);
             return;
         }
 
@@ -2038,10 +2046,22 @@ void PinWindow::onOCRComplete(const OCRResult& result)
                       result.success ? tr("Text copied") : result.error);
 }
 
-void PinWindow::showOCRResultDialog(const OCRResult& result)
+void PinWindow::showOCRResultDialog(const OCRResult& result, const QPixmap& source)
 {
     auto* vm = new OCRResultViewModel(this);
     vm->setOCRResult(result);
+    if (!source.isNull()) {
+        QPointer<PinWindow> safeThis = this;
+        vm->setVerticalRetrySource(source,
+            [safeThis](const QImage& image, const OCRResultViewModel::OCRResultCallback& done) {
+                OCRManager* manager = safeThis ? safeThis->ensureOCRManager() : nullptr;
+                if (!manager) {
+                    done(OCRResult{});
+                    return;
+                }
+                manager->recognizeText(QPixmap::fromImage(image), done);
+            });
+    }
 
     auto* dlg = new SnapTray::QmlDialog(
         QUrl("qrc:/SnapTrayQml/dialogs/OCRResultDialog.qml"),
@@ -5565,7 +5585,7 @@ void PinWindow::onAutoBlurRequested()
                     aggregated->credentialRegions =
                         CredentialDetector::detect(result.blocks, imageSize);
                 } else if (!result.success && !result.error.isEmpty()
-                           && result.error != QStringLiteral("No text detected")) {
+                           && result.error != ocrNoTextDetectedError()) {
                     aggregated->ocrError = result.error;
                 }
 

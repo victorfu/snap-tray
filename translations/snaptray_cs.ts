@@ -1593,6 +1593,18 @@ Velikost souboru: %3</translation>
         <source>%1 (edited)</source>
         <translation>%1 (upraveno)</translation>
     </message>
+    <message>
+        <source>Retry as Vertical Text</source>
+        <translation>Zkusit znovu jako svislý text</translation>
+    </message>
+    <message>
+        <source>Show Original</source>
+        <translation>Zobrazit původní</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Zrušit</translation>
+    </message>
 </context>
 <context>
     <name>OCRResultViewModel</name>
@@ -1610,6 +1622,22 @@ Velikost souboru: %3</translation>
         <location filename="../src/qml/OCRResultViewModel.cpp" line="41" />
         <source>%1 (edited)</source>
         <translation>%1 (upraveno)</translation>
+    </message>
+    <message>
+        <source>Recognizing as vertical text...</source>
+        <translation>Rozpoznávání jako svislý text...</translation>
+    </message>
+    <message>
+        <source>No text found for vertical retry</source>
+        <translation>Pro svislý pokus nebyl nalezen žádný text</translation>
+    </message>
+    <message>
+        <source>Not a single column of vertical text</source>
+        <translation>Nejde o jeden sloupec svislého textu</translation>
+    </message>
+    <message>
+        <source>Vertical retry found no text</source>
+        <translation>Svislý pokus nenašel žádný text</translation>
     </message>
 </context>
 <context>

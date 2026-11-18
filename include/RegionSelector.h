@@ -421,8 +421,8 @@ private:
     SnapTray::QmlToast *m_selectionToast = nullptr;
 
     void performOCR();
-    void onOCRComplete(const OCRResult &result);
-    void showOCRResultDialog(const OCRResult &result);
+    void onOCRComplete(const OCRResult &result, const QPixmap &source = QPixmap());
+    void showOCRResultDialog(const OCRResult &result, const QPixmap &source = QPixmap());
 
     // QR Code state
     QRCodeManager *m_qrCodeManager;
