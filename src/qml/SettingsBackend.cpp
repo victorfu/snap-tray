@@ -138,6 +138,7 @@ const ResettableSetting kResettableSettings[] = {
     // Pin Windows and Library
     {"pinDefaultOpacity", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacity * 100.0)); }},
     {"pinShowHoverControls", [] { return QVariant(PinWindowSettingsManager::kDefaultShowHoverControls); }},
+    {"pinProtectUnsavedEdits", [] { return QVariant(PinWindowSettingsManager::kDefaultProtectUnsavedEdits); }},
     {"pinOpacityStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultOpacityStep * 100.0)); }},
     {"pinZoomStep", [] { return QVariant(qRound(PinWindowSettingsManager::kDefaultZoomStep * 100.0)); }},
     {"pinMaxCacheFiles", [] { return QVariant(PinWindowSettingsManager::kDefaultMaxCacheFiles); }},
@@ -410,6 +411,7 @@ void SettingsBackend::loadAllSettings()
     m_pinOpacityStep = qRound(pinMgr.loadOpacityStep() * 100.0);
     m_pinZoomStep = qRound(pinMgr.loadZoomStep() * 100.0);
     m_pinShowHoverControls = pinMgr.loadShowHoverControls();
+    m_pinProtectUnsavedEdits = pinMgr.loadProtectUnsavedEdits();
     m_pinMaxCacheFiles = pinMgr.loadMaxCacheFiles();
 
     // Watermark
@@ -755,6 +757,15 @@ void SettingsBackend::setPinShowHoverControls(bool v) {
         m_pinShowHoverControls = v;
         PinWindowSettingsManager::instance().saveShowHoverControls(v);
         emit pinShowHoverControlsChanged();
+    }
+}
+
+bool SettingsBackend::pinProtectUnsavedEdits() const { return m_pinProtectUnsavedEdits; }
+void SettingsBackend::setPinProtectUnsavedEdits(bool v) {
+    if (m_pinProtectUnsavedEdits != v) {
+        m_pinProtectUnsavedEdits = v;
+        PinWindowSettingsManager::instance().saveProtectUnsavedEdits(v);
+        emit pinProtectUnsavedEditsChanged();
     }
 }
 

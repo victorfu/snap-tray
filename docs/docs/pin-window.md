@@ -132,6 +132,16 @@ Annotations entirely on one side keep their place or move with the pixels, and a
 
 Applying is one undo step that restores the image, its size, the annotations and the region layout together. Cut Out is not available during Live Update or while auto-blur is still running.
 
+## Protect edited pins when closing
+
+Enable **Confirm before closing edited pins** in **Settings → Pin Windows** to choose Save, Discard, or Cancel before closing a pin with unsaved edits. The setting is off by default. Moving or zooming a pin does not require saving. Save and Beautify Save protect the snapshot written to disk. Copying or exporting a derived image leaves the pin's edit state intact.
+
+To check the behavior on your desktop:
+
+1. Annotate a pin, merge it with an untouched pin, then close the result. Only the merged pin should ask. Choose Cancel to keep it.
+2. Hide the edited pin and choose Exit from the tray. Cancel should keep SnapTray running. Show the pins again to continue editing.
+3. Save a large edited pin and immediately close it. The pin should close after the write succeeds. If you edit again during the write, the pin should stay open. To check cancellation, turn off automatic screenshot saving, choose Save in the close prompt, and cancel the file picker.
+
 ## Next step
 
 Use [Hotkeys](/docs/hotkeys/) to bind pin actions for faster workflows.

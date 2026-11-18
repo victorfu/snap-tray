@@ -4,6 +4,7 @@
 #include "CaptureManager.h"
 #include "PinWindow.h"
 #include "PinWindowManager.h"
+#include "SnapTrayApplication.h"
 #include "PlatformFeatures.h"
 #include "RecordingManager.h"
 #include "recording/ScreenSourceService.h"
@@ -404,6 +405,9 @@ void MainApplication::initialize()
 {
     // Create pin window manager first (needed by capture manager)
     m_pinWindowManager = new PinWindowManager(this);
+    if (auto* app = dynamic_cast<SnapTrayApplication*>(qApp)) {
+        app->setPinWindowManager(m_pinWindowManager);
+    }
 
     // Create capture manager
     m_captureManager = new CaptureManager(m_pinWindowManager, this);

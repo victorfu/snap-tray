@@ -2215,6 +2215,26 @@ Grootte: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Verwijderen</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Opslaan</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Wijzigingen opslaan voordat je deze vastgezette afbeelding sluit?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Niet-opgeslagen wijzigingen aan de vastgezette afbeelding</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Schikken</translation>
@@ -2757,6 +2777,10 @@ Grootte: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Om bevestiging vragen bij het sluiten van bewerkte vastgezette afbeeldingen</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

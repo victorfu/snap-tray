@@ -44,6 +44,14 @@ Flickable {
             onToggled: function(checked) { settingsBackend.pinShowHoverControls = checked }
         }
 
+        SettingsToggle {
+            resetKey: "pinProtectUnsavedEdits"
+            objectName: "pinProtectUnsavedEditsToggle"
+            label: qsTr("Confirm before closing edited pins")
+            checked: settingsBackend.pinProtectUnsavedEdits
+            onToggled: function(checked) { settingsBackend.pinProtectUnsavedEdits = checked }
+        }
+
         SettingsSection { title: qsTr("Steps") }
 
         SettingsSlider {

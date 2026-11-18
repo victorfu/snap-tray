@@ -2214,6 +2214,26 @@ Kích thước: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Bỏ</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Lưu</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Lưu thay đổi trước khi đóng ảnh đã ghim này?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Thay đổi chưa lưu trên ảnh đã ghim</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Sắp xếp</translation>
@@ -2756,6 +2776,10 @@ Kích thước: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Hỏi trước khi đóng ảnh đã ghim có chỉnh sửa</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

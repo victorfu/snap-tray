@@ -1,7 +1,9 @@
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "settings/PinWindowSettingsManager.h"
 
 #include <QDebug>
+#include <QScopedValueRollback>
 #include <utility>
 
 PinWindowManager::PinWindowManager(QObject *parent)
@@ -18,7 +20,8 @@ PinWindowManager::~PinWindowManager()
             window->finishExportBeforeQuit();
         }
     }
-    closeAllWindows();
+    const auto remaining = m_windows;
+    closeReplacedWindows(remaining);
 }
 
 PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
@@ -52,17 +55,32 @@ PinWindow* PinWindowManager::createPinWindow(const QPixmap &screenshot,
     return window;
 }
 
-void PinWindowManager::closeAllWindows()
+bool PinWindowManager::closeAllWindows()
 {
     // Make a copy since window close events mutate m_windows.
     const QList<PinWindow*> windowsCopy = m_windows;
-    closeWindows(windowsCopy);
+    if (m_closingAll) {
+        return false;
+    }
+    QScopedValueRollback<bool> closing(m_closingAll, true);
+    for (PinWindow* window : windowsCopy) {
+        if (m_windows.contains(window) && (!window->close() || m_windows.contains(window))) {
+            return false;
+        }
+    }
+    return m_windows.isEmpty();
 }
 
-void PinWindowManager::closeWindows(const QList<PinWindow*>& windows)
+bool PinWindowManager::confirmApplicationQuit()
+{
+    return !PinWindowSettingsManager::instance().loadProtectUnsavedEdits() || closeAllWindows();
+}
+
+void PinWindowManager::closeReplacedWindows(const QList<PinWindow*>& windows)
 {
     for (PinWindow* window : windows) {
         if (window && m_windows.contains(window)) {
+            window->m_internalClose = true;
             window->close();
         }
     }

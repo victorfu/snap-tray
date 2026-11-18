@@ -2215,6 +2215,26 @@ Koko: %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Peruuta</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Hylkää</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Tallenna</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Tallennetaanko muutokset ennen kiinnitetyn kuvan sulkemista?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Kiinnitetyn kuvan tallentamattomat muutokset</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Järjestä</translation>
@@ -2757,6 +2777,10 @@ Koko: %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Vahvista muokattujen kiinnitettyjen kuvien sulkeminen</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

@@ -2,6 +2,11 @@
 #include <QtTest/QtTest>
 
 #include <QApplication>
+#include <QQuickView>
+#include <QQuickItem>
+#include <QFileDialog>
+#include <QCloseEvent>
+#include "settings/PinWindowSettingsManager.h"
 #include <QGuiApplication>
 #include <QMouseEvent>
 #include <QPainter>
@@ -16,8 +21,11 @@
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "region/TextAnnotationEditor.h"
+#include "InlineTextEditor.h"
+#include <QTextEdit>
 #include "annotations/EmojiStickerAnnotation.h"
 #include "PinWindowManager.h"
+#include "SnapTrayApplication.h"
 #include "pinwindow/PinWindowPlacement.h"
 #include "pinwindow/PinExportJob.h"
 #include <QClipboard>
@@ -163,6 +171,12 @@ private:
     static std::unique_ptr<PinWindow> arrowPin(QPixmap pixmap);
 
 private slots:
+    void cancelClosePreservesCroppedPinAndRemainder();
+    void mergeInheritsUnsavedEdits_data();
+    void mergeInheritsUnsavedEdits();
+    void saveOnCloseCanRetry();
+    void closeDuringFailedSaveOrClipboardRender();
+    void lateTextEditSurvivesCloseDuringSave();
     void arrowBindingUsesReleasePosition();
     void arrowControlReleaseKeepsLastDragPosition();
     void testLongScreenshotAnnotationToolbar();
@@ -494,6 +508,223 @@ void TestPinWindowStyleSync::testAutomaticSavesPreserveEarlierImage()
     QCOMPARE(QImage(secondPath).pixelColor(12, 12), QColor(Qt::blue));
 }
 
+namespace {
+class ScopedCloseProtection
+{
+public:
+    ScopedCloseProtection() { settings.saveProtectUnsavedEdits(true); }
+    ~ScopedCloseProtection() { settings.saveProtectUnsavedEdits(previous); }
+private:
+    PinWindowSettingsManager& settings = PinWindowSettingsManager::instance();
+    bool previous = settings.loadProtectUnsavedEdits();
+};
+
+QObject* closeButton(const QString& name)
+{
+    for (auto* window : QGuiApplication::topLevelWindows()) {
+        auto* view = qobject_cast<QQuickView*>(window);
+        if (view && view->isVisible() && view->rootObject()
+            && view->rootObject()->objectName() == "pinCloseDialog") {
+            return view->rootObject()->findChild<QObject*>(name);
+        }
+    }
+    return nullptr;
+}
+
+void chooseCloseAction(QObject* context, const QString& name)
+{
+    QTimer::singleShot(0, context, [name] {
+        QVERIFY(QMetaObject::invokeMethod(closeButton(name), "clicked"));
+    });
+}
+} // namespace
+
+void TestPinWindowStyleSync::cancelClosePreservesCroppedPinAndRemainder()
+{
+    ScopedCloseProtection guard;
+    PinWindowManager manager;
+    auto* edited = manager.createPinWindow(createTestPixmap(), {}, false);
+    manager.createPinWindow(createTestPixmap(), {}, false);
+    edited->setZoomLevel(1.5);
+    edited->setOpacity(0.5);
+    QVERIFY(!edited->hasUnsavedEdits());
+    edited->applyCrop(QRect(0, 0, 40, 40));
+    QVERIFY(edited->hasUnsavedEdits());
+    edited->undoCrop();
+    QVERIFY(!edited->hasUnsavedEdits());
+    edited->redoCrop();
+    QTimer::singleShot(0, this, [&] {
+        QCloseEvent repeated;
+        QApplication::sendEvent(edited, &repeated);
+        QVERIFY(!repeated.isAccepted());
+        QVERIFY(!manager.closeAllWindows());
+        QVERIFY(QMetaObject::invokeMethod(closeButton("cancelClose"), "clicked"));
+    });
+    QVERIFY(!manager.closeAllWindows());
+    QCOMPARE(manager.windowCount(), 2);
+
+    static_cast<SnapTrayApplication*>(qApp)->setPinWindowManager(&manager);
+    QEvent quit(QEvent::Quit);
+    QTimer::singleShot(0, this, [] {
+        auto* cancel = qobject_cast<QQuickItem*>(closeButton("cancelClose"));
+        QVERIFY(cancel && cancel->window());
+        QTest::keyClick(cancel->window(), Qt::Key_Escape);
+    });
+    QApplication::sendEvent(qApp, &quit);
+    QVERIFY(!quit.isAccepted());
+    QCOMPARE(manager.windowCount(), 2);
+    chooseCloseAction(this, "discardEdits");
+    QVERIFY(manager.closeAllWindows());
+}
+
+void TestPinWindowStyleSync::mergeInheritsUnsavedEdits_data()
+{
+    QTest::addColumn<bool>("edited");
+    QTest::addColumn<bool>("draftLayout");
+    QTest::newRow("clean sources") << false << false;
+    QTest::newRow("one edited source") << true << false;
+    QTest::newRow("unapplied layout in source") << false << true;
+}
+
+void TestPinWindowStyleSync::mergeInheritsUnsavedEdits()
+{
+    QFETCH(bool, edited);
+    QFETCH(bool, draftLayout);
+    ScopedCloseProtection guard;
+    PinWindowManager manager;
+    auto* first = manager.createPinWindow(createTestPixmap(), {});
+    auto* second = manager.createPinWindow(createTestPixmap(), {});
+    if (edited) {
+        second->applyCrop(QRect(0, 0, 40, 40));
+    }
+    if (draftLayout) {
+        LayoutRegion left;
+        left.index = 1;
+        left.rect = left.originalRect = QRect(0, 0, 80, 40);
+        left.image = createTestPixmap(80, 40).toImage();
+        auto right = left;
+        right.index = 2;
+        right.rect = right.originalRect = left.rect.translated(80, 0);
+        second->setMultiRegionData({left, right});
+        second->enterRegionLayoutMode();
+        second->m_regionLayoutManager->setArrangementMode(3);
+    }
+    first->mergePinsFromContextMenu();
+    QCOMPARE(manager.windowCount(), 1);
+    QCOMPARE(manager.windows().first()->hasUnsavedEdits(), edited || draftLayout);
+}
+
+void TestPinWindowStyleSync::saveOnCloseCanRetry()
+{
+    const bool previous = qApp->testAttribute(Qt::AA_DontUseNativeDialogs);
+    qApp->setAttribute(Qt::AA_DontUseNativeDialogs);
+    const auto restore = qScopeGuard([previous] {
+        qApp->setAttribute(Qt::AA_DontUseNativeDialogs, previous);
+    });
+    ScopedCloseProtection guard;
+    PinWindow window(createTestPixmap(), {});
+    window.setAttribute(Qt::WA_DeleteOnClose, false);
+    window.applyCrop(QRect(0, 0, 40, 40));
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile blocker(dir.filePath("file"));
+    QVERIFY(blocker.open(QIODevice::WriteOnly));
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveScreenshotPath(blocker.fileName() + "/sub");
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+    settings.saveAutoSaveScreenshots(false);
+    QTimer::singleShot(0, this, [this] {
+        auto* saveButton = closeButton("saveEdits");
+        QVERIFY(saveButton);
+        QTimer::singleShot(0, this, [] {
+            auto* picker = qobject_cast<QFileDialog*>(QApplication::activeModalWidget());
+            QVERIFY(picker);
+            static_cast<QDialog*>(picker)->reject();
+        });
+        QVERIFY(QMetaObject::invokeMethod(saveButton, "clicked"));
+    });
+    QVERIFY(!window.close());
+    QVERIFY(window.hasUnsavedEdits());
+    QCOMPARE(failed.count(), 0);
+
+    settings.saveAutoSaveScreenshots(true);
+    chooseCloseAction(this, "saveEdits");
+    QVERIFY(!window.close());
+    QCOMPARE(failed.count(), 1);
+    QVERIFY(window.hasUnsavedEdits());
+
+    settings.saveScreenshotPath(dir.path());
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    chooseCloseAction(this, "saveEdits");
+    QVERIFY(window.close());
+    QCOMPARE(saved.count(), 1);
+    window.show();
+    window.undoCrop();
+    QVERIFY(window.hasUnsavedEdits());
+    window.applyCrop(QRect(0, 0, 40, 40));
+    QVERIFY(!window.hasUnsavedEdits());
+    saved.clear();
+    window.saveToFile();
+    QVERIFY(window.m_exportRunner->isBusy());
+    QVERIFY(window.close());
+    QCOMPARE(saved.count(), 1);
+    QVERIFY(!window.hasUnsavedEdits());
+}
+
+void TestPinWindowStyleSync::closeDuringFailedSaveOrClipboardRender()
+{
+    ScopedCloseProtection guard;
+    PinWindow window(createTestPixmap(), {});
+    window.setAttribute(Qt::WA_DeleteOnClose, false);
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QFile blocker(dir.filePath("file"));
+    QVERIFY(blocker.open(QIODevice::WriteOnly));
+    auto& settings = FileSettingsManager::instance();
+    settings.saveAutoSaveScreenshots(true);
+    settings.saveScreenshotPath(blocker.fileName() + "/sub");
+    window.saveToFile();
+    QVERIFY(window.m_exportRunner->isBusy());
+    QVERIFY(!window.close());
+    QVERIFY(!window.hasUnsavedEdits());
+
+    window.applyCrop(QRect(0, 0, 40, 40));
+    window.onBeautifyCopy(BeautifySettings{});
+    QVERIFY(window.m_exportRunner->isBusy());
+    QTimer poll;
+    connect(&poll, &QTimer::timeout, this, [&poll] {
+        if (auto* discard = closeButton("discardEdits")) {
+            poll.stop();
+            QVERIFY(QMetaObject::invokeMethod(discard, "clicked"));
+        }
+    });
+    poll.start(5);
+    QVERIFY(window.close());
+    QVERIFY(!poll.isActive());
+}
+
+void TestPinWindowStyleSync::lateTextEditSurvivesCloseDuringSave()
+{
+    ScopedCloseProtection guard;
+    PinWindow window(createTestPixmap(), {});
+    window.setAttribute(Qt::WA_DeleteOnClose, false);
+    window.initializeAnnotationComponents();
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto& settings = FileSettingsManager::instance();
+    settings.saveScreenshotPath(dir.path());
+    settings.saveAutoSaveScreenshots(true);
+    connect(&window, &PinWindow::saveCompleted, &window, [&] {
+        window.m_textAnnotationEditor->startEditing({10, 10}, window.rect(), Qt::blue);
+        window.m_textEditor->textEdit()->setPlainText("Late edit");
+    });
+    window.saveToFile();
+    QVERIFY(!window.close());
+    QVERIFY(window.hasUnsavedEdits());
+    QCOMPARE(window.m_annotationLayer->itemCount(), size_t(1));
+}
+
 void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot_data()
 {
     QTest::addColumn<bool>("beautify");
@@ -543,9 +774,16 @@ void TestPinWindowStyleSync::testSaveIsWrittenOffTheGuiThreadFromItsSnapshot()
     QCOMPARE(QImage(saved.first().at(1).toString()).pixelColor(32, 32), QColor(Qt::red));
     QCOMPARE(QDir(dir.path()).entryList(QDir::Files).size(), 1);
 
+    QVERIFY(window.hasUnsavedEdits());
+    window.m_annotationLayer->undo();
+    QVERIFY(!window.hasUnsavedEdits());
+    window.m_annotationLayer->redo();
+    QVERIFY(window.hasUnsavedEdits());
+
     // Once it has finished, the next save takes the edited picture.
     save();
     QTRY_COMPARE(saved.count(), 2);
+    QVERIFY(!window.hasUnsavedEdits());
     QCOMPARE(failed.count(), 0);
     QCOMPARE(QImage(saved.last().at(1).toString()).pixelColor(32, 32), QColor(Qt::blue));
 }
@@ -1611,5 +1849,5 @@ void TestPinWindowStyleSync::arrowControlReleaseKeepsLastDragPosition()
         layer->redo(); QCOMPARE(arrow->controlPoint(),draggedControl);
     }
 }
-QTEST_MAIN(TestPinWindowStyleSync)
+QTEST_MAIN_WRAPPER(TestPinWindowStyleSync, QTEST_QAPP_SETUP(SnapTrayApplication))
 #include "tst_StyleSync.moc"

@@ -63,6 +63,10 @@
 #include "utils/FilenameTemplateEngine.h"
 #include "utils/ImageSaveUtils.h"
 #include "utils/NativeFileDialogUtils.h"
+#include "pinwindow/PinClosePrompt.h"
+#include <QScopedValueRollback>
+#include <algorithm>
+#include <QEventLoop>
 #include "qml/OCRResultViewModel.h"
 #include "InlineTextEditor.h"
 #include "region/TextAnnotationEditor.h"
@@ -578,6 +582,8 @@ PinWindow::PinWindow(const QPixmap& screenshot,
             this, &PinWindow::handleApplicationStateChanged);
 
     // Initial size matches screenshot (use logical size for HiDPI)
+    m_uneditedImageKey = m_originalPixmap.cacheKey();
+    m_savedEdits = editSnapshot();
     m_displayPixmap = m_originalPixmap;
     m_contentLogicalSize = logicalSizeFromPixmap(m_displayPixmap);
     updateAccessibleName();
@@ -1742,6 +1748,12 @@ void PinWindow::mergePinsFromContextMenu()
     layoutOptions.gap = PinMergeConstants::kDefaultGap;
     layoutOptions.maxRowWidth = targetRowWidth;
 
+    for (PinWindow* source : mergeCandidates) {
+        if (source->m_confirmingClose || source->m_choosingSavePath) {
+            return;
+        }
+        source->finishPendingTextEdit();
+    }
     const PinMergeResult result = PinMergeHelper::merge(mergeCandidates, layoutOptions);
     if (!result.success) {
         SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Info,
@@ -1754,6 +1766,18 @@ void PinWindow::mergePinsFromContextMenu()
     const QSize logicalSize = logicalSizeFromPixmap(result.composedPixmap);
     const QPoint position = screenGeometry.center() - QPoint(logicalSize.width() / 2, logicalSize.height() / 2);
 
+    bool inheritsUnsavedEdits = false;
+    for (PinWindow* source : result.mergedWindows) {
+        inheritsUnsavedEdits |= source->hasUnsavedEdits();
+        if (source->isRegionLayoutMode()) {
+            const auto current = source->m_regionLayoutManager->regions();
+            const auto original = source->m_regionLayoutManager->originalRegions();
+            inheritsUnsavedEdits |= !std::equal(current.begin(), current.end(),
+                original.begin(), original.end(), [](const LayoutRegion& a, const LayoutRegion& b) {
+                    return a.index == b.index && a.rect == b.rect;
+                });
+        }
+    }
     PinWindow* mergedWindow = m_pinWindowManager->createPinWindow(result.composedPixmap, position);
     if (!mergedWindow) {
         SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
@@ -1762,7 +1786,10 @@ void PinWindow::mergePinsFromContextMenu()
         return;
     }
     mergedWindow->setMultiRegionData(result.regions);
-    m_pinWindowManager->closeWindows(result.mergedWindows);
+    if (inheritsUnsavedEdits) {
+        mergedWindow->m_savedEdits.reset();
+    }
+    m_pinWindowManager->closeReplacedWindows(result.mergedWindows);
 }
 
 bool PinWindow::rejectIfExportInProgress()
@@ -1789,7 +1816,7 @@ void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixma
     const QString requestedPath = request.filePath;
     const bool started = m_exportRunner->start(
         std::move(request),
-        [this, snapshot, beautified, rememberDirectoryOnSuccess, history = std::move(history)](
+        [this, snapshot, edits = editSnapshot(), beautified, rememberDirectoryOnSuccess, history = std::move(history)](
             const SnapTray::PinExportResult& result) mutable {
             if (result.renderFailed) {
                 emit saveFailed(result.filePath,
@@ -1807,6 +1834,7 @@ void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixma
                                            : tr("Failed to save screenshot: %1").arg(detail));
                 return;
             }
+            m_savedEdits = edits;
             if (rememberDirectoryOnSuccess) {
                 FileSettingsManager::instance().rememberManualScreenshotSaveDirectory(result.filePath);
             }
@@ -1825,6 +1853,10 @@ void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixma
 
 void PinWindow::saveToFile()
 {
+    if (m_choosingSavePath) {
+        return;
+    }
+    QScopedValueRollback<bool> choosingPath(m_choosingSavePath, true);
     if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
@@ -3781,8 +3813,112 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
     }
 }
 
+bool PinWindow::EditSnapshot::operator==(const EditSnapshot& other) const
+{
+    if (rotation != other.rotation || flipHorizontal != other.flipHorizontal
+        || annotations != other.annotations) {
+        return false;
+    }
+    // Live frames advance without an edit. Undo normally restores the same
+    // backing store, while independently repeating a crop creates a new one.
+    return (uneditedFrame && other.uneditedFrame) || image.cacheKey() == other.image.cacheKey()
+        || (image.devicePixelRatio() == other.image.devicePixelRatio()
+            && image.size() == other.image.size() && image.toImage() == other.image.toImage());
+}
+
+PinWindow::EditSnapshot PinWindow::editSnapshot() const
+{
+    EditSnapshot state;
+    state.image = m_originalPixmap;
+    state.uneditedFrame = m_originalPixmap.cacheKey() == m_uneditedImageKey;
+    // A vertical flip is a half-turn followed by a horizontal flip.
+    state.rotation = (m_rotationAngle + (m_flipVertical ? 180 : 0)) % 360;
+    state.flipHorizontal = m_flipHorizontal != m_flipVertical;
+    if (m_annotationLayer && !m_annotationLayer->isEmpty()) {
+        state.annotations = SnapTray::serializeAnnotationLayer(*m_annotationLayer);
+    }
+    return state;
+}
+
+bool PinWindow::hasUnsavedEdits() const
+{
+    return !m_savedEdits || !(*m_savedEdits == editSnapshot());
+}
+
+PinWindow::FileSaveOutcome PinWindow::waitForActiveExport()
+{
+    FileSaveOutcome outcome = FileSaveOutcome::NoFileSave;
+    if (m_exportRunner->isBusy()) {
+        QEventLoop loop;
+        connect(m_exportRunner.get(), &SnapTray::PinExportRunner::finished, &loop,
+                [&](SnapTray::PinExportRequest::Destination destination, bool success) {
+            if (destination != SnapTray::PinExportRequest::Destination::Clipboard) {
+                outcome = success ? FileSaveOutcome::Saved : FileSaveOutcome::Failed;
+            }
+            loop.quit();
+        });
+        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
+        const bool enabled = isEnabled();
+        setEnabled(false);
+        loop.exec();
+        setEnabled(enabled);
+        finishPendingTextEdit();
+    }
+    return outcome;
+}
+
+void PinWindow::finishPendingTextEdit()
+{
+    if (!m_textEditor || !m_textEditor->isEditing()) {
+        return;
+    }
+    if (m_textEditor->textEdit()->toPlainText().trimmed().isEmpty()) {
+        m_textEditor->cancelEditing();
+    } else {
+        m_textEditor->finishEditing();
+    }
+}
+
+bool PinWindow::confirmClose()
+{
+    if (m_confirmingClose || m_choosingSavePath) {
+        return false;
+    }
+    QScopedValueRollback<bool> confirming(m_confirmingClose, true);
+    finishPendingTextEdit();
+    const auto pending = waitForActiveExport();
+    if (pending != FileSaveOutcome::NoFileSave) {
+        return pending == FileSaveOutcome::Saved && !hasUnsavedEdits();
+    }
+    if (!hasUnsavedEdits()) {
+        return true;
+    }
+    PinClosePrompt prompt;
+    int choice = PinClosePrompt::Cancel;
+    {
+        SnapTray::QmlDialog dialog(QUrl("qrc:/SnapTrayQml/dialogs/PinCloseDialog.qml"),
+            &prompt, "viewModel", this, SnapTray::QmlDialog::ViewModelOwnership::Borrowed);
+        dialog.setModal(true);
+        connect(&dialog, &SnapTray::QmlDialog::closed, &prompt, &PinClosePrompt::cancel);
+        dialog.showCenteredOnScreen(screen());
+        if (dialog.hasContent()) {
+            choice = prompt.exec();
+        }
+    }
+    if (choice == PinClosePrompt::Save) {
+        saveToFile();
+        return waitForActiveExport() == FileSaveOutcome::Saved && !hasUnsavedEdits();
+    }
+    return choice == PinClosePrompt::Discard;
+}
+
 void PinWindow::closeEvent(QCloseEvent* event)
 {
+    if (!m_internalClose && PinWindowSettingsManager::instance().loadProtectUnsavedEdits()
+        && !confirmClose()) {
+        event->ignore();
+        return;
+    }
     if (m_colorPickOverlay) {
         m_colorPickOverlay->cancel();
     }
@@ -6960,6 +7096,7 @@ void PinWindow::updateLiveFrame()
     if (!frame.isNull()) {
         m_originalPixmap = QPixmap::fromImage(frame);
         m_originalPixmap.setDevicePixelRatio(sourceScreen->devicePixelRatio());
+        m_uneditedImageKey = m_originalPixmap.cacheKey();
         setContentLogicalSize(!m_sourceRegion.isEmpty()
             ? m_sourceRegion.size()
             : logicalSizeFromPixmap(m_originalPixmap));
@@ -7655,6 +7792,10 @@ void PinWindow::onBeautifyExport(const BeautifySettings& settings)
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)
 {
+    if (m_choosingSavePath) {
+        return;
+    }
+    QScopedValueRollback<bool> choosingPath(m_choosingSavePath, true);
     if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }

@@ -223,6 +223,11 @@ void QmlDialog::close()
     deleteLater();
 }
 
+bool QmlDialog::hasContent() const
+{
+    return m_view && m_view->status() == QQuickView::Ready;
+}
+
 void QmlDialog::setModal(bool modal)
 {
     if (m_modal == modal) return;

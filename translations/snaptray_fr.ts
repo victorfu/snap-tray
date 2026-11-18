@@ -2215,6 +2215,26 @@ Taille : %2</translation>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Enregistrer</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Enregistrer vos modifications avant de fermer cette image épinglée ?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Modifications non enregistrées de l’image épinglée</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Organiser</translation>
@@ -2757,6 +2777,10 @@ Taille : %2</translation>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Demander confirmation avant de fermer les images épinglées modifiées</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

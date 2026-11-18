@@ -39,6 +39,7 @@ struct PinExportRequest {
 };
 
 struct PinExportResult {
+    PinExportRequest::Destination destination = PinExportRequest::Destination::UniqueFile;
     bool success = false;
     // The source is null or could not be beautified (for example a picture
     // or one of its intermediates too large to allocate); nothing was written.
@@ -86,6 +87,9 @@ public:
     // Waits for the job in flight and drops its result. Used when the app
     // quits: the file is finished, but there is no UI left to report it to.
     void waitWithoutReporting();
+
+signals:
+    void finished(PinExportRequest::Destination destination, bool success);
 
 private:
     void deliver(QFutureWatcher<PinExportResult>* watcher);

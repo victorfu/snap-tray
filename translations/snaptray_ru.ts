@@ -2216,6 +2216,26 @@ Size: %2</source>
 <context>
     <name>PinWindow</name>
     <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Discard</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
+    </message>
+    <message>
+        <source>Save your edits before closing this pin?</source>
+        <translation>Сохранить изменения перед закрытием закреплённого изображения?</translation>
+    </message>
+    <message>
+        <source>Unsaved pin edits</source>
+        <translation>Несохранённые изменения закреплённого изображения</translation>
+    </message>
+    <message>
         <location filename="../src/PinWindow.cpp" line="1224" />
         <source>Arrange</source>
         <translation>Упорядочить</translation>
@@ -2758,6 +2778,10 @@ Size: %2</source>
 </context>
 <context>
     <name>PinWindowSettings</name>
+    <message>
+        <source>Confirm before closing edited pins</source>
+        <translation>Запрашивать подтверждение перед закрытием изменённых закреплённых изображений</translation>
+    </message>
     <message>
         <location filename="../src/qml/settings/PinWindowSettings.qml" line="22" />
         <source>Pin Windows</source>

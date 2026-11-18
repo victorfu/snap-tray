@@ -1,5 +1,6 @@
 #include <QLocalSocket>
 #include "MainApplication.h"
+#include "SnapTrayApplication.h"
 #include "AutoLaunchManager.h"
 #include "SingleInstanceGuard.h"
 #include "cli/CLIHandler.h"
@@ -161,7 +162,7 @@ int main(int argc, char* argv[])
     }
 
     // GUI mode: standard application startup
-    QApplication app(argc, argv);
+    SnapTrayApplication app(argc, argv);
 
     // Critical: Don't quit when last window closes (we're a tray app)
     app.setQuitOnLastWindowClosed(false);

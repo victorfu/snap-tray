@@ -20,8 +20,8 @@ public:
                                const QPoint &position,
                                bool showImmediately = true,
                                qreal initialZoom = 1.0);
-    void closeAllWindows();
-    void closeWindows(const QList<PinWindow*>& windows);
+    bool closeAllWindows();
+    bool confirmApplicationQuit();
     void setAllPinsVisible(bool visible);
     void toggleAllPinsVisibility();
     QList<PinWindow*> windows() const { return m_windows; }
@@ -45,6 +45,9 @@ private slots:
     void onWindowClosed(PinWindow *window);
 
 private:
+    friend class PinWindow;
+    void closeReplacedWindows(const QList<PinWindow*>& windows);
+    bool m_closingAll = false;
     QList<PinWindow*> m_windows;
     bool m_pinsHidden = false;
 };
