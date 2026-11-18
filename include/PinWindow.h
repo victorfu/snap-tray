@@ -126,6 +126,10 @@ public:
 
     // Pin window manager
     void setPinWindowManager(PinWindowManager* manager);
+    // Finishes a save or Beautify export still being written, without
+    // reporting it. Called when the app quits, where closing a pin no longer
+    // deletes it, so the file is never left half-written (#353).
+    void finishExportBeforeQuit();
 
     // Click-through mode
     void setClickThrough(bool enabled);
@@ -242,12 +246,14 @@ private:
     void saveToFile();
     void copyToClipboard();
     bool ensureAutoBlurReadyForExport();
-    // True, after telling the user, while an earlier save or Beautify export
-    // of this pin is still being written.
-    bool exportInProgress();
-    // Writes `snapshot` (beautified when `history` is given) off the GUI
-    // thread and reports it with saveCompleted/saveFailed once the file is
-    // published or has failed. Edits made meanwhile are not part of it (#353).
+    // While an earlier save, Beautify save or Beautify copy of this pin is
+    // still running, tells the user and returns true; otherwise false.
+    bool rejectIfExportInProgress();
+    // Composes (beautified when request.beautify is set) and writes the
+    // request's snapshot off the GUI thread, then reports it with
+    // saveCompleted/saveFailed once the file is published or has failed.
+    // `snapshot` is the pixmap saveCompleted reports for an unbeautified
+    // save. Edits made meanwhile are not part of the file (#353).
     void startFileExport(SnapTray::PinExportRequest request, const QPixmap& snapshot,
                          bool rememberDirectoryOnSuccess,
                          std::optional<SnapTray::CaptureSessionWriteRequest> history);

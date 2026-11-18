@@ -2723,8 +2723,8 @@ Taille : %2</translation>
         <translation>Exporter sous...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>L’exportation précédente est encore en cours d’enregistrement</translation>
+        <source>Still exporting the previous image</source>
+        <translation>L’image précédente est encore en cours d’exportation</translation>
     </message>
 </context>
 <context>

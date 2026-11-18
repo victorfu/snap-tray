@@ -2722,8 +2722,8 @@ Size: %2</source>
         <translation>名前を付けて書き出し...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>前回のエクスポートを保存しています</translation>
+        <source>Still exporting the previous image</source>
+        <translation>前の画像をエクスポートしています</translation>
     </message>
 </context>
 <context>

@@ -1765,13 +1765,20 @@ void PinWindow::mergePinsFromContextMenu()
     m_pinWindowManager->closeWindows(result.mergedWindows);
 }
 
-bool PinWindow::exportInProgress()
+bool PinWindow::rejectIfExportInProgress()
 {
     if (!m_exportRunner->isBusy()) {
         return false;
     }
-    m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still saving the previous export"));
+    m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
     return true;
+}
+
+void PinWindow::finishExportBeforeQuit()
+{
+    if (m_exportRunner) {
+        m_exportRunner->waitWithoutReporting();
+    }
 }
 
 void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixmap& snapshot,
@@ -1812,13 +1819,13 @@ void PinWindow::startFileExport(SnapTray::PinExportRequest request, const QPixma
         });
     if (!started) {
         // Only reachable if a save dialog let another export start meanwhile.
-        emit saveFailed(requestedPath, tr("Still saving the previous export"));
+        emit saveFailed(requestedPath, tr("Still exporting the previous image"));
     }
 }
 
 void PinWindow::saveToFile()
 {
-    if (!ensureAutoBlurReadyForExport() || exportInProgress()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 
@@ -7539,7 +7546,7 @@ SnapTray::CaptureSessionWriteRequest PinWindow::beautifiedHistoryRequest(
 
 void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 {
-    if (!ensureAutoBlurReadyForExport() || exportInProgress()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 
@@ -7560,18 +7567,26 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
     request.source = source.toImage();
     request.beautify = settings;
     request.screenColorSpace = exportColorSpaceForScreen(exportScreen);
+    // The clipboard's place is taken now, in the order the user asked: a copy
+    // made while this one renders replaces it rather than being overwritten.
+    const quint64 clipboardRequest = PlatformFeatures::reserveClipboardRequest();
     // Rendering runs off the GUI thread; the clipboard is written on it.
-    m_exportRunner->start(
+    const bool started = m_exportRunner->start(
         std::move(request),
-        [this, historyRequest = beautifiedHistoryRequest(source, settings)](
+        [this, clipboardRequest, historyRequest = beautifiedHistoryRequest(source, settings)](
             const SnapTray::PinExportResult& rendered) mutable {
             if (!rendered.success) {
+                if (m_isDestructing) {
+                    qWarning() << "PinWindow: Beautify copy failed while the pin closed";
+                    return;
+                }
                 m_toast->showToast(SnapTray::QmlToast::Level::Error,
-                                   tr("Beautify rendering failed"));
+                                   rendered.renderFailed ? tr("Beautify rendering failed")
+                                                         : tr("Copy failed"));
                 return;
             }
             historyRequest.resultImage = rendered.image;
-            QPointer<PinWindow> safeThis(this);
+            QPointer<PinWindow> safeThis(m_isDestructing ? nullptr : this);
             PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
                 rendered.clipboardImage,
                 qApp,
@@ -7588,8 +7603,13 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
                     safeThis->m_toast->showToast(
                         success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
                         success ? tr("Beautified image copied") : tr("Copy failed"));
-                });
+                },
+                clipboardRequest);
         });
+    if (!started) {
+        // Only reachable if another export started since the check above.
+        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
+    }
 }
 
 void PinWindow::onBeautifyExport(const BeautifySettings& settings)
@@ -7615,7 +7635,7 @@ void PinWindow::onBeautifyExport(const BeautifySettings& settings)
 
 void PinWindow::onBeautifySave(const BeautifySettings& settings)
 {
-    if (!ensureAutoBlurReadyForExport() || exportInProgress()) {
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) {
         return;
     }
 

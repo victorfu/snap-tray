@@ -2724,8 +2724,8 @@ Velikost: %2</translation>
         <translation>Exportovat jako...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Předchozí export se stále ukládá</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Předchozí obrázek se stále exportuje</translation>
     </message>
 </context>
 <context>

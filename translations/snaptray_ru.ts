@@ -2724,8 +2724,8 @@ Size: %2</source>
         <translation>Экспортировать как...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Предыдущий экспорт ещё сохраняется</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Предыдущее изображение ещё экспортируется</translation>
     </message>
 </context>
 <context>

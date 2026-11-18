@@ -137,10 +137,21 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
 void PlatformFeatures::copyImageToClipboardForGuiAsync(
     const QImage& image,
     QObject* context,
-    ClipboardCopyCompletion completion) const
+    ClipboardCopyCompletion completion,
+    quint64 reservedRequest) const
 {
+    // A request reserved earlier is dropped if a newer copy was requested
+    // since; any other request is the newest and is always written.
+    const quint64 request = reservedRequest ? reservedRequest : reserveClipboardRequest();
+    const bool reserved = reservedRequest != 0;
     QObject* target = context ? context : QCoreApplication::instance();
     if (!target) {
+        if (reserved && !isLatestClipboardRequest(request)) {
+            if (completion) {
+                completion(ClipboardCopyResult::Superseded);
+            }
+            return;
+        }
         const bool success = copyImageToClipboardForGui(image);
         if (completion) {
             completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
@@ -149,7 +160,13 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(
     }
 
     QMetaObject::invokeMethod(target,
-        [this, image, completion = std::move(completion)]() mutable {
+        [this, image, request, reserved, completion = std::move(completion)]() mutable {
+            if (reserved && !isLatestClipboardRequest(request)) {
+                if (completion) {
+                    completion(ClipboardCopyResult::Superseded);
+                }
+                return;
+            }
             const bool success = copyImageToClipboardForGui(image);
             if (completion) {
                 completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);

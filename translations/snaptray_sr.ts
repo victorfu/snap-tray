@@ -2724,8 +2724,8 @@ Size: %2</source>
         <translation>Извези као...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Претходни извоз се још увек чува</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Претходна слика се још увек извози</translation>
     </message>
 </context>
 <context>

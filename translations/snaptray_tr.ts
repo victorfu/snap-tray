@@ -2722,8 +2722,8 @@ Boyut: %2</translation>
         <translation>Farklı dışa aktar...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Önceki dışa aktarma hâlâ kaydediliyor</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Önceki görüntü hâlâ dışa aktarılıyor</translation>
     </message>
 </context>
 <context>

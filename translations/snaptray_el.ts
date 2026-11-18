@@ -2723,8 +2723,8 @@ Size: %2</source>
         <translation>Εξαγωγή ως...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Η προηγούμενη εξαγωγή αποθηκεύεται ακόμα</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Η προηγούμενη εικόνα εξάγεται ακόμα</translation>
     </message>
 </context>
 <context>

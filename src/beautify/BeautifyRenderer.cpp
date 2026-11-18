@@ -20,14 +20,15 @@ void paintSource(QPainter& painter, const QRect& target, const QImage& source)
     painter.drawImage(target, source);
 }
 
-// The picture inside the frame, clipped to the rounded corners.
+// The picture inside the frame, clipped to the rounded corners. False, with
+// nothing drawn, when an intermediate image cannot be allocated.
 template <typename Source>
-void drawScreenshot(QPainter& painter, const QRect& insetRect,
+bool drawScreenshot(QPainter& painter, const QRect& insetRect,
                     const Source& source, const BeautifySettings& settings)
 {
     if (settings.cornerRadius <= 0) {
         paintSource(painter, insetRect, source);
-        return;
+        return true;
     }
 
     // Use CompositionMode_DestinationIn with alpha mask for high-quality anti-aliased corners
@@ -36,6 +37,10 @@ void drawScreenshot(QPainter& painter, const QRect& insetRect,
     const QSize deviceSize = CoordinateHelper::toPhysical(insetRect.size(), dpr);
 
     QImage screenshotImage(deviceSize, QImage::Format_ARGB32_Premultiplied);
+    QImage alphaMask(deviceSize, QImage::Format_ARGB32_Premultiplied);
+    if (screenshotImage.isNull() || alphaMask.isNull()) {
+        return false;
+    }
     screenshotImage.setDevicePixelRatio(dpr);
     screenshotImage.fill(Qt::transparent);
 
@@ -43,7 +48,6 @@ void drawScreenshot(QPainter& painter, const QRect& insetRect,
     imgPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
     paintSource(imgPainter, QRect(0, 0, insetRect.width(), insetRect.height()), source);
 
-    QImage alphaMask(deviceSize, QImage::Format_ARGB32_Premultiplied);
     alphaMask.setDevicePixelRatio(dpr);
     alphaMask.fill(Qt::transparent);
     QPainter maskPainter(&alphaMask);
@@ -59,12 +63,14 @@ void drawScreenshot(QPainter& painter, const QRect& insetRect,
     imgPainter.end();
 
     painter.drawImage(insetRect, screenshotImage);
+    return true;
 }
 
 // Paints the whole beautified picture onto target, which already has the
-// output's device size and the source's device pixel ratio.
+// output's device size and the source's device pixel ratio. False when the
+// picture itself could not be drawn.
 template <typename Source>
-void paintBeautified(QPaintDevice& target, const QSize& logicalSource, const QSize& logicalOutput,
+bool paintBeautified(QPaintDevice& target, const QSize& logicalSource, const QSize& logicalOutput,
                      const Source& source, const BeautifySettings& settings)
 {
     QPainter painter(&target);
@@ -77,10 +83,11 @@ void paintBeautified(QPaintDevice& target, const QSize& logicalSource, const QSi
 
     QRect insetRect = BeautifyRenderer::calculateInsetRect(logicalOutput, logicalSource, settings);
     BeautifyRenderer::drawShadow(painter, insetRect, settings);
-    drawScreenshot(painter, insetRect, source, settings);
+    const bool drawn = drawScreenshot(painter, insetRect, source, settings);
     BeautifyRenderer::drawBorder(painter, insetRect, settings);
 
     painter.end();
+    return drawn;
 }
 
 } // namespace
@@ -95,9 +102,10 @@ QPixmap BeautifyRenderer::applyToPixmap(const QPixmap& source, const BeautifySet
     const QSize deviceOutput = CoordinateHelper::toPhysical(logicalOutput, dpr);
 
     QPixmap result(deviceOutput);
+    if (result.isNull()) return {};
     result.fill(Qt::transparent);
     result.setDevicePixelRatio(dpr);
-    paintBeautified(result, logicalSource, logicalOutput, source, settings);
+    if (!paintBeautified(result, logicalSource, logicalOutput, source, settings)) return {};
     return result;
 }
 
@@ -114,7 +122,7 @@ QImage BeautifyRenderer::applyToImage(const QImage& source, const BeautifySettin
     if (result.isNull()) return {};
     result.fill(Qt::transparent);
     result.setDevicePixelRatio(dpr);
-    paintBeautified(result, logicalSource, logicalOutput, source, settings);
+    if (!paintBeautified(result, logicalSource, logicalOutput, source, settings)) return {};
     return result;
 }
 

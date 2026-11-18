@@ -32,16 +32,20 @@ struct PinExportRequest {
     // From exportColorSpaceForScreen, resolved on the GUI thread.
     QColorSpace screenColorSpace;
     Destination destination = Destination::UniqueFile;
+    // UniqueFile only; its outputDir must be set.
     ImageSaveUtils::UniqueSaveSpec uniqueSave;
+    // ExactFile only; must be set.
     QString filePath;
 };
 
 struct PinExportResult {
     bool success = false;
-    // The source could not be composed (for example a beautified picture too
-    // large to allocate); nothing was written.
+    // The source is null or could not be beautified (for example a picture
+    // or one of its intermediates too large to allocate); nothing was written.
     bool renderFailed = false;
-    // The composed picture, untagged and with the source's device pixel ratio.
+    // The composed picture with the source's device pixel ratio: the source
+    // itself when not beautified (keeping any colour space it has), otherwise
+    // the beautified picture, which is untagged.
     QImage image;
     // Clipboard only: the picture normalized as normalizeImageForExport does.
     QImage clipboardImage;
@@ -73,18 +77,23 @@ public:
 
     // Returns false, without starting anything, while another job is in
     // flight; a burst of key presses never queues unbounded work.
-    bool start(PinExportRequest request, Completion onFinished);
+    [[nodiscard]] bool start(PinExportRequest request, Completion onFinished);
 
     // Waits for the job in flight and delivers its result now. Used when
     // the pin closes, so its save is still reported.
     void finishNow();
 
+    // Waits for the job in flight and drops its result. Used when the app
+    // quits: the file is finished, but there is no UI left to report it to.
+    void waitWithoutReporting();
+
 private:
     void deliver(QFutureWatcher<PinExportResult>* watcher);
 
-    // Its own pool at high quality of service: an export the user is waiting
-    // for runs on a performance core (on Apple silicon, Qt's global pool ran
-    // it about three times slower than the GUI thread did).
+    // Its own single-thread pool at high quality of service, so an export the
+    // user is waiting for runs on a performance core; on Apple silicon Qt's
+    // global pool ran it noticeably slower than the GUI thread (2026-11).
+    // Its idle thread exits after the pool's expiry timeout (30 s by default).
     QThreadPool m_pool;
     QPointer<QFutureWatcher<PinExportResult>> m_watcher;
     Completion m_completion;

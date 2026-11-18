@@ -3,6 +3,7 @@
 #include "ImageColorSpaceHelper.h"
 #include "beautify/BeautifyRenderer.h"
 
+#include <QDebug>
 #include <QtConcurrent/QtConcurrentRun>
 
 #include <utility>
@@ -13,6 +14,10 @@ PinExportResult runPinExport(const PinExportRequest& request)
 {
     using Destination = PinExportRequest::Destination;
 
+    Q_ASSERT(request.destination != Destination::ExactFile || !request.filePath.isEmpty());
+    Q_ASSERT(request.destination != Destination::UniqueFile ||
+             !request.uniqueSave.outputDir.isEmpty());
+
     PinExportResult result;
     if (request.destination == Destination::ExactFile) {
         result.filePath = request.filePath;
@@ -22,6 +27,9 @@ PinExportResult runPinExport(const PinExportRequest& request)
         ? BeautifyRenderer::applyToImage(request.source, *request.beautify)
         : request.source;
     if (result.image.isNull()) {
+        qWarning() << "PinExport: could not compose the picture; source" << request.source.size()
+                   << "beautified" << request.beautify.has_value()
+                   << "destination" << static_cast<int>(request.destination);
         result.renderFailed = true;
         return result;
     }
@@ -33,6 +41,10 @@ PinExportResult runPinExport(const PinExportRequest& request)
         normalized.setDevicePixelRatio(1.0);
         result.clipboardImage = tagImageWithColorSpace(normalized, request.screenColorSpace);
         result.success = !result.clipboardImage.isNull();
+        if (!result.success) {
+            qWarning() << "PinExport: could not convert the picture for the clipboard;"
+                       << result.image.size();
+        }
         return result;
     }
     case Destination::UniqueFile: {
@@ -62,10 +74,7 @@ PinExportRunner::PinExportRunner(QObject* parent)
 
 PinExportRunner::~PinExportRunner()
 {
-    if (m_watcher) {
-        m_watcher->disconnect(this);
-        m_watcher->waitForFinished();
-    }
+    waitWithoutReporting();
 }
 
 bool PinExportRunner::isBusy() const
@@ -95,10 +104,23 @@ void PinExportRunner::finishNow()
         return;
     }
     QFutureWatcher<PinExportResult>* watcher = m_watcher;
-    // The queued finished signal must not deliver the same result again.
+    // The pending finished notification must not deliver the result again.
     watcher->disconnect(this);
     watcher->waitForFinished();
     deliver(watcher);
+}
+
+void PinExportRunner::waitWithoutReporting()
+{
+    if (!m_watcher) {
+        return;
+    }
+    QFutureWatcher<PinExportResult>* watcher = m_watcher;
+    watcher->disconnect(this);
+    watcher->waitForFinished();
+    m_watcher.clear();
+    m_completion = Completion();
+    watcher->deleteLater();
 }
 
 void PinExportRunner::deliver(QFutureWatcher<PinExportResult>* watcher)

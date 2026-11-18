@@ -11,9 +11,11 @@
 #include <QThread>
 
 #include <memory>
+#include <optional>
 
 #include "beautify/BeautifyRenderer.h"
 #include "pinwindow/PinExportJob.h"
+#include "PlatformFeatures.h"
 
 using SnapTray::PinExportRequest;
 using SnapTray::PinExportResult;
@@ -52,6 +54,13 @@ BeautifySettings look()
     return settings;
 }
 
+// Delivers posted events, including deferred deletes, without waiting.
+void drainEvents()
+{
+    QCoreApplication::sendPostedEvents();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
 QByteArray fileBytes(const QString& path)
 {
     QFile file(path);
@@ -67,6 +76,7 @@ class TestPinExportJob : public QObject
 private slots:
     void uniqueSaveNeverReplacesAFile();
     void exactSaveFailureKeepsTheExistingFile();
+    void uniqueSaveFailureIsReported();
     void beautifiedSaveMatchesTheRenderer();
     void colorSpaceTagFollowsTheExportRules();
     void clipboardImageIsNormalized();
@@ -77,6 +87,8 @@ private slots:
     void runnerWritesTheSnapshotNotLaterChanges();
     void runnerFinishNowDeliversImmediately();
     void destroyedRunnerFinishesTheFileWithoutCallback();
+    void waitWithoutReportingFinishesTheFile();
+    void staleReservedClipboardCopyIsSuperseded();
 };
 
 void TestPinExportJob::uniqueSaveNeverReplacesAFile()
@@ -120,6 +132,26 @@ void TestPinExportJob::exactSaveFailureKeepsTheExistingFile()
     QCOMPARE(fileBytes(path), QByteArray("original"));
 }
 
+void TestPinExportJob::uniqueSaveFailureIsReported()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    // The output directory cannot be created: its parent is a file.
+    const QString blocker = dir.filePath(QStringLiteral("file"));
+    {
+        QFile file(blocker);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    const PinExportResult result = SnapTray::runPinExport(
+        uniqueRequest(solidImage({20, 20}, Qt::red), blocker + QStringLiteral("/sub")));
+
+    QVERIFY(!result.success);
+    QVERIFY(!result.renderFailed);
+    QVERIFY(!result.error.message.isEmpty() || !result.error.stage.isEmpty());
+    QCOMPARE(QDir(dir.path()).entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot),
+             QStringList{QStringLiteral("file")});
+}
+
 void TestPinExportJob::beautifiedSaveMatchesTheRenderer()
 {
     QTemporaryDir dir;
@@ -137,8 +169,14 @@ void TestPinExportJob::beautifiedSaveMatchesTheRenderer()
     const QImage expected = BeautifyRenderer::applyToImage(source, look());
     QCOMPARE(result.image, expected);
     QCOMPARE(result.image.devicePixelRatio(), 2.0);
-    QCOMPARE(QImage(result.filePath).convertToFormat(QImage::Format_ARGB32_Premultiplied).size(),
-             expected.size());
+    const QImage written =
+        QImage(result.filePath).convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    QCOMPARE(written.size(), expected.size());
+    // The written pixels are the rendered ones: background, picture, corner.
+    for (const QPoint& point : {QPoint(2, 2), QPoint(written.width() / 2, written.height() / 2),
+                                QPoint(written.width() - 3, written.height() - 3)}) {
+        QCOMPARE(written.pixel(point), expected.pixel(point));
+    }
 }
 
 void TestPinExportJob::colorSpaceTagFollowsTheExportRules()
@@ -216,7 +254,7 @@ void TestPinExportJob::runnerDeliversOnItsThreadOnce()
     QVERIFY(delivered.success);
     QVERIFY(QFile::exists(delivered.filePath));
     QVERIFY(!runner.isBusy());
-    QCoreApplication::processEvents();
+    drainEvents();
     QCOMPARE(calls, 1);
 }
 
@@ -234,7 +272,7 @@ void TestPinExportJob::runnerRejectsASecondJobWhileBusy()
                           [&](const PinExportResult&) { ++second; }));
 
     QTRY_COMPARE(first, 1);
-    QCoreApplication::processEvents();
+    drainEvents();
     QCOMPARE(second, 0);
     QCOMPARE(QDir(dir.path()).entryList(QDir::Files).size(), 1);
 
@@ -279,8 +317,8 @@ void TestPinExportJob::runnerFinishNowDeliversImmediately()
     QVERIFY(QFile::exists(path));
     QVERIFY(!runner.isBusy());
 
-    // The queued notification does not report it a second time.
-    QTest::qWait(50);
+    // The pending finished notification does not report it a second time.
+    drainEvents();
     QCOMPARE(calls, 1);
 }
 
@@ -299,8 +337,43 @@ void TestPinExportJob::destroyedRunnerFinishesTheFileWithoutCallback()
     const QStringList files = QDir(dir.path()).entryList(QDir::Files);
     QCOMPARE(files.size(), 1);
     QCOMPARE(QImage(dir.filePath(files.first())).pixelColor(300, 300), QColor(Qt::red));
-    QTest::qWait(50);
+    drainEvents();
     QCOMPARE(calls, 0);
+}
+
+void TestPinExportJob::waitWithoutReportingFinishesTheFile()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    PinExportRunner runner;
+    int calls = 0;
+
+    QVERIFY(runner.start(uniqueRequest(solidImage({600, 600}, Qt::red), dir.path()),
+                         [&](const PinExportResult&) { ++calls; }));
+    runner.waitWithoutReporting();
+    QVERIFY(!runner.isBusy());
+    // Published, with no staging file left behind, and never reported.
+    const QStringList files = QDir(dir.path()).entryList(QDir::Files | QDir::Hidden);
+    QCOMPARE(files.size(), 1);
+    QCOMPARE(QImage(dir.filePath(files.first())).pixelColor(300, 300), QColor(Qt::red));
+    drainEvents();
+    QCOMPARE(calls, 0);
+}
+
+void TestPinExportJob::staleReservedClipboardCopyIsSuperseded()
+{
+    // A copy reserved while rendering, then overtaken by a newer copy, is
+    // dropped instead of overwriting the newer clipboard contents.
+    const quint64 stale = PlatformFeatures::reserveClipboardRequest();
+    PlatformFeatures::reserveClipboardRequest();
+    QVERIFY(!PlatformFeatures::isLatestClipboardRequest(stale));
+
+    std::optional<PlatformFeatures::ClipboardCopyResult> result;
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
+        solidImage({8, 8}, Qt::red), qApp,
+        [&](PlatformFeatures::ClipboardCopyResult copied) { result = copied; }, stale);
+    QTRY_VERIFY(result.has_value());
+    QCOMPARE(*result, PlatformFeatures::ClipboardCopyResult::Superseded);
 }
 
 QTEST_MAIN(TestPinExportJob)

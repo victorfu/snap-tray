@@ -2573,8 +2573,8 @@ English is always included and cannot be removed.</source>
         <translation>ส่งออกเป็น...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>ยังคงบันทึกการส่งออกก่อนหน้าอยู่</translation>
+        <source>Still exporting the previous image</source>
+        <translation>ยังคงส่งออกภาพก่อนหน้าอยู่</translation>
     </message>
 </context>
 <context>

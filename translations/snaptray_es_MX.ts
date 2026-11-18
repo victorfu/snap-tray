@@ -2723,8 +2723,8 @@ Tamaño: %2</translation>
         <translation>Exportar como...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Todavía se está guardando la exportación anterior</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Todavía se está exportando la imagen anterior</translation>
     </message>
 </context>
 <context>

@@ -2722,8 +2722,8 @@ Size: %2</source>
         <translation>匯出為...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>仍在儲存上一次匯出</translation>
+        <source>Still exporting the previous image</source>
+        <translation>仍在匯出上一張圖片</translation>
     </message>
 </context>
 <context>

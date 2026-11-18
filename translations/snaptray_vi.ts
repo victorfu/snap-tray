@@ -2722,8 +2722,8 @@ Kích thước: %2</translation>
         <translation>Xuất thành...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>Vẫn đang lưu bản xuất trước đó</translation>
+        <source>Still exporting the previous image</source>
+        <translation>Vẫn đang xuất ảnh trước đó</translation>
     </message>
 </context>
 <context>

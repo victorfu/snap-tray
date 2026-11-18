@@ -120,6 +120,7 @@ private slots:
     void unmodifiedPinKeepsItsEditableDocument();
     void editedPinIsFlattenedButKeepsBeautify();
     void pinWithoutCaptureIsFlattened();
+    void failedSaveAddsNoEntry();
 
 private:
     // Saves through the same path as the panel's Save button.
@@ -331,6 +332,26 @@ void TestPinWindowBeautifyHistory::pinWithoutCaptureIsFlattened()
     QCOMPARE(beautified.devicePixelRatio, 1.5);
     QCOMPARE(normalized(QImage(beautified.resultPath)),
              normalized(BeautifyRenderer::applyToPixmap(source, pinLook()).toImage()));
+}
+
+void TestPinWindowBeautifyHistory::failedSaveAddsNoEntry()
+{
+    // #353: the entry is submitted only once the file is published.
+    const QString blocker = m_dir.filePath(QStringLiteral("failedSaveAddsNoEntry_blocker"));
+    {
+        QFile file(blocker);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+    }
+    FileSettingsManager::instance().saveScreenshotPath(blocker + QStringLiteral("/sub"));
+    PinWindow window(patternPixmap(QSize(80, 60), 1.0), QPoint(0, 0), nullptr, false, false);
+    QSignalSpy saved(&window, &PinWindow::saveCompleted);
+    QSignalSpy failed(&window, &PinWindow::saveFailed);
+
+    window.onBeautifySave(pinLook());
+    QTRY_COMPARE(failed.count(), 1);
+    QCOMPARE(saved.count(), 0);
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    QVERIFY(SnapTray::HistoryStore::loadEntries().isEmpty());
 }
 
 QTEST_MAIN(TestPinWindowBeautifyHistory)

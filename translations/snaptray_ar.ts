@@ -2727,8 +2727,8 @@ Size: %2</source>
         <translation>تصدير باسم...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>لا يزال حفظ التصدير السابق جاريًا</translation>
+        <source>Still exporting the previous image</source>
+        <translation>لا يزال تصدير الصورة السابقة جاريًا</translation>
     </message>
 </context>
 <context>

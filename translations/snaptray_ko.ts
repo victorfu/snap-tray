@@ -2722,8 +2722,8 @@ Size: %2</source>
         <translation>다른 이름으로 내보내기...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>이전 내보내기를 아직 저장하는 중입니다</translation>
+        <source>Still exporting the previous image</source>
+        <translation>이전 이미지를 아직 내보내는 중입니다</translation>
     </message>
 </context>
 <context>

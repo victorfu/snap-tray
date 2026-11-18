@@ -2723,8 +2723,8 @@ Dimensione: %2</translation>
         <translation>Esporta come...</translation>
     </message>
     <message>
-        <source>Still saving the previous export</source>
-        <translation>L’esportazione precedente è ancora in fase di salvataggio</translation>
+        <source>Still exporting the previous image</source>
+        <translation>L’immagine precedente è ancora in fase di esportazione</translation>
     </message>
 </context>
 <context>
