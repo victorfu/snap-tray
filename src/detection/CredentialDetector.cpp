@@ -2,6 +2,7 @@
 
 #include <QRegularExpression>
 #include <QSet>
+#include <QUrl>
 #include <QStringList>
 #include <QtMath>
 #include <QtGlobal>
@@ -431,6 +432,122 @@ QRect subRectByTextSpan(const PreparedBlock& block, int spanStart, int spanLengt
     return result;
 }
 
+bool validCard(const QString& text)
+{
+    QString digits = text;
+    digits.remove(' ').remove('-').remove('\n');
+    if (digits.size() < 13 || digits.size() > 19 || digits.count(digits.front()) == digits.size())
+        return false;
+    int sum = 0;
+    bool doubleDigit = false;
+    for (auto it = digits.crbegin(); it != digits.crend(); ++it) {
+        int digit = it->digitValue();
+        if (doubleDigit) {
+            digit *= 2;
+            if (digit > 9)
+                digit -= 9;
+        }
+        sum += digit;
+        doubleDigit = !doubleDigit;
+    }
+    return sum % 10 == 0;
+}
+
+bool validAddress(const QString& text)
+{
+    for (const QString& part : text.split('.')) {
+        if (part.toInt() > 255 || (part.size() > 1 && part.startsWith('0')))
+            return false;
+    }
+    return true;
+}
+
+bool validWebUrl(const QString& text)
+{
+    const QUrl url(text, QUrl::StrictMode);
+    return url.isValid() && !url.host().isEmpty();
+}
+
+struct SensitiveRule {
+    QString category;
+    QRegularExpression pattern;
+    bool (*validate)(const QString&) = nullptr;
+};
+
+const QVector<SensitiveRule>& sensitiveRules()
+{
+    static const QVector<SensitiveRule> rules{
+        {"email", QRegularExpression(QStringLiteral(R"([A-Za-z0-9_%+-]+(?:\.[A-Za-z0-9_%+-]+)*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})"))},
+        {"url", QRegularExpression(QStringLiteral(R"(https?://[^\s<>"，。]+)"), QRegularExpression::CaseInsensitiveOption), validWebUrl},
+        {"ipv4", QRegularExpression(QStringLiteral(R"((?<![A-Za-z0-9.])(?:[0-9]{1,3}\.){3}[0-9]{1,3}(?![A-Za-z0-9.]))")), validAddress},
+        {"phone", QRegularExpression(QStringLiteral(R"((?<![\w+])(?<![0-9][ -])(?:\+[0-9]{1,3}[ -]?)?(?:\([0-9]{2,4}\)|[0-9]{2,4})[ -]?[0-9]{3,4}[- ][0-9]{3,4}(?![0-9 -]*[0-9]))"))},
+        {"card", QRegularExpression(QStringLiteral(R"((?<![0-9])(?:[0-9][ \n-]?){12,18}[0-9](?![0-9]))")), validCard}
+    };
+    return rules;
+}
+
+// Keep offsets in the joined row so matches split by OCR can still use
+// each contributing block's native UTF-16 geometry.
+void appendSensitiveRegions(const QVector<PreparedBlock>& blocks, const QStringList& categories,
+                            QVector<QRect>& regions, qsizetype wrapAt = -1)
+{
+    constexpr int kMinimumEdgePadding = 2;
+    constexpr qreal kEdgePaddingToHeight = 0.10;
+    const auto appendLine = [&](const QRect& line) {
+        if (line.isEmpty())
+            return;
+        // Leave room for glyph edges outside the native OCR box.
+        const int padding = qMax(kMinimumEdgePadding, qCeil(line.height() * kEdgePaddingToHeight));
+        regions.append(line.adjusted(-padding, -padding, padding, padding));
+    };
+    QString row;
+    qsizetype wrapOffset = -1;
+    QVector<int> starts;
+    for (const auto& block : blocks) {
+        if (starts.size() == wrapAt) {
+            wrapOffset = row.size();
+            row += '\n';
+        } else if (!row.isEmpty()) {
+            const auto& previous = blocks[starts.size() - 1];
+            const int gap = block.pixelRect.left() - previous.pixelRect.right() - 1;
+            const int lineHeight = qMax(previous.pixelRect.height(), block.pixelRect.height());
+            // Do not join columns. Keep punctuation attached across adjacent
+            // word boxes, as native OCR can tokenize a URL or email address.
+            if (gap > lineHeight)
+                row += QChar::ParagraphSeparator;
+            else if (!QStringLiteral("@./:_+-?&#=%").contains(row.back())
+                     && !QStringLiteral("@./:_+-?&#=%").contains(block.text.front()))
+                row += ' ';
+        }
+        starts.append(row.size());
+        row += block.text;
+    }
+    for (const auto& rule : sensitiveRules()) {
+        if (!categories.contains(rule.category))
+            continue;
+        auto matches = rule.pattern.globalMatch(row);
+        while (matches.hasNext()) {
+            const auto match = matches.next();
+            if (wrapOffset >= 0 && (match.capturedStart() >= wrapOffset || match.capturedEnd() <= wrapOffset))
+                continue;
+            if (rule.validate && !rule.validate(match.captured()))
+                continue;
+            QRect rect;
+            for (qsizetype i = 0; i < blocks.size(); ++i) {
+                if (i == wrapAt) {
+                    appendLine(rect);
+                    rect = {};
+                }
+                const int start = qMax<int>(match.capturedStart(), starts[i]);
+                const int end = qMin<int>(match.capturedEnd(), starts[i] + blocks[i].text.size());
+                if (end > start)
+                    rect = rect.united(subRectByTextSpan(blocks[i], start - starts[i], end - start));
+            }
+            appendLine(rect);
+        }
+    }
+}
+
 QVector<RowBucket> clusterRows(QVector<PreparedBlock> blocks, qreal tolerance)
 {
     std::sort(blocks.begin(), blocks.end(), [](const PreparedBlock& a, const PreparedBlock& b) {
@@ -626,7 +743,8 @@ QVector<QRect> mergeNearbyRects(const QVector<QRect>& rects, const QSize& imageS
 
 } // namespace
 
-QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, const QSize& imageSize)
+QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, const QSize& imageSize,
+                                          const QStringList& categories)
 {
     if (blocks.isEmpty() || imageSize.width() <= 0 || imageSize.height() <= 0) {
         return {};
@@ -676,12 +794,15 @@ QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, c
     const QVector<RowBucket> rows = clusterRows(std::move(preparedBlocks), rowTolerance);
 
     QVector<QRect> detectedRegions;
+    QVector<QRect> optionalRegions;
     for (const RowBucket& row : rows) {
         if (row.blocks.isEmpty()) {
             continue;
         }
 
         const QVector<PreparedBlock>& tokens = row.blocks;
+        if (!categories.isEmpty())
+            appendSensitiveRegions(tokens, categories, optionalRegions);
         QVector<bool> mark(tokens.size(), false);
         QVector<EmbeddedSensitiveValueMatch> embeddedMatches(tokens.size());
 
@@ -742,5 +863,31 @@ QVector<QRect> CredentialDetector::detect(const QVector<OCRTextBlock>& blocks, c
         }
     }
 
-    return mergeNearbyRects(detectedRegions, imageSize);
+    if (categories.contains("card")) {
+        for (qsizetype i = 1; i < rows.size(); ++i) {
+            const auto& previous = rows[i - 1].blocks;
+            const auto& next = rows[i].blocks;
+            const QRect last = previous.back().pixelRect;
+            const QRect first = next.front().pixelRect;
+            const int lineHeight = qMax(last.height(), first.height());
+            if (first.top() - last.bottom() > lineHeight ||
+                first.left() > last.right() + lineHeight ||
+                first.right() < previous.front().pixelRect.left() - lineHeight)
+                continue;
+            appendSensitiveRegions(previous + next, {"card"}, optionalRegions, previous.size());
+        }
+    }
+    auto candidates = mergeNearbyRects(detectedRegions, imageSize);
+    const QRect bounds(QPoint(), imageSize);
+    for (const auto& region : optionalRegions) {
+        const QRect clipped = region.intersected(bounds);
+        // With word- or block-only geometry several matches can point to
+        // the same pixels. Coalesce containment, but keep neighbours selectable.
+        if (std::any_of(candidates.cbegin(), candidates.cend(),
+                        [&](const QRect& item) { return item.contains(clipped); }))
+            continue;
+        candidates.removeIf([&](const QRect& item) { return clipped.contains(item); });
+        candidates.append(clipped);
+    }
+    return candidates;
 }

@@ -290,6 +290,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>ที่อยู่อีเมล</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>ที่อยู่เว็บ</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>ที่อยู่ IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>หมายเลขโทรศัพท์</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>บัตรชำระเงิน</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>จับภาพ</translation>
@@ -8574,6 +8594,39 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <source>Increase text size</source>
         <translation>เพิ่มขนาดข้อความ</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>ตรวจสอบการเบลออัตโนมัติ</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>เลือกบริเวณที่ต้องการซ่อน OCR อาจตรวจไม่พบข้อความที่ละเอียดอ่อน</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>บริเวณ %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>ใบหน้าที่เบลอ: %1 · บริเวณข้อความ: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>ไม่พบใบหน้าหรือข้อความที่ละเอียดอ่อน</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>ยกเลิก</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>นำไปใช้</translation>
     </message>
 </context>
 </TS>

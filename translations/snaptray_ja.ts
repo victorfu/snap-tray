@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>メールアドレス</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>ウェブアドレス</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 アドレス</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>電話番号</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>決済カード</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>キャプチャ</translation>
@@ -8889,6 +8909,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>文字を大きくする</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>自動ぼかしの確認</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>隠す範囲を選択してください。OCR は機密情報を見落とすことがあります。</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>領域 %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>ぼかした顔：%1 件 · テキスト領域：%2 件</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>顔や機密テキストは検出されませんでした</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>適用</translation>
     </message>
 </context>
 </TS>

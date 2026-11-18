@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Indirizzi email</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Indirizzi web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Indirizzi IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Numeri di telefono</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Carte di pagamento</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Cattura</translation>
@@ -8893,6 +8913,39 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Ingrandisci il testo</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Verifica sfocatura automatica</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Seleziona le aree da nascondere. Il riconoscimento del testo può tralasciare dati sensibili.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Area %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Volti sfocati: %1 · Aree di testo: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nessun volto o testo sensibile rilevato</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Applica</translation>
     </message>
 </context>
 </TS>

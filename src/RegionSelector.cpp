@@ -44,6 +44,7 @@ using snaptray::colorwidgets::ColorPickerDialogCompat;
 #include "PlatformFeatures.h"
 #include "detection/AutoBlurManager.h"
 #include "detection/CredentialDetector.h"
+#include "qml/RedactionReview.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
 #include "settings/FileSettingsManager.h"
@@ -4892,6 +4893,7 @@ void RegionSelector::closeEvent(QCloseEvent* event)
     }
 
     m_isClosing = true;
+    ++m_autoBlurGeneration;
     m_inputHandler->setBoundarySnapSource({}, 1.0);
     if (m_markerTextCache) m_markerTextCache->clear();
     if (auto* marker = m_toolManager->handler(ToolId::Marker)) marker->cancelDrawing();
@@ -5404,7 +5406,7 @@ void RegionSelector::performAutoBlur()
     aggregated->faceError = faceUnavailableError;
 
     QPointer<RegionSelector> safeThis = this;
-    auto finishIfReady = [safeThis, request, aggregated]() {
+    auto applyReviewed = [safeThis, request, aggregated]() {
         if (!safeThis || aggregated->facePending || aggregated->ocrPending) {
             return;
         }
@@ -5435,21 +5437,8 @@ void RegionSelector::performAutoBlur()
                 return;
             }
 
-            QString partialMessage;
-            if (faceCount > 0 && credentialCount > 0) {
-                partialMessage = safeThis->tr("Blurred %1 face(s), %2 credential(s). %3")
-                    .arg(faceCount)
-                    .arg(credentialCount)
-                    .arg(warningMessage);
-            } else if (faceCount > 0) {
-                partialMessage = safeThis->tr("Blurred %1 face(s). %2")
-                    .arg(faceCount)
-                    .arg(warningMessage);
-            } else {
-                partialMessage = safeThis->tr("Blurred %1 credential(s). %2")
-                    .arg(credentialCount)
-                    .arg(warningMessage);
-            }
+            const QString partialMessage = SnapTray::redactionSummary(faceCount, credentialCount)
+                + QLatin1Char(' ') + warningMessage;
             safeThis->onAutoBlurComplete(
                 request->generation, false, faceCount, credentialCount, partialMessage);
             return;
@@ -5469,6 +5458,30 @@ void RegionSelector::performAutoBlur()
         } else {
             safeThis->onAutoBlurComplete(request->generation, false, 0, 0, errorMessage);
         }
+    };
+
+    auto finishIfReady = [safeThis, aggregated, applyReviewed, request, selectedImage] {
+        if (!safeThis || aggregated->facePending || aggregated->ocrPending)
+            return;
+        if (!safeThis->isAutoBlurRequestCurrent(*request) || (aggregated->faceRegions.isEmpty() && aggregated->credentialRegions.isEmpty())) {
+            applyReviewed();
+            return;
+        }
+        auto* dialog = SnapTray::reviewRedactions(safeThis, selectedImage, aggregated->faceRegions,
+            aggregated->credentialRegions, [safeThis, aggregated, applyReviewed, request](
+                bool accepted, QVector<QRect> faces, QVector<QRect> text) {
+                if (!safeThis)
+                    return;
+                if (!accepted || (faces.isEmpty() && text.isEmpty())) {
+                    safeThis->clearAutoBlurProgress(request->generation);
+                    return;
+                }
+                aggregated->faceRegions = std::move(faces);
+                aggregated->credentialRegions = std::move(text);
+                applyReviewed();
+            });
+        safeThis->trackBlockingDialog(dialog);
+        dialog->showCenteredOnScreen(safeThis->screen());
     };
 
     m_autoBlurWatcher = nullptr;
@@ -5502,14 +5515,14 @@ void RegionSelector::performAutoBlur()
         QPixmap ocrSource = selectedPixmap;
         ocrSource.setDevicePixelRatio(1.0);
         ocrManager->recognizeText(ocrSource,
-            [safeThis, aggregated, finishIfReady, selectedImageSize](const OCRResult& result) {
+            [safeThis, aggregated, finishIfReady, selectedImageSize, categories = opts.sensitiveCategories](const OCRResult& result) {
                 if (!safeThis) {
                     return;
                 }
 
                 if (result.success && !result.blocks.isEmpty()) {
                     aggregated->credentialRegions =
-                        CredentialDetector::detect(result.blocks, selectedImageSize);
+                        CredentialDetector::detect(result.blocks, selectedImageSize, categories);
                 } else if (!result.success && !result.error.isEmpty()
                            && result.error != ocrNoTextDetectedError()) {
                     aggregated->ocrError = result.error;
@@ -5551,7 +5564,10 @@ void RegionSelector::addAutoBlurRegions(const AutoBlurRequestSnapshot& request,
         const QRect absolutePhysicalRect =
             region.translated(request.clampedPhysicalRect.topLeft());
         const QRect logicalRect =
-            CoordinateHelper::toLogical(absolutePhysicalRect, request.devicePixelRatio)
+            QRectF(absolutePhysicalRect.x() / request.devicePixelRatio,
+                   absolutePhysicalRect.y() / request.devicePixelRatio,
+                   absolutePhysicalRect.width() / request.devicePixelRatio,
+                   absolutePhysicalRect.height() / request.devicePixelRatio).toAlignedRect()
                 .intersected(request.selectionRect);
         if (logicalRect.isEmpty()) {
             continue;
@@ -5590,23 +5606,11 @@ void RegionSelector::onAutoBlurComplete(quint64 generation, bool success, int fa
 
     QString msg;
     auto level = SnapTray::QmlToast::Level::Info;
-    if (success && faceCount > 0 && credentialCount > 0) {
-        msg = tr("Blurred %1 face(s), %2 credential(s)").arg(faceCount).arg(credentialCount);
-        level = SnapTray::QmlToast::Level::Success;
-    }
-    else if (success && faceCount > 0) {
-        msg = tr("Blurred %1 face(s)").arg(faceCount);
-        level = SnapTray::QmlToast::Level::Success;
-    }
-    else if (success && credentialCount > 0) {
-        msg = tr("Blurred %1 credential(s)").arg(credentialCount);
-        level = SnapTray::QmlToast::Level::Success;
-    }
-    else if (success) {
-        msg = tr("No faces or credentials detected");
-        level = SnapTray::QmlToast::Level::Info;
-    }
-    else {
+    if (success) {
+        msg = SnapTray::redactionSummary(faceCount, credentialCount);
+        if (faceCount || credentialCount)
+            level = SnapTray::QmlToast::Level::Success;
+    } else {
         msg = error.isEmpty() ? tr("Detection failed") : error;
         level = SnapTray::QmlToast::Level::Error;
     }

@@ -5,6 +5,7 @@
 
 #include <QRect>
 #include <QSize>
+#include <QStringList>
 #include <QVector>
 
 /**
@@ -23,7 +24,8 @@ public:
      * @param imageSize Source image size in pixels.
      * @return Pixel-space rectangles relative to the input image.
      */
-    static QVector<QRect> detect(const QVector<OCRTextBlock>& blocks, const QSize& imageSize);
+    static QVector<QRect> detect(const QVector<OCRTextBlock>& blocks, const QSize& imageSize,
+                                 const QStringList& categories = {});
 };
 
 #endif // CREDENTIALDETECTOR_H

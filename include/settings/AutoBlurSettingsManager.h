@@ -1,6 +1,8 @@
 #ifndef AUTOBLURSETTINGSMANAGER_H
 #define AUTOBLURSETTINGSMANAGER_H
 
+#include <QStringList>
+
 #include "annotations/MosaicBlurType.h"
 
 /**
@@ -22,6 +24,7 @@ public:
         bool detectFaces = true;
         int blurIntensity = 50;  // 1-100
         BlurType blurType = BlurType::Pixelate;
+        QStringList sensitiveCategories;
     };
 
     static AutoBlurSettingsManager& instance();
@@ -31,6 +34,9 @@ public:
     void save(const Options& options);
 
     // Individual accessors
+    QStringList loadSensitiveCategories() const;
+    void saveSensitiveCategories(const QStringList& categories);
+
     bool loadEnabled() const;
     void saveEnabled(bool enabled);
 

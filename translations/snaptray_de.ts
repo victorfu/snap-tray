@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-Mail-Adressen</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webadressen</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4-Adressen</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefonnummern</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Zahlungskarten</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Erfassung</translation>
@@ -8893,6 +8913,39 @@ Sie wird möglicherweise von einer anderen Anwendung verwendet.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Text vergrößern</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Automatische Unschärfe prüfen</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Wählen Sie die zu verdeckenden Bereiche. Die Texterkennung kann sensible Inhalte übersehen.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Bereich %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Unkenntlich gemachte Gesichter: %1 · Textbereiche: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Keine Gesichter oder sensiblen Texte erkannt</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Abbrechen</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Anwenden</translation>
     </message>
 </context>
 </TS>

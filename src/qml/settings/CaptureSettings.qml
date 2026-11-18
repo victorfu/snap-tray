@@ -78,6 +78,23 @@ Flickable {
             onActivated: function(index) { settingsBackend.blurType = index }
         }
 
+        Repeater {
+            model: settingsBackend.ocrSupported ? [
+                { key: "blurEmail", label: qsTr("Email addresses") },
+                { key: "blurUrl", label: qsTr("Web addresses") },
+                { key: "blurIpv4", label: qsTr("IPv4 addresses") },
+                { key: "blurPhone", label: qsTr("Phone numbers") },
+                { key: "blurCard", label: qsTr("Payment cards") }
+            ] : []
+            SettingsToggle {
+                required property var modelData
+                label: modelData.label
+                resetKey: modelData.key
+                checked: settingsBackend[modelData.key]
+                onToggled: function(enabled) { settingsBackend[modelData.key] = enabled }
+            }
+        }
+
         SettingsSlider {
             resetKey: "blurIntensity"
             objectName: "blurIntensitySlider"

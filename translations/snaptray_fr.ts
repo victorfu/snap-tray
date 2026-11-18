@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Adresses e-mail</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Adresses web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Adresses IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Numéros de téléphone</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Cartes de paiement</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Capture</translation>
@@ -8893,6 +8913,39 @@ Il est peut-être utilisé par une autre application.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Augmenter la taille du texte</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Vérifier le floutage automatique</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Sélectionnez les zones à masquer. La reconnaissance de texte peut manquer des données sensibles.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Zone %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Visages floutés : %1 · Zones de texte : %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Aucun visage ni texte sensible détecté</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuler</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Appliquer</translation>
     </message>
 </context>
 </TS>

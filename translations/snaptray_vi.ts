@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Địa chỉ email</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Địa chỉ web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Địa chỉ IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Số điện thoại</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Thẻ thanh toán</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Chụp</translation>
@@ -8889,6 +8909,39 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <source>Increase text size</source>
         <translation>Tăng cỡ chữ</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Xem lại các vùng làm mờ tự động</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Chọn vùng cần ẩn. OCR có thể bỏ sót văn bản nhạy cảm.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Vùng %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Số khuôn mặt đã làm mờ: %1 · Vùng văn bản: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Không phát hiện khuôn mặt hoặc văn bản nhạy cảm</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Hủy</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Áp dụng</translation>
     </message>
 </context>
 </TS>

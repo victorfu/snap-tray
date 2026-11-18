@@ -84,6 +84,17 @@ private slots:
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testFullScreenCaptureAction_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
+    void optionalSensitiveCategoriesRoundTrip() {
+        SettingsBackend backend;
+        const QStringList categories{"email", "ipv4"};
+        backend.setSensitiveCategories(categories);
+        QCOMPARE(SettingsBackend().sensitiveCategories(), categories);
+        QVERIFY(backend.canResetSetting("blurEmail"));
+        backend.resetSetting("blurEmail");
+        QCOMPARE(SettingsBackend().sensitiveCategories(), QStringList{"ipv4"});
+        backend.resetSetting("blurIpv4");
+        QVERIFY(SettingsBackend().sensitiveCategories().isEmpty());
+    }
     void testBlurTypeMapping_RoundTripMatchesUiIndices();
     void testUseLastScreenshotSaveLocation_RoundTripPersistsAndSignals();
     void testCheckForUpdates_Started_EmitsNoTerminalSignals();

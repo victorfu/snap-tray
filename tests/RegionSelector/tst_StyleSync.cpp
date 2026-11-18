@@ -1355,14 +1355,16 @@ void TestRegionSelectorStyleSync::testAutoBlurGaussianCoversDetectedRegion()
     request.annotationLayer = &layer;
     request.blockSize = 12;
     request.blurType = MosaicBlurType::Gaussian;
-    selector.addAutoBlurRegions(request, {QRect(16 * dpr, 16 * dpr, 32 * dpr, 24 * dpr)});
+    const QRect detected(17, 13, 31, 21);
+    selector.addAutoBlurRegions(request, {detected});
     QCOMPARE(layer.itemCount(), size_t(1));
     QImage output(240, 200, QImage::Format_ARGB32);
     output.setDevicePixelRatio(dpr);
     output.fill(Qt::transparent);
     { QPainter painter(&output); layer.itemAt(0)->draw(painter); }
-    for (int y = 32 * dpr; y < 56 * dpr; ++y)
-        for (int x = 32 * dpr; x < 64 * dpr; ++x)
+    const QRect expected = detected.translated(request.clampedPhysicalRect.topLeft());
+    for (int y = expected.top(); y <= expected.bottom(); ++y)
+        for (int x = expected.left(); x <= expected.right(); ++x)
             QCOMPARE(output.pixelColor(x, y), QColor(Qt::red));
 }
 

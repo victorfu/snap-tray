@@ -55,6 +55,55 @@ class tst_CredentialDetector : public QObject
     Q_OBJECT
 
 private slots:
+    void wrappedPaymentCard() {
+        const QVector<OCRTextBlock> blocks{
+            makeBlock("public note", .05, .10), makeBlock("4111 1111", .70, .10),
+            makeBlock("1111 1111", .05, .16), makeBlock("other note", .50, .16)
+        };
+        const QSize image(1000, 800);
+        const auto regions = CredentialDetector::detect(blocks, image, {"card"});
+        QCOMPARE(regions.size(), 2);
+        for (int i : {1, 2})
+            QVERIFY(containsRectCenter(regions, expectedPixelRect(blocks[i].boundingRect, image)));
+        for (int i : {0, 3}) {
+            for (const auto& region : regions)
+                QVERIFY(!region.intersects(expectedPixelRect(blocks[i].boundingRect, image)));
+        }
+    }
+    void urlWithPortCoversQuery() {
+        const QString url = QStringLiteral("https://example.org:8443/private/report?token=XYZ");
+        auto block = makeBlock(url, .04, .2, .5);
+        for (int i = 0; i < url.size(); ++i)
+            block.textRanges.append({i, 1, QRectF(.04 + .01 * i, .2, .01, .04)});
+        const QSize image(1000, 500);
+        const auto regions = CredentialDetector::detect({block}, image, {"url"});
+        QCOMPARE(regions.size(), 1);
+        QVERIFY(regions.front().contains(expectedPixelRect(block.textRanges.back().boundingRect, image)));
+    }
+    void splitPaymentCard() {
+        const QVector<OCRTextBlock> blocks{
+            makeBlock("4111 1111", .1, .2), makeBlock("1111 1111", .25, .2)
+        };
+        const QSize image(800, 400);
+        const auto regions = CredentialDetector::detect(blocks, image, {"card"});
+        QCOMPARE(regions.size(), 1);
+        for (const auto& block : blocks)
+            QVERIFY(regions.front().contains(expectedPixelRect(block.boundingRect, image)));
+    }
+    void splitEmailWithNativeWordBounds() {
+        const QVector<OCRTextBlock> blocks{
+            makeBlock("help", .01, .20, .07), makeBlock("-", .08, .20, .02),
+            makeBlock("support", .10, .20, .07), makeBlock("@", .17, .20, .02),
+            makeBlock("example.org", .19, .20, .12)
+        };
+        const QSize size(800, 400);
+        const auto hits = CredentialDetector::detect(blocks, size, {"email"});
+        QCOMPARE(hits.size(), 1);
+        for (const auto& block : blocks)
+            QVERIFY(hits.front().contains(expectedPixelRect(block.boundingRect, size)));
+    }
+    void optionalCategories_data();
+    void optionalCategories();
     void testDetect_FontGeometryCoverage();
     void testDetect_RangeGeometryUnicodeAndFallback();
     void testDetect_IncompleteGeometryPreservesKnownExtent();
@@ -76,6 +125,39 @@ private slots:
     void testDetect_CommaDelimitedPlainWordsAfterValue_NotMarked();
     void testDetect_MergeOverlappingRegions();
 };
+
+void tst_CredentialDetector::optionalCategories_data()
+{
+    QTest::addColumn<QString>("text");
+    QTest::addColumn<QString>("category");
+    QTest::addColumn<bool>("expected");
+    QTest::newRow("email") << QStringLiteral("聯絡a.b@example.org") << QStringLiteral("email") << true;
+    QTest::newRow("email-incomplete") << QStringLiteral("a@localhost") << QStringLiteral("email") << false;
+    QTest::newRow("url") << QStringLiteral("https://example.org/path") << QStringLiteral("url") << true;
+    QTest::newRow("url-incomplete") << QStringLiteral("https://") << QStringLiteral("url") << false;
+    QTest::newRow("ipv4") << QStringLiteral("192.168.0.1") << QStringLiteral("ipv4") << true;
+    QTest::newRow("invalid-ip") << QStringLiteral("192.168.256.1") << QStringLiteral("ipv4") << false;
+    QTest::newRow("phone") << QStringLiteral("+1 (202) 555-0142") << QStringLiteral("phone") << true;
+    QTest::newRow("card-is-not-phone") << QStringLiteral("4111 1111 1111 1111") << QStringLiteral("phone") << false;
+    QTest::newRow("version") << QStringLiteral("v2026.11.18") << QStringLiteral("phone") << false;
+    QTest::newRow("card") << QStringLiteral("4111 1111 1111 1111") << QStringLiteral("card") << true;
+    QTest::newRow("card-line-break") << QStringLiteral("4111 1111\n1111 1111") << QStringLiteral("card") << true;
+    QTest::newRow("card-checksum") << QStringLiteral("4111 1111 1111 1112") << QStringLiteral("card") << false;
+}
+
+void tst_CredentialDetector::optionalCategories()
+{
+    QFETCH(QString, text);
+    QFETCH(QString, category);
+    QFETCH(bool, expected);
+    const QSize size(500, 300);
+    const auto block = makeBlock(text, 0.2, 0.2);
+    QVERIFY(CredentialDetector::detect({block}, size).isEmpty());
+    const auto matches = CredentialDetector::detect({block}, size, {category});
+    QCOMPARE(!matches.isEmpty(), expected);
+    if (expected)
+        QVERIFY(matches.first().contains(expectedPixelRect(block.boundingRect, size)));
+}
 
 void tst_CredentialDetector::testDetect_FontGeometryCoverage()
 {

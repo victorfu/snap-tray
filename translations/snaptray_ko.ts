@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>이메일 주소</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>웹 주소</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4 주소</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>전화번호</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>결제 카드</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>캡처</translation>
@@ -8889,6 +8909,39 @@ It may be in use by another application.</source>
     <message>
         <source>Increase text size</source>
         <translation>글자 크기 늘리기</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>자동 흐림 검토</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>숨길 영역을 선택하세요. OCR이 민감한 텍스트를 놓칠 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>영역 %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>흐리게 처리한 얼굴: %1개 · 텍스트 영역: %2개</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>얼굴이나 민감한 텍스트가 감지되지 않았습니다</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>적용</translation>
     </message>
 </context>
 </TS>

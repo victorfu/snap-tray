@@ -411,6 +411,7 @@ void tst_SettingsWindowFeatureGating::searchFindsSettingsSectionsAndHotkeys()
     // By label, any case. The first query after an empty field must already
     // give results (the "searching" binding can lag behind onQueryChanged).
     QVERIFY(hasTarget(results(QStringLiteral("zoom STEP")), QStringLiteral("pins"), QStringLiteral("pinZoomStep")));
+    QCOMPARE(hasTarget(results("Payment cards"), "capture", "blurCard"), backend.ocrSupported());
     // By section: every watermark setting, under Saving.
     const auto watermark = results(QStringLiteral("watermark"));
     QVERIFY(hasTarget(watermark, QStringLiteral("saving"), QStringLiteral("watermarkEnabled")));

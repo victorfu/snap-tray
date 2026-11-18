@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>E-mailadressen</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Webadressen</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>IPv4-adressen</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Telefoonnummers</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Betaalkaarten</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Vastleggen</translation>
@@ -8893,6 +8913,39 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Tekst vergroten</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Automatisch vervagen controleren</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Selecteer de gebieden die u wilt verbergen. Tekstherkenning kan gevoelige tekst missen.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Gebied %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Vervaagde gezichten: %1 · Tekstgebieden: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Geen gezichten of gevoelige tekst gedetecteerd</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annuleren</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Toepassen</translation>
     </message>
 </context>
 </TS>

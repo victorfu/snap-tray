@@ -44,6 +44,7 @@
 #include "annotations/MosaicRectAnnotation.h"
 #include "detection/AutoBlurManager.h"
 #include "detection/CredentialDetector.h"
+#include "qml/RedactionReview.h"
 #include "tools/ToolManager.h"
 #include "tools/ToolRepaintHelper.h"
 #include "tools/handlers/EmojiStickerToolHandler.h"
@@ -3783,6 +3784,7 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
 void PinWindow::closeEvent(QCloseEvent* event)
 {
+    invalidateAutoBlurRequest();
     if (m_colorPickOverlay) {
         m_colorPickOverlay->cancel();
     }
@@ -6226,17 +6228,10 @@ void PinWindow::onAutoBlurRequested()
 
         QString message;
         auto toastLevel = SnapTray::QmlToast::Level::Success;
-        if (success && faceCount > 0 && credentialCount > 0) {
-            message = safeThis->tr("Blurred %1 face(s), %2 credential(s)")
-                .arg(faceCount)
-                .arg(credentialCount);
-        } else if (success && faceCount > 0) {
-            message = safeThis->tr("Blurred %1 face(s)").arg(faceCount);
-        } else if (success && credentialCount > 0) {
-            message = safeThis->tr("Blurred %1 credential(s)").arg(credentialCount);
-        } else if (success) {
-            message = safeThis->tr("No faces or credentials detected");
-            toastLevel = SnapTray::QmlToast::Level::Info;
+        if (success) {
+            message = SnapTray::redactionSummary(faceCount, credentialCount);
+            if (!faceCount && !credentialCount)
+                toastLevel = SnapTray::QmlToast::Level::Info;
         } else {
             message = error.isEmpty() ? safeThis->tr("Detection failed") : error;
             toastLevel = SnapTray::QmlToast::Level::Error;
@@ -6246,7 +6241,7 @@ void PinWindow::onAutoBlurRequested()
         safeThis->update();
     };
 
-    auto finishIfReady = [safeThis,
+    auto applyReviewed = [safeThis,
                           aggregated,
                           requestGeneration,
                           requestRotationAngle,
@@ -6317,21 +6312,8 @@ void PinWindow::onAutoBlurRequested()
                 return;
             }
 
-            QString partialMessage;
-            if (faceCount > 0 && credentialCount > 0) {
-                partialMessage = safeThis->tr("Blurred %1 face(s), %2 credential(s). %3")
-                    .arg(faceCount)
-                    .arg(credentialCount)
-                    .arg(warningMessage);
-            } else if (faceCount > 0) {
-                partialMessage = safeThis->tr("Blurred %1 face(s). %2")
-                    .arg(faceCount)
-                    .arg(warningMessage);
-            } else {
-                partialMessage = safeThis->tr("Blurred %1 credential(s). %2")
-                    .arg(credentialCount)
-                    .arg(warningMessage);
-            }
+            const QString partialMessage = SnapTray::redactionSummary(faceCount, credentialCount)
+                + QLatin1Char(' ') + warningMessage;
             complete(false, faceCount, credentialCount, partialMessage);
             return;
         }
@@ -6350,6 +6332,31 @@ void PinWindow::onAutoBlurRequested()
         } else {
             complete(false, 0, 0, errorMessage);
         }
+    };
+
+    auto finishIfReady = [safeThis, aggregated, applyReviewed, requestGeneration, image] {
+        if (!safeThis || aggregated->facePending || aggregated->ocrPending)
+            return;
+        if (!safeThis->isAutoBlurRequestCurrent(requestGeneration) || (aggregated->faceRegions.isEmpty() && aggregated->credentialRegions.isEmpty())) {
+            applyReviewed();
+            return;
+        }
+        auto* dialog = SnapTray::reviewRedactions(safeThis, image, aggregated->faceRegions,
+            aggregated->credentialRegions, [safeThis, aggregated, applyReviewed](
+                bool accepted, QVector<QRect> faces, QVector<QRect> text) {
+                if (!safeThis)
+                    return;
+                if (!accepted || (faces.isEmpty() && text.isEmpty())) {
+                    safeThis->m_autoBlurInProgress = false;
+                    safeThis->updateToolbarAutoBlurState();
+                    safeThis->updateLoadingSpinnerState();
+                    return;
+                }
+                aggregated->faceRegions = std::move(faces);
+                aggregated->credentialRegions = std::move(text);
+                applyReviewed();
+            });
+        dialog->showCenteredOnScreen(safeThis->screen());
     };
 
     m_autoBlurWatcher = nullptr;
@@ -6383,14 +6390,14 @@ void PinWindow::onAutoBlurRequested()
         QPixmap ocrPixmap = detectionPixmap;
         ocrPixmap.setDevicePixelRatio(1.0);
         ocrManager->recognizeText(ocrPixmap,
-            [safeThis, aggregated, finishIfReady, imageSize](const OCRResult& result) {
+            [safeThis, aggregated, finishIfReady, imageSize, categories = options.sensitiveCategories](const OCRResult& result) {
                 if (!safeThis) {
                     return;
                 }
 
                 if (result.success && !result.blocks.isEmpty()) {
                     aggregated->credentialRegions =
-                        CredentialDetector::detect(result.blocks, imageSize);
+                        CredentialDetector::detect(result.blocks, imageSize, categories);
                 } else if (!result.success && !result.error.isEmpty()
                            && result.error != ocrNoTextDetectedError()) {
                     aggregated->ocrError = result.error;

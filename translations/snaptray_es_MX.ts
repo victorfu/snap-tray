@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Direcciones de correo electrónico</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Direcciones web</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Direcciones IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Números de teléfono</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Tarjetas de pago</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Captura</translation>
@@ -8893,6 +8913,39 @@ Puede estar en uso por otra aplicación.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Aumentar el tamaño del texto</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Revisar difuminado automático</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Selecciona las regiones que deseas ocultar. El OCR puede pasar por alto texto sensible.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Región %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rostros difuminados: %1 · Regiones de texto: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>No se detectaron rostros ni texto sensible</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Cancelar</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Aplicar</translation>
     </message>
 </context>
 </TS>

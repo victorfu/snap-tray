@@ -342,6 +342,26 @@
 <context>
     <name>CaptureSettings</name>
     <message>
+        <source>Email addresses</source>
+        <translation>Adresy e-mail</translation>
+    </message>
+    <message>
+        <source>Web addresses</source>
+        <translation>Adresy internetowe</translation>
+    </message>
+    <message>
+        <source>IPv4 addresses</source>
+        <translation>Adresy IPv4</translation>
+    </message>
+    <message>
+        <source>Phone numbers</source>
+        <translation>Numery telefonów</translation>
+    </message>
+    <message>
+        <source>Payment cards</source>
+        <translation>Karty płatnicze</translation>
+    </message>
+    <message>
         <location filename="../src/qml/settings/CaptureSettings.qml" line="22" />
         <source>Capture</source>
         <translation>Przechwytywanie</translation>
@@ -8897,6 +8917,39 @@ Może być używany przez inną aplikację.</translation>
     <message>
         <source>Increase text size</source>
         <translation>Powiększ tekst</translation>
+    </message>
+</context>
+<context>
+    <name>RedactionReview</name>
+    <message>
+        <source>Review Auto Blur</source>
+        <translation>Sprawdź automatyczne rozmycie</translation>
+    </message>
+    <message>
+        <source>Select the regions to hide. OCR can miss sensitive text.</source>
+        <translation>Wybierz obszary do ukrycia. OCR może pominąć poufny tekst.</translation>
+    </message>
+    <message>
+        <source>Region %1
+(%2, %3)</source>
+        <translation>Obszar %1
+(%2, %3)</translation>
+    </message>
+    <message>
+        <source>Blurred faces: %1 · Text regions: %2</source>
+        <translation>Rozmyte twarze: %1 · Obszary tekstu: %2</translation>
+    </message>
+    <message>
+        <source>No faces or sensitive text detected</source>
+        <translation>Nie wykryto twarzy ani poufnego tekstu</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Anuluj</translation>
+    </message>
+    <message>
+        <source>Apply</source>
+        <translation>Zastosuj</translation>
     </message>
 </context>
 </TS>
