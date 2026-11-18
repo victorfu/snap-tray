@@ -2610,6 +2610,16 @@ Rozmiar: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Przywróć powiększenie 100%, aby wyciąć pasek</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Nie można przyciąć tego zaznaczenia</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Wstrzymaj aktualizację na żywo, aby przyciąć</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

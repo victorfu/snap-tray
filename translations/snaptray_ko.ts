@@ -2608,6 +2608,16 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>띠를 잘라내려면 확대/축소를 100%로 되돌리세요</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>이 선택 영역을 자를 수 없습니다</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>자르려면 실시간 업데이트를 일시 중지하세요</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2608,6 +2608,16 @@ Kích thước: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Đặt lại thu phóng về 100% để cắt một dải</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Không thể cắt vùng chọn này</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Tạm dừng cập nhật trực tiếp để cắt</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

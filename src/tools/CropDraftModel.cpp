@@ -35,11 +35,106 @@ bool CropDraftModel::isValidAspect(int value)
     return false;
 }
 
+void CropDraftModel::clear()
+{
+    m_rect = QRect();
+    m_gestureActive = false;
+    m_gestureStartRect = QRect();
+}
+
+int CropDraftModel::exactPositionStep(qreal viewPerPixel)
+{
+    if (viewPerPixel <= 0.0) {
+        return 0;
+    }
+    constexpr qreal kTolerance = 1e-6;
+    for (int step = 1; step <= kMaxPositionStep; ++step) {
+        const qreal view = step * viewPerPixel;
+        if (view > 0.5 && qAbs(view - qRound(view)) < kTolerance) {
+            return step;
+        }
+    }
+    return 0;
+}
+
+void CropDraftModel::setPositionStep(const QSize& step)
+{
+    const QSize bounded(qMax(1, step.width()), qMax(1, step.height()));
+    if (bounded == m_positionStep) {
+        return;
+    }
+    m_positionStep = bounded;
+    if (hasRect()) {
+        m_rect = snapped(m_rect);
+    }
+}
+
+QRect CropDraftModel::snapped(const QRect& rect) const
+{
+    if (rect.isEmpty() || m_sourceSize.isEmpty()) {
+        return rect;
+    }
+    const auto snapAxis = [](int pos, int extent, int imageExtent, int step) {
+        const int maxPos = qMax(0, imageExtent - extent);
+        if (step <= 1) {
+            return qBound(0, pos, maxPos);
+        }
+        // Nearest grid line that still keeps the rect inside the image.
+        const int lastLine = (maxPos / step) * step;
+        return qBound(0, qRound(static_cast<qreal>(pos) / step) * step, lastLine);
+    };
+    return QRect(snapAxis(rect.x(), rect.width(), m_sourceSize.width(), m_positionStep.width()),
+                 snapAxis(rect.y(), rect.height(), m_sourceSize.height(), m_positionStep.height()),
+                 rect.width(), rect.height());
+}
+
+void CropDraftModel::beginGesture()
+{
+    m_gestureActive = true;
+    m_gestureStartRect = m_rect;
+}
+
+void CropDraftModel::moveBy(const QPoint& delta)
+{
+    if (m_gestureActive && !m_gestureStartRect.isEmpty()) {
+        moveRect(m_gestureStartRect, delta);
+    }
+}
+
+void CropDraftModel::dragHandle(Handle handle, const QPoint& current)
+{
+    if (m_gestureActive && !m_gestureStartRect.isEmpty()) {
+        resizeRect(m_gestureStartRect, handle, current);
+    }
+}
+
+void CropDraftModel::endGesture()
+{
+    if (!m_gestureActive) {
+        return;
+    }
+    if (!hasRect()) {
+        m_rect = m_gestureStartRect;
+    }
+    m_gestureActive = false;
+    m_gestureStartRect = QRect();
+}
+
+void CropDraftModel::cancelGesture()
+{
+    if (!m_gestureActive) {
+        return;
+    }
+    m_rect = m_gestureStartRect;
+    m_gestureActive = false;
+    m_gestureStartRect = QRect();
+}
+
 void CropDraftModel::setSource(const QSize& pixelSize, qreal devicePixelRatio)
 {
     const QSize size = pixelSize.isValid() ? pixelSize : QSize();
     if (size != m_sourceSize) {
-        m_rect = QRect();
+        clear();
     }
     m_sourceSize = size;
     m_dpr = devicePixelRatio > 0.0 ? devicePixelRatio : 1.0;
@@ -52,11 +147,6 @@ void CropDraftModel::setViewTransposed(bool transposed)
     }
     m_viewTransposed = transposed;
     setAspect(m_aspect);
-}
-
-void CropDraftModel::restoreRect(const QRect& rect)
-{
-    m_rect = rect.intersected(QRect(QPoint(0, 0), m_sourceSize));
 }
 
 qreal CropDraftModel::sourceRatio() const
@@ -138,25 +228,30 @@ void CropDraftModel::setRectClamped(const QRect& rect)
     const int h = qMin(rect.height(), m_sourceSize.height());
     const int x = boundInt(0, rect.x(), m_sourceSize.width() - w);
     const int y = boundInt(0, rect.y(), m_sourceSize.height() - h);
-    m_rect = QRect(x, y, w, h);
+    m_rect = snapped(QRect(x, y, w, h));
 }
 
-void CropDraftModel::setAspect(Aspect aspect)
+bool CropDraftModel::setAspect(Aspect aspect)
 {
+    const Aspect previous = m_aspect;
     m_aspect = aspect;
     if (!hasRect() || sourceRatio() <= 0.0) {
-        return;
+        return true;
     }
 
     const QSize size = fitSize(m_rect.width(), 0.0, m_sourceSize.width(), m_sourceSize.height());
     if (size.isEmpty()) {
-        return;
+        // The draft cannot take this ratio: the selected preset must not say
+        // otherwise.
+        m_aspect = previous;
+        return false;
     }
     const qreal centerX = m_rect.x() + m_rect.width() / 2.0;
     const qreal centerY = m_rect.y() + m_rect.height() / 2.0;
     setRectClamped(QRect(qRound(centerX - size.width() / 2.0),
                          qRound(centerY - size.height() / 2.0),
                          size.width(), size.height()));
+    return true;
 }
 
 void CropDraftModel::setRectFromDrag(const QPoint& anchor, const QPoint& current)
@@ -183,9 +278,9 @@ void CropDraftModel::setRectFromDrag(const QPoint& anchor, const QPoint& current
         m_rect = QRect();
         return;
     }
-    m_rect = QRect(right ? a.x() : a.x() - size.width(),
-                   down ? a.y() : a.y() - size.height(),
-                   size.width(), size.height());
+    m_rect = snapped(QRect(right ? a.x() : a.x() - size.width(),
+                           down ? a.y() : a.y() - size.height(),
+                           size.width(), size.height()));
 }
 
 void CropDraftModel::moveRect(const QRect& startRect, const QPoint& delta)
@@ -193,10 +288,11 @@ void CropDraftModel::moveRect(const QRect& startRect, const QPoint& delta)
     setRectClamped(startRect.translated(delta));
 }
 
-void CropDraftModel::nudge(const QPoint& delta)
+void CropDraftModel::nudge(const QPoint& steps)
 {
     if (hasRect()) {
-        moveRect(m_rect, delta);
+        moveRect(m_rect, QPoint(steps.x() * m_positionStep.width(),
+                                steps.y() * m_positionStep.height()));
     }
 }
 
@@ -222,10 +318,9 @@ void CropDraftModel::resizeRect(const QRect& startRect, Handle handle, const QPo
     default: isCorner = false; break;
     }
     if (isCorner) {
-        const QRect previous = m_rect;
         setRectFromDrag(cornerAnchor, current);
         if (!hasRect()) {
-            m_rect = previous;
+            m_rect = startRect;   // dragged onto its anchor: nothing to select
         }
         return;
     }
@@ -270,7 +365,7 @@ void CropDraftModel::resizeRect(const QRect& startRect, Handle handle, const QPo
     }
 
     const int axisStart = towardEnd ? fixed : fixed - axisExtent;
-    m_rect = horizontal
+    m_rect = snapped(horizontal
         ? QRect(axisStart, crossStart, axisExtent, crossExtent)
-        : QRect(crossStart, axisStart, crossExtent, axisExtent);
+        : QRect(crossStart, axisStart, crossExtent, axisExtent));
 }

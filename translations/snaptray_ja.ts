@@ -2608,6 +2608,16 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>帯を切り取るには、ズームを 100% に戻してください</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>この選択範囲は切り抜けません</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>切り抜くにはライブ更新を一時停止してください</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

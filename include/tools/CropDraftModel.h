@@ -15,11 +15,18 @@
  * lines: x runs from 0 to the image width inclusive, so a rect spanning
  * [0, width] covers every column.
  *
- * Positions move one source pixel at a time. Extents are kept to sizes the pin
- * shows without resampling: a whole number of logical pixels at the image's
- * device pixel ratio (any size at 1x, even sizes at 2x), or the full image
- * extent. Without that rule a 101 px crop of a 2x image would be stretched to
- * 102 px on screen and in exports.
+ * Positions move one source pixel at a time, unless setPositionStep() asks
+ * for a coarser grid. Extents are the nearest whole number of logical pixels
+ * at the image's device pixel ratio, or the full image extent. At an integer
+ * ratio (1x, 2x, 3x) that is a size the pin shows without resampling: any
+ * size at 1x, even sizes at 2x, where a 101 px crop would otherwise be
+ * stretched to 102 px on screen and in exports. At a fractional ratio it is
+ * only the closest fit: 101 px at 1.5x is 67.33 logical pixels and is still
+ * shown at 67, as any capture of that size is.
+ *
+ * Every rect the model holds was produced by its own rules. A pointer drag is
+ * a gesture: beginGesture() remembers the draft, the drag functions work from
+ * that snapshot, and cancelGesture() puts it back.
  */
 class CropDraftModel
 {
@@ -66,23 +73,44 @@ public:
     void setViewTransposed(bool transposed);
     bool viewTransposed() const { return m_viewTransposed; }
 
+    // Grid the draft's top-left corner stays on, in source pixels per axis.
+    // The host raises it above 1 when annotations must move with the crop by
+    // a whole number of their own units. Re-snaps the current draft.
+    void setPositionStep(const QSize& step);
+    QSize positionStep() const { return m_positionStep; }
+    // Smallest step whose multiples are whole view units, given how many view
+    // units one source pixel covers; 0 when none up to kMaxPositionStep is.
+    static int exactPositionStep(qreal viewPerPixel);
+    static constexpr int kMaxPositionStep = 64;
+
     bool hasRect() const { return !m_rect.isEmpty(); }
     QRect rect() const { return m_rect; }
-    void clear() { m_rect = QRect(); }
-    // Restores a rect produced earlier by this model (for cancelling a drag).
-    void restoreRect(const QRect& rect);
+    void clear();
 
     Aspect aspect() const { return m_aspect; }
-    // Re-fits the current draft around its center.
-    void setAspect(Aspect aspect);
+    // Selects a preset and re-fits the current draft around its center.
+    // Returns false, keeping the old preset and draft, when the draft cannot
+    // take that ratio (degenerate image sizes).
+    bool setAspect(Aspect aspect);
 
     // A new selection from a fixed corner to the pointer.
     void setRectFromDrag(const QPoint& anchor, const QPoint& current);
-    // Moves the draft `startRect` by `delta`, kept inside the image.
-    void moveRect(const QRect& startRect, const QPoint& delta);
-    void nudge(const QPoint& delta);
-    // Drags one handle of `startRect` to `current`.
-    void resizeRect(const QRect& startRect, Handle handle, const QPoint& current);
+    // Moves the draft by position steps, kept inside the image.
+    void nudge(const QPoint& steps);
+
+    // ---- pointer gesture ----
+    // Remembers the draft as it is now. The functions below work from it.
+    void beginGesture();
+    bool gestureActive() const { return m_gestureActive; }
+    // The remembered draft, moved by `delta` source pixels.
+    void moveBy(const QPoint& delta);
+    // One handle of the remembered draft dragged to `current`.
+    void dragHandle(Handle handle, const QPoint& current);
+    // Ends the gesture. A drag that left nothing selectable keeps the
+    // remembered draft instead.
+    void endGesture();
+    // Ends the gesture and puts the remembered draft back.
+    void cancelGesture();
 
     // The size nearest to `pixels`, no larger than `maxPixels`, that the pin
     // shows without resampling; 0 when none fits. The whole image extent is
@@ -94,12 +122,19 @@ private:
     qreal sourceRatio() const;
     QSize fitSize(qreal width, qreal height, int maxWidth, int maxHeight) const;
     void setRectClamped(const QRect& rect);
+    void moveRect(const QRect& startRect, const QPoint& delta);
+    void resizeRect(const QRect& startRect, Handle handle, const QPoint& current);
+    // Puts the corner of `rect` on the position grid, inside the image.
+    QRect snapped(const QRect& rect) const;
 
     QSize m_sourceSize;
     qreal m_dpr = 1.0;
     bool m_viewTransposed = false;
     Aspect m_aspect = Aspect::Free;
     QRect m_rect;
+    QSize m_positionStep{1, 1};
+    bool m_gestureActive = false;
+    QRect m_gestureStartRect;
 };
 
 #endif // CROPDRAFTMODEL_H

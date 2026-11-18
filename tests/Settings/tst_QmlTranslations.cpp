@@ -407,6 +407,8 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         {"PinWindow", "The image would become too large"},
         {"PinWindow", "Reset zoom to 100% to cut out a strip"},
         {"PinToolOptionsViewModel", "Reset zoom to 100% to cut out a strip"},
+        {"PinWindow", "Unable to crop this selection"},
+        {"PinWindow", "Pause Live Update to crop"},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

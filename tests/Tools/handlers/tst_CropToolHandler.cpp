@@ -31,6 +31,10 @@ private slots:
     void cursorFollowsHandleAndOrientation();
     void draftChangedIsReported();
     void previewDimsOutsideDraftOnly();
+    void collapsedDragKeepsPreviousDraft();
+    void orientationChangeCancelsDragInProgress();
+    void commitDropsDraftWithoutHelpFromHost();
+    void positionStepSnapsDraftAndNudges();
 
 private:
     void drag(const QPointF& from, const QPointF& to);
@@ -332,6 +336,76 @@ void TestCropToolHandler::previewDimsOutsideDraftOnly()
     QVERIFY(canvas.pixelColor(5, 5).red() < 200);            // dimmed outside
     // Clear inside, away from the grid lines and the size label.
     QCOMPARE(canvas.pixelColor(50, 65), QColor(Qt::white));
+}
+
+void TestCropToolHandler::collapsedDragKeepsPreviousDraft()
+{
+    drag(QPointF(20, 10), QPointF(120, 70));
+    const QRect draft = m_handler.draftRect();
+
+    // A drag well past the threshold, but along one line: nothing to select.
+    m_handler.onMousePressF(&m_ctx, QPointF(150, 90));
+    m_handler.onMouseMoveF(&m_ctx, QPointF(190, 90));
+    QVERIFY(!m_handler.hasDraft());   // while dragging there is no area yet
+    m_handler.onMouseReleaseF(&m_ctx, QPointF(190, 90));
+    QCOMPARE(m_handler.draftRect(), draft);
+    QVERIFY(m_committed.isEmpty());
+}
+
+void TestCropToolHandler::orientationChangeCancelsDragInProgress()
+{
+    drag(QPointF(20, 10), QPointF(120, 70));
+    const QRect draft = m_handler.draftRect();
+
+    m_handler.onMousePressF(&m_ctx, QPointF(70, 40));
+    m_handler.onMouseMoveF(&m_ctx, QPointF(110, 60));
+    QVERIFY(m_handler.isDrawing());
+    // The pin is rotated under the pointer: the press position means nothing now.
+    m_handler.setViewOrientation(90, false, false);
+    QVERIFY(!m_handler.isDrawing());
+    QCOMPARE(m_handler.draftRect(), draft);
+    m_handler.onMouseMoveF(&m_ctx, QPointF(150, 80));
+    m_handler.onMouseReleaseF(&m_ctx, QPointF(150, 80));
+    QCOMPARE(m_handler.draftRect(), draft);
+
+    // Setting the same orientation again leaves a drag alone.
+    m_handler.onMousePressF(&m_ctx, QPointF(70, 40));
+    m_handler.onMouseMoveF(&m_ctx, QPointF(90, 50));
+    m_handler.setViewOrientation(90, false, false);
+    QVERIFY(m_handler.isDrawing());
+    m_handler.onMouseReleaseF(&m_ctx, QPointF(90, 50));
+}
+
+void TestCropToolHandler::commitDropsDraftWithoutHelpFromHost()
+{
+    // This callback applies but, unlike the pin, neither leaves the tool nor
+    // replaces the source.
+    drag(QPointF(20, 10), QPointF(120, 70));
+    QVERIFY(m_handler.commitDraft());
+    QVERIFY(!m_handler.hasDraft());
+    QVERIFY(!m_handler.commitDraft());
+    QCOMPARE(m_committed.size(), 1);
+}
+
+void TestCropToolHandler::positionStepSnapsDraftAndNudges()
+{
+    m_handler.setImageSize(QSize(200, 100));
+    m_handler.setSource(QSize(400, 200), 2.0, 5);
+    drag(QPointF(5.5, 3.5), QPointF(55.5, 28.5));
+    QCOMPARE(m_handler.draftRect(), QRect(11, 7, 100, 50));
+
+    m_changes = 0;
+    m_handler.setPositionStep(QSize(2, 2));
+    QCOMPARE(m_handler.draftRect(), QRect(12, 8, 100, 50));
+    QCOMPARE(m_changes, 1);
+    m_handler.setPositionStep(QSize(2, 2));
+    QCOMPARE(m_changes, 1);
+
+    QVERIFY(m_handler.nudgeDraft(QPoint(1, 0)));
+    QCOMPARE(m_handler.draftRect(), QRect(14, 8, 100, 50));
+    drag(QPointF(40, 20), QPointF(60.5, 30.5));
+    QCOMPARE(m_handler.draftRect().x() % 2, 0);
+    QCOMPARE(m_handler.draftRect().y() % 2, 0);
 }
 
 QTEST_MAIN(TestCropToolHandler)

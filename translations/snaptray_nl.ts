@@ -2609,6 +2609,16 @@ Grootte: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Zet de zoom terug op 100% om een strook uit te knippen</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Deze selectie kan niet worden bijgesneden</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pauzeer live bijwerken om bij te snijden</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

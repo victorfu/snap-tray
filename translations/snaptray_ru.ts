@@ -2610,6 +2610,16 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Сбросьте масштаб до 100 %, чтобы вырезать полосу</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Не удалось обрезать выделенную область</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Приостановите живое обновление, чтобы обрезать</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

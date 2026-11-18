@@ -2608,6 +2608,16 @@ Boyut: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Bir şerit kesmek için yakınlaştırmayı %100&apos;e sıfırlayın</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Bu seçim kırpılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Kırpmak için canlı güncellemeyi duraklatın</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

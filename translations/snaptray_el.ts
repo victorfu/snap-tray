@@ -2609,6 +2609,16 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Επαναφέρετε το ζουμ στο 100% για να αποκόψετε μια λωρίδα</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Δεν είναι δυνατή η περικοπή αυτής της επιλογής</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Κάντε παύση της ζωντανής ενημέρωσης για περικοπή</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

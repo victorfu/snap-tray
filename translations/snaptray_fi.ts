@@ -2609,6 +2609,16 @@ Koko: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Palauta zoomaus 100 %:iin, jotta voit leikata kaistan</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Tätä valintaa ei voi rajata</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Keskeytä live-päivitys rajataksesi</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

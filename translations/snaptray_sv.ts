@@ -2609,6 +2609,16 @@ Storlek: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Återställ zoomen till 100 % för att klippa ut en remsa</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Det går inte att beskära den här markeringen</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pausa liveuppdateringen för att beskära</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

@@ -2609,6 +2609,16 @@ Tamanho: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Redefina o zoom para 100% para recortar uma faixa</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Não é possível recortar esta seleção</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Pause a atualização ao vivo para recortar</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

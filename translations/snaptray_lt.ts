@@ -2610,6 +2610,16 @@ Dydis: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Norėdami iškirpti juostą, atkurkite 100 % mastelį</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>Šios srities apkirpti nepavyko</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>Norėdami apkirpti, pristabdykite tiesioginį atnaujinimą</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>

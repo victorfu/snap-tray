@@ -2459,6 +2459,16 @@ English is always included and cannot be removed.</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>รีเซ็ตการซูมเป็น 100% เพื่อตัดแถบออก</translation>
     </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Unable to crop this selection</source>
+        <translation>ไม่สามารถครอบตัดส่วนที่เลือกนี้ได้</translation>
+    </message>
+    <message>
+        <location filename="../src/PinWindow.cpp" line="0" />
+        <source>Pause Live Update to crop</source>
+        <translation>หยุดการอัปเดตสดชั่วคราวเพื่อครอบตัด</translation>
+    </message>
 </context>
 <context>
     <name>PinWindowSettings</name>
