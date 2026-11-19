@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Dışa aktar...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Saydam</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Görsel</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Arka plan görselini seç</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Görseller</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Bir görsel seçin</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Görsel yükleniyor…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Görsel kullanılamıyor. Başka bir görsel seçin.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Görsel seç…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Hizalama</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Sol üst</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Üst orta</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Sağ üst</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Sol orta</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Orta</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Sağ orta</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Sol alt</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Alt orta</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Sağ alt</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

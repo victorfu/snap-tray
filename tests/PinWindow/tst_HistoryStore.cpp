@@ -119,6 +119,7 @@ private slots:
     void testBeautifySettingsJsonRejectsDamage();
     void testBeautifySnapshotRoundTrip_data();
     void testBeautifySnapshotRoundTrip();
+    void testImageBackgroundBelongsToEntry();
     void testLegacyManifestStaysReplayable();
     void testNewerSchemaIsListedButNeverReplayedOrOverwritten();
     void testDamagedBeautifyBlocksReplayOnly();
@@ -353,7 +354,7 @@ void tst_HistoryStore::testBeautifySnapshotRoundTrip()
 
     const auto entry = SnapTray::HistoryStore::loadEntry(written->id);
     QVERIFY(entry);
-    QCOMPARE(entry->schemaVersion, SnapTray::HistoryStore::kSchemaVersion);
+    QCOMPARE(entry->schemaVersion, SnapTray::HistoryStore::kDocumentSchemaVersion);
     QVERIFY(!entry->isFromNewerVersion());
     QVERIFY(entry->replayAvailable);
     QVERIFY(entry->beautify);
@@ -379,7 +380,30 @@ void tst_HistoryStore::testBeautifySnapshotRoundTrip()
     const auto plain = SnapTray::HistoryStore::writeCaptureSession(sampleRequest(1));
     QVERIFY(plain);
     QVERIFY(!plain->beautify);
-    QCOMPARE(plain->schemaVersion, SnapTray::HistoryStore::kSchemaVersion);
+    QCOMPARE(plain->schemaVersion, SnapTray::HistoryStore::kDocumentSchemaVersion);
+}
+
+void tst_HistoryStore::testImageBackgroundBelongsToEntry()
+{
+    auto request = sampleRequest();
+    const QString path = m_historyDir.filePath("asset.png");
+    QVERIFY(request.canvasImage.save(path));
+    request.beautify = sampleBeautify();
+    request.beautify->backgroundType = BeautifyBackgroundType::Image;
+    request.beautify->alignment = BeautifyAlignment::BottomRight;
+    request.beautify->backgroundImagePath = path;
+    request.beautify->backgroundImageData = fileBytes(path);
+    QVERIFY(QFile::remove(path));
+    const auto entry = SnapTray::HistoryStore::writeCaptureSession(request);
+    QVERIFY(entry && entry->beautify);
+    QCOMPARE(entry->schemaVersion, SnapTray::HistoryStore::kSchemaVersion);
+    QCOMPARE(entry->beautify->alignment, BeautifyAlignment::BottomRight);
+    QCOMPARE(fileBytes(entry->beautify->imageSourcePath()), request.beautify->backgroundImageData);
+    QVERIFY(entry->beautify->imageSourcePath() != path);
+
+    request.beautify->backgroundImageData.clear();
+    QVERIFY(!SnapTray::HistoryStore::writeCaptureSession(request));
+    QCOMPARE(SnapTray::HistoryStore::loadEntries().size(), 1);
 }
 
 void tst_HistoryStore::testLegacyManifestStaysReplayable()

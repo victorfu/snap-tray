@@ -663,6 +663,18 @@ Item {
             }
 
             SettingsRow {
+                visible: root.backend && root.backend.imageBackground
+                label: root.backend ? root.backend.imageStatus : ""
+                SettingsButton {
+                    activeFocusOnTab: true
+                    Accessible.onPressAction: clicked()
+                    text: qsTr("Choose image…")
+                    onClicked: root.backend.pickBackgroundImage()
+                }
+            }
+
+            SettingsRow {
+                visible: !root.backend || root.backend.colorBackground
                 label: qsTr("Colors")
 
                 Row {
@@ -782,6 +794,36 @@ Item {
                 }
             }
 
+            SettingsRow {
+                height: Math.max(36, alignmentGrid.implicitHeight)
+                label: qsTr("Alignment")
+                Grid {
+                    id: alignmentGrid
+                    columns: 3
+                    spacing: 2
+                    Repeater {
+                        model: [qsTr("Top left"), qsTr("Top center"), qsTr("Top right"),
+                                qsTr("Middle left"), qsTr("Center"), qsTr("Middle right"),
+                                qsTr("Bottom left"), qsTr("Bottom center"), qsTr("Bottom right")]
+                        delegate: SettingsButton {
+                            required property int index
+                            required property string modelData
+                            objectName: "beautifyAnchor" + index
+                            width: 30
+                            height: 24
+                            text: ["↖", "↑", "↗", "←", "•", "→", "↙", "↓", "↘"][index]
+                            activeFocusOnTab: true
+                            Accessible.onPressAction: clicked()
+                            Accessible.name: modelData
+                            Accessible.checkable: true
+                            Accessible.checked: primary
+                            primary: root.backend && root.backend.alignment === index
+                            onClicked: if (root.backend) root.backend.alignment = index
+                        }
+                    }
+                }
+            }
+
             SettingsCombo {
                 objectName: "beautifyAspectRatio"
                 label: qsTr("Aspect ratio")
@@ -800,12 +842,14 @@ Item {
 
             SettingsButton {
                 width: Math.floor((parent.width - 24) / 4)
+                enabled: root.backend && root.backend.imageReady
                 text: qsTr("Copy")
                 onClicked: if (root.backend) root.backend.requestCopy()
             }
 
             SettingsButton {
                 width: Math.floor((parent.width - 24) / 4)
+                enabled: root.backend && root.backend.imageReady
                 text: qsTr("Save")
                 primary: true
                 onClicked: if (root.backend) root.backend.requestSave()
@@ -815,6 +859,7 @@ Item {
             SettingsButton {
                 objectName: "beautifyExportButton"
                 width: Math.floor((parent.width - 24) / 4)
+                enabled: root.backend && root.backend.imageReady
                 text: qsTr("Export...")
                 onClicked: if (root.backend) root.backend.requestExport()
             }

@@ -24,6 +24,7 @@ struct PinExportRequest {
     enum class Destination {
         UniqueFile, // automatic save: a new file name, never replacing a file
         ExactFile,  // the path chosen in the save dialog, replaced atomically
+        ExportDialog, // the composed image for the size/format dialog
         Clipboard,  // only the composed picture is produced; the GUI copies it
     };
 
@@ -46,7 +47,7 @@ struct PinExportResult {
     bool renderFailed = false;
     // The composed picture with the source's device pixel ratio: the source
     // itself when not beautified (keeping any colour space it has), otherwise
-    // the beautified picture, which is untagged.
+    // the beautified picture in the source color space.
     QImage image;
     // Clipboard only: the picture normalized as normalizeImageForExport does.
     QImage clipboardImage;

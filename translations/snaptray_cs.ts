@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Exportovat...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Průhledné</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Obrázek</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Vybrat obrázek pozadí</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Obrázky</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Vyberte obrázek</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Načítání obrázku…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Obrázek není dostupný. Vyberte jiný obrázek.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Vybrat obrázek…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Zarovnání</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Vlevo nahoře</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Nahoře uprostřed</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Vpravo nahoře</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Vlevo uprostřed</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Uprostřed</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Vpravo uprostřed</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Vlevo dole</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Dole uprostřed</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Vpravo dole</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

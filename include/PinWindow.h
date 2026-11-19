@@ -366,6 +366,7 @@ private:
     void updateUndoRedoState();
     bool isAnnotationTool(ToolId toolId) const;
     QPixmap getExportPixmapWithAnnotations() const;
+    QPixmap beautifySourcePixmap() const;
     QSize regionLayoutContentViewSize(const QSize& layoutSize) const;
     QSize regionLayoutViewportSize(const QSize& layoutSize) const;
     QRect regionLayoutControlsRect(const QSize& layoutSize) const;
@@ -746,6 +747,7 @@ private:
     // Region Layout Mode
     RegionLayoutManager* m_regionLayoutManager = nullptr;
     QPointer<SnapTray::QmlDialog> m_regionLayoutDialog;
+    quint64 m_exportDialogRevision = 0;
     SnapTray::ImageExportDialogController* m_imageExport = nullptr;   // child of this
     QVector<LayoutRegion> m_storedRegions;
     bool m_hasMultiRegionData = false;
@@ -771,7 +773,7 @@ private:
     // Beautify
     void showBeautifyPanel();
     void onBeautifyCopy(const BeautifySettings& settings);
-    void onBeautifySave(const BeautifySettings& settings);
+    void onBeautifySave(BeautifySettings settings);
     void onBeautifyExport(const BeautifySettings& settings);
     // Export dialog (#357): a smaller copy of the composed image. The pin,
     // its annotations and its history entry are left as they are.

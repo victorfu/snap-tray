@@ -8,6 +8,7 @@
 #include <QVariantList>
 
 class QTimer;
+class QFileSystemWatcher;
 
 namespace SnapTray {
 
@@ -16,6 +17,11 @@ class BeautifyPanelBackend : public QObject
     Q_OBJECT
 
     Q_PROPERTY(int backgroundType READ backgroundType WRITE setBackgroundType NOTIFY settingsStateChanged)
+    Q_PROPERTY(int alignment READ alignment WRITE setAlignment NOTIFY settingsStateChanged)
+    Q_PROPERTY(bool imageBackground READ imageBackground NOTIFY settingsStateChanged)
+    Q_PROPERTY(bool colorBackground READ colorBackground NOTIFY settingsStateChanged)
+    Q_PROPERTY(bool imageReady READ imageReady NOTIFY settingsStateChanged)
+    Q_PROPERTY(QString imageStatus READ imageStatus NOTIFY settingsStateChanged)
     Q_PROPERTY(QColor primaryColor READ primaryColor NOTIFY settingsStateChanged)
     Q_PROPERTY(QColor secondaryColor READ secondaryColor NOTIFY settingsStateChanged)
     Q_PROPERTY(bool secondaryColorVisible READ secondaryColorVisible NOTIFY settingsStateChanged)
@@ -41,7 +47,8 @@ class BeautifyPanelBackend : public QObject
     Q_PROPERTY(int previewRevision READ previewRevision NOTIFY previewRevisionChanged)
 
 public:
-    explicit BeautifyPanelBackend(QObject* parent = nullptr);
+    explicit BeautifyPanelBackend(QObject* parent = nullptr, bool previewActive = true);
+    void setPreviewActive(bool active);
     ~BeautifyPanelBackend() override;
 
     void setSourcePixmap(const QPixmap& pixmap);
@@ -52,6 +59,16 @@ public:
 
     int backgroundType() const;
     void setBackgroundType(int type);
+
+    int alignment() const { return int(m_settings.alignment); }
+    void setAlignment(int anchor);
+    Q_INVOKABLE void pickBackgroundImage();
+    bool imageBackground() const { return m_settings.backgroundType == BeautifyBackgroundType::Image; }
+    bool colorBackground() const { return !imageBackground() && m_settings.backgroundType != BeautifyBackgroundType::Transparent; }
+    bool imageReady() const;
+    QString imageStatus() const;
+    QSize originalBackgroundSize() const { return m_originalBackgroundSize; }
+    const QImage& backgroundPreview() const { return m_backgroundPreview; }
 
     QColor primaryColor() const;
     QColor secondaryColor() const;
@@ -119,6 +136,8 @@ signals:
     void closeRequested();
 
 private:
+    void reloadBackground();
+    void startBackgroundLoad();
     void rebuildPresetModel();
     void schedulePreviewUpdate();
     void commitSettingsChange();
@@ -128,6 +147,12 @@ private:
 
     BeautifySettings m_settings;
     QPixmap m_sourcePixmap;
+    QImage m_backgroundPreview;
+    QSize m_originalBackgroundSize;
+    QFileSystemWatcher* m_imageWatcher;
+    quint64 m_imageRevision = 0;
+    bool m_imageLoading = false;
+    bool m_previewActive;
     QVariantList m_presetModel;
     QTimer* m_previewTimer = nullptr;
     int m_previewRevision = 0;

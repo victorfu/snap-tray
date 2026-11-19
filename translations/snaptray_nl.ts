@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Exporteren...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Transparant</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Afbeelding</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Achtergrondafbeelding selecteren</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Afbeeldingen</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Kies een afbeelding</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Afbeelding laden…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Afbeelding niet beschikbaar. Kies een andere afbeelding.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Afbeelding kiezen…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Uitlijning</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Linksboven</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Middenboven</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Rechtsboven</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Midden links</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Midden</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Midden rechts</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Linksonder</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Middenonder</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Rechtsonder</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

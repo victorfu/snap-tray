@@ -278,6 +278,78 @@
         <source>Export...</source>
         <translation>ส่งออก...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>โปร่งใส</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>รูปภาพ</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>เลือกภาพพื้นหลัง</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>รูปภาพ</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>เลือกรูปภาพ</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>กำลังโหลดรูปภาพ…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>ไม่สามารถเปิดรูปภาพได้ โปรดเลือกภาพอื่น</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>เลือกรูปภาพ…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>การจัดตำแหน่ง</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>ซ้ายบน</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>กลางบน</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>ขวาบน</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>ซ้ายกลาง</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>กึ่งกลาง</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>ขวากลาง</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>ซ้ายล่าง</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>กลางล่าง</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>ขวาล่าง</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

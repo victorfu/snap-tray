@@ -26,6 +26,7 @@ constexpr auto kEnvHistoryPath = "SNAPTRAY_HISTORY_DIR";
 constexpr auto kEntriesFolderName = "entries";
 constexpr auto kManifestFileName = "manifest.json";
 constexpr auto kCanvasFileName = "canvas.png";
+constexpr auto kBackgroundFileName = "background.image";
 constexpr auto kResultFileName = "result.png";
 constexpr auto kAnnotationsFileName = "annotations.json";
 constexpr auto kCaptureSessionKind = "capture_session";
@@ -155,7 +156,7 @@ QString fileNameString(const char* value)
     return QString::fromLatin1(value);
 }
 
-bool writeTextFile(const QDir& directory, const char* fileName, const QByteArray& data)
+bool writeBytes(const QDir& directory, const char* fileName, const QByteArray& data)
 {
     if (stepFails(fileName)) {
         return false;
@@ -367,7 +368,7 @@ std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessi
     }
     if (!documentWritten &&
         (!saveImage(request.canvasImage, stagingDir, kCanvasFileName) ||
-         !writeTextFile(stagingDir, kAnnotationsFileName, request.annotationsJson))) {
+         !writeBytes(stagingDir, kAnnotationsFileName, request.annotationsJson))) {
         return abandon();
     }
     if (!saveImage(request.resultImage, stagingDir, kResultFileName)) {
@@ -379,7 +380,11 @@ std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessi
                                         fileNameString(kResultFileName),
                                         fileNameString(kResultFileName),
                                         true);
-    manifest.insert(QStringLiteral("schemaVersion"), kSchemaVersion);
+    const bool needsNewSchema = request.beautify
+        && (request.beautify->backgroundType == BeautifyBackgroundType::Image
+            || request.beautify->backgroundType == BeautifyBackgroundType::Transparent
+            || request.beautify->alignment != BeautifyAlignment::Center);
+    manifest.insert(QStringLiteral("schemaVersion"), needsNewSchema ? kSchemaVersion : kDocumentSchemaVersion);
     manifest.insert(QStringLiteral("canvasPath"), fileNameString(kCanvasFileName));
     manifest.insert(QStringLiteral("annotationsPath"), fileNameString(kAnnotationsFileName));
     manifest.insert(QStringLiteral("selectionRect"), serializeRect(selectionRect));
@@ -391,10 +396,14 @@ std::optional<HistoryEntry> HistoryStore::writeCaptureSession(const CaptureSessi
     manifest.insert(QStringLiteral("windowTitle"), windowTitle);
     manifest.insert(QStringLiteral("ownerApp"), ownerApp);
     if (request.beautify) {
+        if (request.beautify->backgroundType == BeautifyBackgroundType::Image) {
+            const auto& asset = request.beautify->backgroundImageData;
+            if (asset.isEmpty() || !writeBytes(stagingDir, kBackgroundFileName, asset)) return abandon();
+        }
         manifest.insert(QStringLiteral("beautify"), beautifySettingsToJson(*request.beautify));
     }
 
-    if (!writeTextFile(stagingDir, kManifestFileName,
+    if (!writeBytes(stagingDir, kManifestFileName,
                        QJsonDocument(manifest).toJson(QJsonDocument::Indented))) {
         return abandon();
     }
@@ -477,6 +486,11 @@ std::optional<HistoryEntry> HistoryStore::loadEntryFromDirectory(const QString& 
     const QJsonValue beautify = manifest.value(QStringLiteral("beautify"));
     if (!beautify.isUndefined()) {
         entry.beautify = beautifySettingsFromJson(beautify.toObject());
+        if (entry.beautify && entry.beautify->backgroundType == BeautifyBackgroundType::Image) {
+            // Resolve only our own fixed name. If missing or damaged the panel
+            // offers replacement and the completed result is still available.
+            entry.beautify->historyBackgroundPath = dir.filePath(fileNameString(kBackgroundFileName));
+        }
         if (!entry.beautify) {
             // Replaying it would show the picture without the look it was
             // saved with, or with today's defaults; the finished picture stays.

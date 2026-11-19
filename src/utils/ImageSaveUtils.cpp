@@ -24,7 +24,7 @@ QByteArray normalizeFormat(QByteArray format)
 
 QByteArray canonicalFormat(QByteArray format)
 {
-    if (format == "jpg") {
+    if (format == "jpg" || format == "jfif") {
         return "jpeg";
     }
     if (format == "tif") {
@@ -52,7 +52,9 @@ bool isSupportedFormat(const QByteArray& format)
 // As instead (#363: a pin whose background was removed, saved as .jpg).
 QImage imageForFormat(const QImage& image, const QByteArray& format)
 {
-    if (format != "jpeg" || !ImageExport::hasTransparency(image)) {
+    // Manual Save also accepts these opaque Qt writer formats through All Files.
+    static const QSet<QByteArray> opaqueFormats{"jpeg", "bmp", "pbm", "pgm", "ppm", "xbm", "wbmp"};
+    if (!opaqueFormats.contains(format) || !ImageExport::hasTransparency(image)) {
         return image;
     }
     ImageExportOptions options;

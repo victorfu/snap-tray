@@ -81,8 +81,10 @@ struct CaptureSessionWriteRequest
 class HistoryStore
 {
 public:
-    // The manifest format this version writes.
-    static constexpr int kSchemaVersion = 2;
+    // Older readers can still edit entries using only the v2 features.
+    static constexpr int kDocumentSchemaVersion = 2;
+    // Latest supported manifest format.
+    static constexpr int kSchemaVersion = 3;
 
     static QString historyRootPath();
     static QString entriesRootPath();

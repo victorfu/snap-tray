@@ -419,6 +419,12 @@ void tst_ImageSaveUtils::testJpegComposesTransparencyOntoWhite()
     // PNG keeps the transparency.
     QImage transparent(8, 8, QImage::Format_ARGB32);
     transparent.fill(Qt::transparent);
+    for (const auto& suffix : {"bmp", "ppm", "pbm", "jfif"}) {
+        if (!QImageWriter::supportedImageFormats().contains(suffix)) continue;
+        const QString path = tempDir.filePath(QStringLiteral("opaque.") + QLatin1String(suffix));
+        QVERIFY(ImageSaveUtils::saveImageAtomically(transparent, path));
+        QCOMPARE(QImage(path).pixelColor(4, 4), QColor(Qt::white));
+    }
     const QString pngPath = tempDir.filePath("transparent.png");
     QVERIFY(ImageSaveUtils::saveImageAtomically(transparent, pngPath));
     QCOMPARE(qAlpha(QImage(pngPath).pixel(4, 4)), 0);

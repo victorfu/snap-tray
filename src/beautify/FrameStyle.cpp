@@ -19,6 +19,8 @@ struct NamedBackground {
 };
 
 constexpr NamedBackground kBackgrounds[] = {
+    {FrameStyle::Background::Image, "image"},
+    {FrameStyle::Background::Transparent, "transparent"},
     {FrameStyle::Background::Solid, "solid"},
     {FrameStyle::Background::LinearGradient, "linearGradient"},
     {FrameStyle::Background::RadialGradient, "radialGradient"},
@@ -30,6 +32,8 @@ struct BackgroundMapping {
 };
 
 constexpr BackgroundMapping kBackgroundMappings[] = {
+    {FrameStyle::Background::Image, BeautifyBackgroundType::Image},
+    {FrameStyle::Background::Transparent, BeautifyBackgroundType::Transparent},
     {FrameStyle::Background::Solid, BeautifyBackgroundType::Solid},
     {FrameStyle::Background::LinearGradient, BeautifyBackgroundType::LinearGradient},
     {FrameStyle::Background::RadialGradient, BeautifyBackgroundType::RadialGradient},
@@ -83,7 +87,8 @@ double fractionOr(const QJsonObject& json, const char* key, double fallback, dou
 
 bool FrameStyle::operator==(const FrameStyle& o) const
 {
-    return background == o.background && solidColor == o.solidColor && gradientStart == o.gradientStart
+    return alignment == o.alignment && backgroundImagePath == o.backgroundImagePath
+        && background == o.background && solidColor == o.solidColor && gradientStart == o.gradientStart
         && gradientEnd == o.gradientEnd && gradientAngle == o.gradientAngle && sameFraction(padding, o.padding)
         && sameFraction(cornerRadius, o.cornerRadius) && shadowEnabled == o.shadowEnabled
         && sameFraction(shadowBlur, o.shadowBlur) && sameFraction(shadowOffsetX, o.shadowOffsetX)
@@ -96,6 +101,8 @@ BeautifySettings FrameStyle::toBeautify(int shortSide) const
 {
     const int side = std::max(1, shortSide);
     BeautifySettings s;
+    s.alignment = alignment;
+    s.backgroundImagePath = backgroundImagePath;
     s.backgroundType = toBeautifyBackground(background);
     s.backgroundColor = solidColor;
     s.gradientStartColor = gradientStart;
@@ -120,6 +127,8 @@ FrameStyle FrameStyle::fromBeautify(const BeautifySettings& settings, int shortS
 {
     const int side = std::max(1, shortSide);
     FrameStyle f;
+    f.alignment = settings.alignment;
+    if (settings.backgroundType == BeautifyBackgroundType::Image) f.backgroundImagePath = settings.backgroundImagePath;
     f.background = fromBeautifyBackground(settings.backgroundType);
     f.solidColor = settings.backgroundColor;
     f.gradientStart = settings.gradientStartColor;
@@ -141,7 +150,7 @@ FrameStyle FrameStyle::fromBeautify(const BeautifySettings& settings, int shortS
 
 QJsonObject FrameStyle::toJson() const
 {
-    const char* backgroundName = kBackgrounds[0].name;
+    const char* backgroundName = "linearGradient";
     for (const auto& entry : kBackgrounds) {
         if (entry.value == background) backgroundName = entry.name;
     }
@@ -163,6 +172,8 @@ QJsonObject FrameStyle::toJson() const
         {QStringLiteral("borderColor"), borderColor.name(QColor::HexArgb)},
         {QStringLiteral("aspectRatio"), int(aspectRatio)},
     };
+    json.insert(QStringLiteral("alignment"), int(alignment));
+    if (background == Background::Image) json.insert(QStringLiteral("backgroundImagePath"), backgroundImagePath);
     if (!deviceFrame.isEmpty()) json.insert(QStringLiteral("deviceFrame"), deviceFrame);
     return json;
 }
@@ -174,6 +185,9 @@ FrameStyle FrameStyle::fromJson(const QJsonObject& json)
     for (const auto& entry : kBackgrounds) {
         if (backgroundName == QLatin1String(entry.name)) f.background = entry.value;
     }
+    f.backgroundImagePath = json.value(QStringLiteral("backgroundImagePath")).toString();
+    const int anchor = json.value(QStringLiteral("alignment")).toInt(int(BeautifyAlignment::Center));
+    if (anchor >= 0 && anchor <= int(BeautifyAlignment::BottomRight)) f.alignment = BeautifyAlignment(anchor);
     f.solidColor = colorOr(json, "solidColor", f.solidColor);
     f.gradientStart = colorOr(json, "gradientStart", f.gradientStart);
     f.gradientEnd = colorOr(json, "gradientEnd", f.gradientEnd);

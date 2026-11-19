@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Xuất...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Trong suốt</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Hình ảnh</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Chọn ảnh nền</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Hình ảnh</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Chọn một ảnh</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Đang tải ảnh…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Không thể mở ảnh. Hãy chọn ảnh khác.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Chọn ảnh…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Căn chỉnh</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Trên trái</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Trên giữa</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Trên phải</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Giữa trái</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Chính giữa</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Giữa phải</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Dưới trái</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Dưới giữa</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Dưới phải</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

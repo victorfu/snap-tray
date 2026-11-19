@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>書き出し...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>透明</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>画像</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>背景画像を選択</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>画像</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>画像を選択</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>画像を読み込み中…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>画像を開けません。別の画像を選んでください。</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>画像を選択…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>配置</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>左上</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>上中央</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>右上</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>左中央</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>中央</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>右中央</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>左下</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>下中央</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>右下</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

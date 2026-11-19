@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Eksportuoti...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Skaidrus</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Vaizdas</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Pasirinkti fono vaizdą</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Vaizdai</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Pasirinkite vaizdą</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Įkeliamas vaizdas…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Vaizdas nepasiekiamas. Pasirinkite kitą vaizdą.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Pasirinkti vaizdą…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Lygiavimas</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Viršuje kairėje</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Viršuje centre</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Viršuje dešinėje</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Viduryje kairėje</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Centre</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Viduryje dešinėje</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Apačioje kairėje</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Apačioje centre</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Apačioje dešinėje</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

@@ -15,7 +15,8 @@ public:
     static QImage applyToImage(const QImage& source, const BeautifySettings& settings);
     static QSize calculateOutputSize(const QSize& sourceSize, const BeautifySettings& settings);
     static void render(QPainter& painter, const QRect& targetRect,
-                       const QPixmap& source, const BeautifySettings& settings);
+                       const QPixmap& source, const BeautifySettings& settings,
+                       const QImage& backgroundPreview = {}, QSize originalBackgroundSize = {});
 
     // Building blocks, shared with recording appearance (#184), which draws
     // video frames (QImage, off the GUI thread) with the same rules.

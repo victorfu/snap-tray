@@ -36,6 +36,9 @@ PinExportResult runPinExport(const PinExportRequest& request)
     }
 
     switch (request.destination) {
+    case Destination::ExportDialog:
+        result.success = true;
+        return result;
     case Destination::Clipboard: {
         // As normalizeImageForExport, with the colour space resolved earlier.
         QImage normalized = result.image.convertToFormat(QImage::Format_ARGB32_Premultiplied);

@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>تصدير...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>شفاف</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>صورة</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>اختيار صورة الخلفية</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>الصور</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>اختر صورة</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>جارٍ تحميل الصورة…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>الصورة غير متاحة. اختر صورة أخرى.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>اختيار صورة…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>المحاذاة</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>أعلى اليسار</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>أعلى الوسط</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>أعلى اليمين</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>وسط اليسار</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>الوسط</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>وسط اليمين</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>أسفل اليسار</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>أسفل الوسط</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>أسفل اليمين</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

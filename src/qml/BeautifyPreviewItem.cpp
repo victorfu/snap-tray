@@ -44,7 +44,7 @@ void BeautifyPreviewItem::paint(QPainter* painter)
         *painter,
         QRect(QPoint(0, 0), QSize(qMax(1, qRound(width())), qMax(1, qRound(height())))),
         m_backend->sourcePixmap(),
-        m_backend->settings());
+        m_backend->settings(), m_backend->backgroundPreview(), m_backend->originalBackgroundSize());
 }
 
 void BeautifyPreviewItem::bindBackend(SnapTray::BeautifyPanelBackend* backend)

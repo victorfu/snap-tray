@@ -64,6 +64,7 @@ void QmlBeautifyPanel::showNear(const QRect& anchorRect)
     }
     updateMaxHeight(screen);
     positionNear(anchorRect);
+    m_backend->setPreviewActive(true);
     m_view->show();
     QmlOverlayManager::configureInteractiveOverlayWindow(m_view);
     QmlOverlayManager::preventWindowHideOnDeactivate(m_view);
@@ -166,7 +167,7 @@ void QmlBeautifyPanel::ensureView()
         return;
     }
 
-    m_backend = new BeautifyPanelBackend(this);
+    m_backend = new BeautifyPanelBackend(this, false);
     m_view = QmlOverlayManager::instance().createToolPanelWindow();
     m_view->setFlag(Qt::WindowDoesNotAcceptFocus, false);
     m_view->rootContext()->setContextProperty(QStringLiteral("beautifyBackend"), m_backend);
@@ -281,6 +282,7 @@ bool QmlBeautifyPanel::eventFilter(QObject* watched, QEvent* event)
     }
 
     if (event->type() == QEvent::Hide || event->type() == QEvent::Close) {
+        m_backend->setPreviewActive(false);
         CursorSurfaceSupport::clearWindowSurface(m_cursorSurfaceId, m_cursorOwnerId);
     } else if (CursorSurfaceSupport::isPointerRefreshEvent(event->type())) {
         syncCursorSurface();

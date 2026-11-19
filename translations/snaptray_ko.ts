@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>내보내기...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>투명</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>이미지</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>배경 이미지 선택</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>이미지</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>이미지 선택</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>이미지 불러오는 중…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>이미지를 열 수 없습니다. 다른 이미지를 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>이미지 선택…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>정렬</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>왼쪽 위</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>가운데 위</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>오른쪽 위</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>왼쪽 가운데</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>가운데</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>오른쪽 가운데</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>왼쪽 아래</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>가운데 아래</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>오른쪽 아래</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

@@ -82,6 +82,7 @@ private slots:
     void beautifiedSaveMatchesTheRenderer();
     void colorSpaceTagFollowsTheExportRules();
     void clipboardImageIsNormalized();
+    void prepareExportDialogUsesRequestedSnapshot();
     void nullSourceIsARenderFailure();
 
     void runnerDeliversOnItsThreadOnce();
@@ -201,6 +202,20 @@ void TestPinExportJob::colorSpaceTagFollowsTheExportRules()
     request.filePath = dir.filePath(QStringLiteral("adobe.png"));
     QVERIFY(SnapTray::runPinExport(request).success);
     QCOMPARE(QImage(request.filePath).colorSpace(), QColorSpace(QColorSpace::AdobeRgb));
+}
+
+void TestPinExportJob::prepareExportDialogUsesRequestedSnapshot()
+{
+    PinExportRequest request;
+    request.destination = PinExportRequest::Destination::ExportDialog;
+    request.source = solidImage(QSize(31, 19), Qt::red);
+    request.beautify = look();
+    request.beautify->backgroundType = BeautifyBackgroundType::Transparent;
+    const auto result = SnapTray::runPinExport(request);
+    QVERIFY(result.success);
+    QCOMPARE(result.image.pixelColor(0, 0).alpha(), 0);
+    QVERIFY(result.clipboardImage.isNull());
+    QVERIFY(result.filePath.isEmpty());
 }
 
 void TestPinExportJob::clipboardImageIsNormalized()

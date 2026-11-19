@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Esporta...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Trasparente</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Immagine</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Seleziona immagine di sfondo</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Immagini</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Scegli un’immagine</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Caricamento immagine…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Immagine non disponibile. Scegli un’altra immagine.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Scegli immagine…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Allineamento</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>In alto a sinistra</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>In alto al centro</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>In alto a destra</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Al centro a sinistra</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Al centro</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Al centro a destra</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>In basso a sinistra</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>In basso al centro</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>In basso a destra</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

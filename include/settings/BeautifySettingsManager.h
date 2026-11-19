@@ -70,6 +70,8 @@ private:
     BeautifySettingsManager(const BeautifySettingsManager&) = delete;
     BeautifySettingsManager& operator=(const BeautifySettingsManager&) = delete;
 
+    static constexpr const char* kKeyImagePath = "beautify/backgroundImagePath";
+    static constexpr const char* kKeyAlignment = "beautify/alignment";
     static constexpr const char* kKeyBackgroundType     = "beautify/backgroundType";
     static constexpr const char* kKeyBackgroundColor    = "beautify/backgroundColor";
     static constexpr const char* kKeyGradientStart      = "beautify/gradientStartColor";

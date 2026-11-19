@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Экспорт...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Прозрачный</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Изображение</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Выбрать фоновое изображение</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Изображения</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Выберите изображение</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Загрузка изображения…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Изображение недоступно. Выберите другое.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Выбрать изображение…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Выравнивание</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Слева вверху</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Вверху по центру</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Справа вверху</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Слева по центру</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>По центру</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Справа по центру</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Слева внизу</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Внизу по центру</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Справа внизу</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

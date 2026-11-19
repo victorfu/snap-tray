@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Exporter...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Transparent</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Image</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Choisir une image de fond</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Images</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Choisir une image</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Chargement de l’image…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Image indisponible. Choisissez une autre image.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Choisir une image…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Alignement</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>En haut à gauche</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>En haut au centre</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>En haut à droite</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Au milieu à gauche</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Au centre</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Au milieu à droite</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>En bas à gauche</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>En bas au centre</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>En bas à droite</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

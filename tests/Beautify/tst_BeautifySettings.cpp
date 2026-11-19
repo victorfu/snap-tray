@@ -18,6 +18,7 @@ private slots:
 
     // BeautifySettings struct defaults
     void testDefaultSettings_Values();
+    void imageStyleAndAlignmentRoundTrip();
 
     // Preset tests
     void testPresets_Count();
@@ -114,6 +115,8 @@ void tst_BeautifySettings::cleanup()
 void tst_BeautifySettings::clearAllTestSettings()
 {
     auto settings = SnapTray::getSettings();
+    settings.remove("beautify/backgroundImagePath");
+    settings.remove("beautify/alignment");
     settings.remove("beautify/backgroundType");
     settings.remove("beautify/backgroundColor");
     settings.remove("beautify/gradientStartColor");
@@ -749,6 +752,22 @@ void tst_BeautifySettings::testFrameStyles_EmptyListDoesNotRestoreLegacy()
     QCOMPARE(BeautifySettingsManager::instance().loadFrameStyles().size(), 1);
     BeautifySettingsManager::instance().saveFrameStyles({}); // the user deleted it
     QVERIFY(BeautifySettingsManager::instance().loadFrameStyles().isEmpty());
+}
+
+void tst_BeautifySettings::imageStyleAndAlignmentRoundTrip()
+{
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImagePath = QStringLiteral("/example/photo.png");
+    settings.alignment = BeautifyAlignment::BottomLeft;
+    BeautifySettingsManager::instance().saveSettings(settings);
+    const auto saved = BeautifySettingsManager::instance().loadSettings();
+    const auto style = SnapTray::FrameStyle::fromBeautify(saved);
+    const auto restored = SnapTray::FrameStyle::fromJson(style.toJson()).toBeautify(1440);
+    QCOMPARE(restored.backgroundType, settings.backgroundType);
+    QCOMPARE(restored.alignment, settings.alignment);
+    QCOMPARE(restored.backgroundImagePath, settings.backgroundImagePath);
+    QCOMPARE(SnapTray::FrameStyle::fromJson({}).alignment, BeautifyAlignment::Center);
 }
 
 QTEST_MAIN(tst_BeautifySettings)

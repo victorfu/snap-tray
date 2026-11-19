@@ -33,6 +33,9 @@ BeautifySettings BeautifySettingsManager::loadSettings() const
     {
         auto stored = SnapTray::getSettings();
         const BeautifySettings d;
+        s.backgroundImagePath = stored.value(kKeyImagePath).toString();
+        const int anchor = stored.value(kKeyAlignment, int(BeautifyAlignment::Center)).toInt();
+        if (anchor >= 0 && anchor <= int(BeautifyAlignment::BottomRight)) s.alignment = BeautifyAlignment(anchor);
         s.borderEnabled = stored.value(kKeyBorderEnabled, d.borderEnabled).toBool();
         s.borderWidth = std::clamp(stored.value(kKeyBorderWidth, d.borderWidth).toInt(), kMinBorderWidth, kMaxBorderWidth);
         const QColor borderColor = stored.value(kKeyBorderColor, d.borderColor).value<QColor>();
@@ -57,6 +60,8 @@ void BeautifySettingsManager::saveSettings(const BeautifySettings& s)
     saveShadowColor(s.shadowColor);
     saveAspectRatio(s.aspectRatio);
     auto stored = SnapTray::getSettings();
+    stored.setValue(kKeyImagePath, s.backgroundImagePath);
+    stored.setValue(kKeyAlignment, int(s.alignment));
     stored.setValue(kKeyBorderEnabled, s.borderEnabled);
     stored.setValue(kKeyBorderWidth, s.borderWidth);
     stored.setValue(kKeyBorderColor, s.borderColor);
@@ -66,7 +71,7 @@ BeautifyBackgroundType BeautifySettingsManager::loadBackgroundType() const
 {
     auto settings = SnapTray::getSettings();
     int val = settings.value(kKeyBackgroundType, static_cast<int>(BeautifyBackgroundType::LinearGradient)).toInt();
-    if (val < 0 || val > 2) val = static_cast<int>(BeautifyBackgroundType::LinearGradient);
+    if (val < 0 || val > int(BeautifyBackgroundType::Image)) val = static_cast<int>(BeautifyBackgroundType::LinearGradient);
     return static_cast<BeautifyBackgroundType>(val);
 }
 
