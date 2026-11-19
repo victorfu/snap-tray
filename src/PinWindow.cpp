@@ -2609,6 +2609,11 @@ QRectF PinWindow::transformedSourceSampleRect() const
         return sampleRect;
     }
 
+    return sourceOrientationTransform().mapRect(sampleRect);
+}
+
+QTransform PinWindow::sourceOrientationTransform() const
+{
     QTransform transform;
     if (m_rotationAngle != 0) {
         transform.rotate(m_rotationAngle);
@@ -2616,10 +2621,7 @@ QRectF PinWindow::transformedSourceSampleRect() const
     if (m_flipHorizontal || m_flipVertical) {
         transform.scale(m_flipHorizontal ? -1.0 : 1.0, m_flipVertical ? -1.0 : 1.0);
     }
-
-    const QTransform mappedTransform =
-        QPixmap::trueMatrix(transform, m_originalPixmap.width(), m_originalPixmap.height());
-    return mappedTransform.mapRect(sampleRect);
+    return QPixmap::trueMatrix(transform, m_originalPixmap.width(), m_originalPixmap.height());
 }
 
 void PinWindow::resetSourceSampleRect()
@@ -3532,7 +3534,8 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
             updateAnnotationCursor(event->pos());
             // Auto measure follows a hovering pointer (#348).
             if (isMeasureHoverActive()) {
-                m_toolManager->handleMouseMove(mapToOriginalCoords(event->position()), event->modifiers());
+                m_toolManager->handleMouseMove(measureHoverToolPosition(event->position()),
+                                               event->modifiers());
             }
         }
     }
@@ -5072,10 +5075,7 @@ std::shared_ptr<const QImage> PinWindow::measureRaster() const
     if (m_originalPixmap.isNull()) {
         return nullptr;
     }
-    const QRectF sampleRect = sourceSampleRect();
-    const QRect rect = QRect(QPoint(qFloor(sampleRect.x()), qFloor(sampleRect.y())),
-                             cropSourcePixelSize())
-                           .intersected(m_originalPixmap.rect());
+    const QRect rect = measureSourcePixelRect();
     if (rect.isEmpty()) {
         return nullptr;
     }
@@ -5099,6 +5099,51 @@ std::shared_ptr<const QImage> PinWindow::measureRaster() const
     m_measureRasterRect = rect;
     ++m_measureRasterBuildCount;
     return m_measureRaster;
+}
+
+QRect PinWindow::measureSourcePixelRect() const
+{
+    const QRectF sampleRect = sourceSampleRect();
+    const QSize pixelSize = cropSourcePixelSize();
+    if (m_originalPixmap.isNull() || sampleRect.isEmpty() || pixelSize.isEmpty()) {
+        return QRect();
+    }
+
+    QPoint origin(qFloor(sampleRect.x()), qFloor(sampleRect.y()));
+    // Resolve the origin the way buildDisplayPixmap() does, in the rotated and
+    // flipped image, then map it back: at native zoom a fractional origin
+    // (a capture at an odd logical x on a 150% screen) is rounded there, and
+    // a flip mirrors which way it rounds.
+    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
+        ? m_originalPixmap.devicePixelRatio()
+        : 1.0;
+    const QTransform orientation = sourceOrientationTransform();
+    const QSize orientedSize =
+        orientation.mapRect(QRectF(m_originalPixmap.rect())).size().toSize();
+    const QRectF shown = displaySourceRectForTarget(orientation.mapRect(sampleRect),
+                                                    orientedSize,
+                                                    CoordinateHelper::toPhysical(size(), dpr));
+    if (shown.isValid() && !shown.isEmpty()) {
+        // Whole pixels map back to whole pixels; the tolerance only absorbs
+        // floating-point error.
+        constexpr qreal kPixelTolerance = 1e-6;
+        const QRectF source = orientation.inverted().mapRect(shown);
+        origin = QPoint(qFloor(source.x() + kPixelTolerance), qFloor(source.y() + kPixelTolerance));
+    }
+    return QRect(origin, pixelSize).intersected(m_originalPixmap.rect());
+}
+
+QPointF PinWindow::measureHoverToolPosition(const QPointF& displayPos) const
+{
+    // A pointer on the left edge of a displayed pixel maps, through a flip, to
+    // the right edge of the source pixel shown there: the next pixel over, or
+    // outside the image. Its center maps inside the pixel whatever the view.
+    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
+        ? m_originalPixmap.devicePixelRatio()
+        : 1.0;
+    const QPointF center((qFloor(displayPos.x() * dpr) + 0.5) / dpr,
+                         (qFloor(displayPos.y() * dpr) + 0.5) / dpr);
+    return mapToOriginalCoords(center);
 }
 
 CutOutToolHandler* PinWindow::cutOutToolHandler() const

@@ -429,6 +429,14 @@ private:
     // only when the image or its sample rect changes, never per pointer move.
     // Annotations are not measured.
     std::shared_ptr<const QImage> measureRaster() const;
+    // The source pixels the pin shows, starting at the column and row the
+    // display path draws first (it snaps a fractional origin at native zoom).
+    QRect measureSourcePixelRect() const;
+    // A hover position as the center of the displayed device pixel under it,
+    // in tool coordinates, so flips and rotations pick the pixel shown there.
+    QPointF measureHoverToolPosition(const QPointF& displayPos) const;
+    // Rotation and flip from source pixels to the oriented pixmap.
+    QTransform sourceOrientationTransform() const;
     // Enter, Apply and double-click for the cut-out band.
     bool commitCutOutDraft();
     bool handleCutOutDraftKey(QKeyEvent* event);

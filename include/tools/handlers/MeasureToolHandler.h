@@ -6,13 +6,16 @@
 
 #include <QImage>
 #include <QPoint>
+#include <QRect>
 #include <QSize>
 #include <QStringList>
 #include <functional>
 #include <memory>
 #include <optional>
 
+class QFontMetrics;
 class TestMeasureToolHandler;
+class TestPinWindowMeasure;
 
 /**
  * @brief Measure tool: a dragged line, plus an optional image-based mode (#348).
@@ -42,10 +45,12 @@ public:
     void onDeactivate(ToolContext* ctx) override;
     void onMousePress(ToolContext* ctx, const QPoint& pos) override;
     void onMouseMove(ToolContext* ctx, const QPoint& pos) override;
-    // Hover keeps the fractional position: at a device pixel ratio above 1
-    // one tool unit covers several image pixels.
-    void onMouseMoveF(ToolContext* ctx, const QPointF& pos) override;
     void onMouseRelease(ToolContext* ctx, const QPoint& pos) override;
+    // Pointer input keeps its fraction: at a device pixel ratio above 1 one
+    // tool unit covers several image pixels, for hovers and drags alike.
+    void onMousePressF(ToolContext* ctx, const QPointF& pos) override;
+    void onMouseMoveF(ToolContext* ctx, const QPointF& pos) override;
+    void onMouseReleaseF(ToolContext* ctx, const QPointF& pos) override;
 
     void drawPreview(QPainter& painter) const override;
     bool isDrawing() const override { return m_isDrawing; }
@@ -79,25 +84,40 @@ public:
 
 private:
     friend class TestMeasureToolHandler;
+    friend class TestPinWindowMeasure;
 
-    QPoint constrainEndpoint(const QPoint& start, const QPoint& end, bool shiftHeld) const;
-    void drawMeasurementOverlay(QPainter& painter, const QPoint& p1, const QPoint& p2) const;
+    QPointF constrainEndpoint(const QPointF& start, const QPointF& end, bool shiftHeld) const;
+    // p1 and p2 are in image pixels.
+    void drawMeasurementOverlay(QPainter& painter, const QPointF& p1, const QPointF& p2) const;
     void drawHoverOverlay(QPainter& painter) const;
-    void drawLabel(QPainter& painter, const QStringList& lines, const QPoint& anchor) const;
+    // Background rect of a label whose text block starts at @p textTopCenter.
+    QRect labelRect(const QFontMetrics& fm, const QStringList& lines, const QPoint& textTopCenter) const;
+    // Moves @p rect inside the image (the whole pin) when the geometry is known.
+    QRect keepInsideImage(QRect rect) const;
+    // Where the hover label of @p orientation goes: beside its span line,
+    // on the side with room, kept inside the pin.
+    QRect hoverLabelRect(Qt::Orientation orientation, const QFontMetrics& fm) const;
+    QString hoverLabelText(Qt::Orientation orientation) const;
+    void paintLabel(QPainter& painter, const QStringList& lines, const QRect& backgroundRect) const;
 
     bool updateHover(const QPointF& toolPos);
     QPoint toPixel(const QPointF& toolPos) const;
+    // Tool coordinates <-> image pixels (fractional, unrounded).
+    QPointF toImage(const QPointF& toolPos) const;
+    QPointF toTool(const QPointF& imagePos) const;
     void releaseRaster();
     QPointF pixelsPerToolUnit() const;
     bool hasImageGeometry() const;
 
+    // Endpoints are kept in image pixels: zooming the pin moves the line with
+    // the image instead of changing what it measures.
     bool m_isDrawing = false;
-    QPoint m_startPoint;
-    QPoint m_endPoint;
+    QPointF m_startPoint;
+    QPointF m_endPoint;
 
     bool m_hasCompletedMeasurement = false;
-    QPoint m_completedStart;
-    QPoint m_completedEnd;
+    QPointF m_completedStart;
+    QPointF m_completedEnd;
 
     bool m_autoMode = false;
     QSize m_toolSize;

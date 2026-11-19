@@ -3,6 +3,8 @@
 #include "tools/ToolContext.h"
 #include "tools/handlers/MeasureToolHandler.h"
 
+#include <QFont>
+#include <QFontMetrics>
 #include <QImage>
 #include <QPainter>
 
@@ -32,6 +34,9 @@ private slots:
     void hoverOverlayPaints();
     void fractionalPointerReachesEveryImagePixel();
     void replacedImageOfTheSameSizeClearsTheHover();
+    void completedLineKeepsItsPixelsWhenThePinZooms();
+    void dragKeepsFractionalPointerPositions();
+    void hoverLabelsStayInsideThePin();
 };
 
 namespace {
@@ -80,41 +85,41 @@ void TestMeasureToolHandler::testToolId()
 void TestMeasureToolHandler::testConstrainEndpoint_NoShift()
 {
     MeasureToolHandler handler;
-    QPoint start(10, 10);
-    QPoint end(50, 30);
+    QPointF start(10, 10);
+    QPointF end(50, 30);
 
-    QPoint result = handler.constrainEndpoint(start, end, false);
+    QPointF result = handler.constrainEndpoint(start, end, false);
     QCOMPARE(result, end);
 }
 
 void TestMeasureToolHandler::testConstrainEndpoint_ShiftHorizontal()
 {
     MeasureToolHandler handler;
-    QPoint start(10, 10);
-    QPoint end(50, 20);  // dx=40 > dy=10 -> horizontal
+    QPointF start(10, 10);
+    QPointF end(50, 20);  // dx=40 > dy=10 -> horizontal
 
-    QPoint result = handler.constrainEndpoint(start, end, true);
-    QCOMPARE(result, QPoint(50, 10));
+    QPointF result = handler.constrainEndpoint(start, end, true);
+    QCOMPARE(result, QPointF(50, 10));
 }
 
 void TestMeasureToolHandler::testConstrainEndpoint_ShiftVertical()
 {
     MeasureToolHandler handler;
-    QPoint start(10, 10);
-    QPoint end(20, 50);  // dx=10 < dy=40 -> vertical
+    QPointF start(10, 10);
+    QPointF end(20, 50);  // dx=10 < dy=40 -> vertical
 
-    QPoint result = handler.constrainEndpoint(start, end, true);
-    QCOMPARE(result, QPoint(10, 50));
+    QPointF result = handler.constrainEndpoint(start, end, true);
+    QCOMPARE(result, QPointF(10, 50));
 }
 
 void TestMeasureToolHandler::testConstrainEndpoint_ShiftDiagonalEqual()
 {
     MeasureToolHandler handler;
-    QPoint start(10, 10);
-    QPoint end(30, 30);  // dx=20 == dy=20 -> dx >= dy -> horizontal
+    QPointF start(10, 10);
+    QPointF end(30, 30);  // dx=20 == dy=20 -> dx >= dy -> horizontal
 
-    QPoint result = handler.constrainEndpoint(start, end, true);
-    QCOMPARE(result, QPoint(30, 10));
+    QPointF result = handler.constrainEndpoint(start, end, true);
+    QCOMPARE(result, QPointF(30, 10));
 }
 
 void TestMeasureToolHandler::manualLabelIsUnchangedAtNativeScale()
@@ -309,14 +314,14 @@ void TestMeasureToolHandler::autoDragStillMeasuresManuallyWithShiftAndEscape()
     QVERIFY(handler.isDrawing());
     QVERIFY(!handler.hasHoverMeasurement());
     handler.onMouseMove(&host.context, QPoint(60, 20));
-    QCOMPARE(handler.m_endPoint, QPoint(60, 10));
+    QCOMPARE(handler.m_endPoint, QPointF(60, 10));
     QVERIFY(handler.handleEscape(&host.context));   // cancels the drag
     QVERIFY(!handler.isDrawing());
 
     handler.onMousePress(&host.context, QPoint(10, 10));
     handler.onMouseRelease(&host.context, QPoint(60, 20));
     QVERIFY(handler.m_hasCompletedMeasurement);
-    QCOMPARE(handler.m_completedEnd, QPoint(60, 10));
+    QCOMPARE(handler.m_completedEnd, QPointF(60, 10));
 
     // Hovering again shows spans next to the finished line.
     host.context.shiftPressed = false;
@@ -434,6 +439,108 @@ void TestMeasureToolHandler::replacedImageOfTheSameSizeClearsTheHover()
     QVERIFY(!handler.m_hoverRaster);
     handler.setAutoMode(false);
     QCOMPARE(releases, 2);
+}
+
+// The finished line is kept in image pixels: zooming moves it with the image
+// instead of changing what it measures. A different image or crop drops it.
+void TestMeasureToolHandler::completedLineKeepsItsPixelsWhenThePinZooms()
+{
+    MeasureToolHandler handler;
+    Host host;
+    handler.setImageGeometry(QSize(200, 100), QSize(200, 100), 1.0, 1);
+    handler.onMousePress(&host.context, QPoint(20, 50));
+    handler.onMouseMove(&host.context, QPoint(120, 50));
+    handler.onMouseRelease(&host.context, QPoint(120, 50));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedEnd - handler.m_completedStart, QPointF(100, 0));
+
+    // Zoomed to 200% after the drag: still 100 image pixels, drawn twice as long.
+    handler.setImageGeometry(QSize(400, 200), QSize(200, 100), 1.0, 1);
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedEnd - handler.m_completedStart, QPointF(100, 0));
+    QCOMPARE(MeasureToolHandler::manualLabelLines(handler.m_completedEnd - handler.m_completedStart, 1.0),
+             QStringList{QStringLiteral("dx: 100  dy: 0  d: 100.0 px")});
+    QCOMPARE(handler.toTool(handler.m_completedEnd) - handler.toTool(handler.m_completedStart),
+             QPointF(200, 0));
+
+    // A crop changes the pixel grid: the old line no longer means anything.
+    handler.setImageGeometry(QSize(150, 100), QSize(150, 100), 1.0, 1);
+    QVERIFY(!handler.m_hasCompletedMeasurement);
+
+    // So does another image of the same size.
+    handler.onMousePress(&host.context, QPoint(20, 50));
+    handler.onMouseRelease(&host.context, QPoint(120, 50));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    handler.setImageGeometry(QSize(150, 100), QSize(150, 100), 1.0, 2);
+    QVERIFY(!handler.m_hasCompletedMeasurement);
+}
+
+// At 2x and 100% a drag from logical x 10.5 to 20 covers device pixels 21 to
+// 40: 19 px. Rounding the start to 11 first would report 18.
+void TestMeasureToolHandler::dragKeepsFractionalPointerPositions()
+{
+    MeasureToolHandler handler;
+    Host host;
+    handler.setImageGeometry(QSize(100, 50), QSize(200, 100), 2.0);
+    handler.onMousePressF(&host.context, QPointF(10.5, 5.0));
+    handler.onMouseMoveF(&host.context, QPointF(15.25, 5.0));
+    QCOMPARE(handler.m_endPoint, QPointF(30.5, 10.0));
+    handler.onMouseReleaseF(&host.context, QPointF(20.0, 5.0));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(21.0, 10.0));
+    QCOMPARE(handler.m_completedEnd, QPointF(40.0, 10.0));
+    QCOMPARE(MeasureToolHandler::manualLabelLines(handler.m_completedEnd - handler.m_completedStart, 2.0)
+                 .first(),
+             QStringLiteral("dx: 19  dy: 0  d: 19.0 px"));
+}
+
+// A width label normally sits above the pointer and a height label to its
+// right; near the top or right edge they move to the other side and stay in.
+void TestMeasureToolHandler::hoverLabelsStayInsideThePin()
+{
+    QImage image(200, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    // A thin bar near the top, and a box near the right edge.
+    for (int y = 1; y <= 4; ++y) {
+        for (int x = 40; x < 120; ++x) {
+            image.setPixelColor(x, y, QColor(30, 90, 200));
+        }
+    }
+    for (int y = 20; y < 60; ++y) {
+        for (int x = 185; x < 198; ++x) {
+            image.setPixelColor(x, y, QColor(30, 90, 200));
+        }
+    }
+    MeasureToolHandler handler;
+    Host host;
+    host.raster = std::make_shared<const QImage>(image);
+    handler.setAutoMode(true);
+    handler.setImageGeometry(QSize(200, 100), QSize(200, 100), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    QFont font;
+    font.setPixelSize(12);
+    const QFontMetrics fm(font);
+    const QRect bounds(0, 0, 200, 100);
+
+    handler.onMouseMove(&host.context, QPoint(80, 2));
+    QVERIFY(handler.hoverSpan(Qt::Horizontal));
+    const QRect widthLabel = handler.hoverLabelRect(Qt::Horizontal, fm);
+    QVERIFY2(bounds.contains(widthLabel), qPrintable(QStringLiteral("width label %1,%2 %3x%4")
+        .arg(widthLabel.x()).arg(widthLabel.y()).arg(widthLabel.width()).arg(widthLabel.height())));
+    QVERIFY(widthLabel.top() > 2);   // moved below the span line
+
+    handler.onMouseMove(&host.context, QPoint(190, 40));
+    QVERIFY(handler.hoverSpan(Qt::Vertical));
+    const QRect heightLabel = handler.hoverLabelRect(Qt::Vertical, fm);
+    QVERIFY(bounds.contains(heightLabel));
+    QVERIFY(heightLabel.right() < 190);   // moved left of the span line
+
+    // With room, the usual sides are kept.
+    host.raster = std::make_shared<const QImage>(elementImage());
+    handler.onMouseMove(&host.context, QPoint(80, 40));
+    QVERIFY(handler.hoverLabelRect(Qt::Horizontal, fm).bottom() < 40);
+    QVERIFY(handler.hoverLabelRect(Qt::Vertical, fm).left() > 80);
 }
 
 QTEST_MAIN(TestMeasureToolHandler)

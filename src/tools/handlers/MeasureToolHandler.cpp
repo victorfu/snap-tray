@@ -59,11 +59,26 @@ void MeasureToolHandler::onDeactivate(ToolContext* ctx)
 
 void MeasureToolHandler::onMousePress(ToolContext* ctx, const QPoint& pos)
 {
+    onMousePressF(ctx, QPointF(pos));
+}
+
+void MeasureToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
+{
+    onMouseMoveF(ctx, QPointF(pos));
+}
+
+void MeasureToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
+{
+    onMouseReleaseF(ctx, QPointF(pos));
+}
+
+void MeasureToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos)
+{
     m_hasCompletedMeasurement = false;
     clearHover();
     m_isDrawing = true;
-    m_startPoint = pos;
-    m_endPoint = pos;
+    m_startPoint = toImage(pos);
+    m_endPoint = m_startPoint;
     ctx->repaint();
 }
 
@@ -75,28 +90,18 @@ void MeasureToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos)
         }
         return;
     }
-    onMouseMove(ctx, pos.toPoint());
-}
-
-void MeasureToolHandler::onMouseMove(ToolContext* ctx, const QPoint& pos)
-{
-    if (!m_isDrawing) {
-        if (m_autoMode && updateHover(QPointF(pos))) {
-            ctx->repaint();
-        }
-        return;
-    }
-    m_endPoint = constrainEndpoint(m_startPoint, pos, ctx->shiftPressed);
+    m_endPoint = constrainEndpoint(m_startPoint, toImage(pos), ctx->shiftPressed);
     ctx->repaint();
 }
 
-void MeasureToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
+void MeasureToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos)
 {
     if (!m_isDrawing) return;
-    m_endPoint = constrainEndpoint(m_startPoint, pos, ctx->shiftPressed);
+    m_endPoint = constrainEndpoint(m_startPoint, toImage(pos), ctx->shiftPressed);
     m_isDrawing = false;
 
-    QPoint diff = m_endPoint - m_startPoint;
+    // The minimum is on screen (tool units): a click is not a measurement.
+    const QPointF diff = toTool(m_endPoint) - toTool(m_startPoint);
     if (diff.manhattanLength() > kMinMeasureDistance) {
         m_hasCompletedMeasurement = true;
         m_completedStart = m_startPoint;
@@ -105,17 +110,17 @@ void MeasureToolHandler::onMouseRelease(ToolContext* ctx, const QPoint& pos)
     ctx->repaint();
 }
 
-QPoint MeasureToolHandler::constrainEndpoint(const QPoint& start, const QPoint& end, bool shiftHeld) const
+QPointF MeasureToolHandler::constrainEndpoint(const QPointF& start, const QPointF& end, bool shiftHeld) const
 {
     if (!shiftHeld) return end;
 
-    int dx = qAbs(end.x() - start.x());
-    int dy = qAbs(end.y() - start.y());
+    const qreal dx = qAbs(end.x() - start.x());
+    const qreal dy = qAbs(end.y() - start.y());
 
     if (dx >= dy) {
-        return QPoint(end.x(), start.y());
+        return QPointF(end.x(), start.y());
     } else {
-        return QPoint(start.x(), end.y());
+        return QPointF(start.x(), end.y());
     }
 }
 
@@ -140,6 +145,11 @@ void MeasureToolHandler::setImageGeometry(const QSize& toolSize, const QSize& pi
     if (toolSize == m_toolSize && pixelSize == m_pixelSize && qFuzzyCompare(dpr, m_imageDpr)
         && imageKey == m_imageKey) {
         return;
+    }
+    // A zoom or rotation only changes the tool size: the line, kept in image
+    // pixels, still measures the same pixels. Another image or crop does not.
+    if (pixelSize != m_pixelSize || imageKey != m_imageKey) {
+        m_hasCompletedMeasurement = false;
     }
     m_toolSize = toolSize;
     m_pixelSize = pixelSize;
@@ -193,10 +203,22 @@ QPointF MeasureToolHandler::pixelsPerToolUnit() const
                    static_cast<qreal>(m_pixelSize.height()) / m_toolSize.height());
 }
 
-QPoint MeasureToolHandler::toPixel(const QPointF& toolPos) const
+QPointF MeasureToolHandler::toImage(const QPointF& toolPos) const
 {
     const QPointF scale = pixelsPerToolUnit();
-    return QPoint(qFloor(toolPos.x() * scale.x()), qFloor(toolPos.y() * scale.y()));
+    return QPointF(toolPos.x() * scale.x(), toolPos.y() * scale.y());
+}
+
+QPointF MeasureToolHandler::toTool(const QPointF& imagePos) const
+{
+    const QPointF scale = pixelsPerToolUnit();
+    return QPointF(imagePos.x() / scale.x(), imagePos.y() / scale.y());
+}
+
+QPoint MeasureToolHandler::toPixel(const QPointF& toolPos) const
+{
+    const QPointF imagePos = toImage(toolPos);
+    return QPoint(qFloor(imagePos.x()), qFloor(imagePos.y()));
 }
 
 // Returns true when what the hover shows changed.
@@ -278,33 +300,60 @@ void MeasureToolHandler::drawPreview(QPainter& painter) const
     }
 }
 
-void MeasureToolHandler::drawLabel(QPainter& painter, const QStringList& lines, const QPoint& anchor) const
+QRect MeasureToolHandler::labelRect(const QFontMetrics& fm, const QStringList& lines,
+                                    const QPoint& textTopCenter) const
 {
-    // anchor: top center of the text block, in the painter's label font.
-    const QFontMetrics fm(painter.font());
-
     int textWidth = 0;
     for (const QString& line : lines) {
         textWidth = qMax(textWidth, fm.horizontalAdvance(line));
     }
-    const int lineHeight = fm.height();
-    const QRect textRect(anchor.x() - textWidth / 2, anchor.y(), textWidth, lineHeight * lines.size());
-    const QRect bgRect = textRect.adjusted(-kLabelPaddingH, -kLabelPaddingV, kLabelPaddingH, kLabelPaddingV);
+    const QRect textRect(textTopCenter.x() - textWidth / 2, textTopCenter.y(),
+                         textWidth, fm.height() * static_cast<int>(lines.size()));
+    return textRect.adjusted(-kLabelPaddingH, -kLabelPaddingV, kLabelPaddingH, kLabelPaddingV);
+}
 
+QRect MeasureToolHandler::keepInsideImage(QRect rect) const
+{
+    if (!hasImageGeometry()) {
+        return rect;
+    }
+    const QRect bounds(QPoint(0, 0), m_toolSize);
+    if (rect.right() > bounds.right()) {
+        rect.moveRight(bounds.right());
+    }
+    if (rect.bottom() > bounds.bottom()) {
+        rect.moveBottom(bounds.bottom());
+    }
+    // Last, so a label wider than a tiny pin keeps its start visible.
+    if (rect.left() < bounds.left()) {
+        rect.moveLeft(bounds.left());
+    }
+    if (rect.top() < bounds.top()) {
+        rect.moveTop(bounds.top());
+    }
+    return rect;
+}
+
+void MeasureToolHandler::paintLabel(QPainter& painter, const QStringList& lines,
+                                    const QRect& backgroundRect) const
+{
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(0, 0, 0, 180));
-    painter.drawRoundedRect(bgRect, kLabelRadius, kLabelRadius);
+    painter.drawRoundedRect(backgroundRect, kLabelRadius, kLabelRadius);
 
+    const QRect textRect =
+        backgroundRect.adjusted(kLabelPaddingH, kLabelPaddingV, -kLabelPaddingH, -kLabelPaddingV);
+    const int lineHeight = lines.isEmpty() ? 0 : textRect.height() / static_cast<int>(lines.size());
     painter.setPen(Qt::white);
     for (int i = 0; i < lines.size(); ++i) {
-        painter.drawText(QRect(textRect.x(), textRect.y() + i * lineHeight, textWidth, lineHeight),
+        painter.drawText(QRect(textRect.x(), textRect.y() + i * lineHeight, textRect.width(), lineHeight),
                          Qt::AlignCenter, lines.at(i));
     }
 }
 
 void MeasureToolHandler::drawMeasurementOverlay(QPainter& painter,
-                                                 const QPoint& p1,
-                                                 const QPoint& p2) const
+                                                 const QPointF& imageP1,
+                                                 const QPointF& imageP2) const
 {
     painter.save();
     painter.setRenderHint(QPainter::Antialiasing);
@@ -313,6 +362,10 @@ void MeasureToolHandler::drawMeasurementOverlay(QPainter& painter,
     const QColor measureColor = DesignSystem::instance().accentDefault();
     QColor guideColor = measureColor;
     guideColor.setAlpha(100);
+
+    // Drawn where the image pixels are now, at the current zoom.
+    const QPointF p1 = toTool(imageP1);
+    const QPointF p2 = toTool(imageP2);
 
     // Measurement line
     painter.setPen(QPen(measureColor, 2, Qt::SolidLine));
@@ -327,22 +380,69 @@ void MeasureToolHandler::drawMeasurementOverlay(QPainter& painter,
     // Dashed dx/dy guide lines (right-angle triangle)
     painter.setPen(QPen(guideColor, 1, Qt::DashLine));
     painter.setBrush(Qt::NoBrush);
-    QPoint corner(p2.x(), p1.y());
+    const QPointF corner(p2.x(), p1.y());
     painter.drawLine(p1, corner);
     painter.drawLine(corner, p2);
 
     // Distances in the image's own pixels, so zooming the pin does not change them.
-    const QPointF scale = pixelsPerToolUnit();
-    const QPoint delta = p2 - p1;
-    const QStringList lines = manualLabelLines(
-        QPointF(delta.x() * scale.x(), delta.y() * scale.y()), m_imageDpr);
+    const QStringList lines = manualLabelLines(imageP2 - imageP1, m_imageDpr);
 
     // Label position: below midpoint of measurement line
-    const QPoint midpoint((p1.x() + p2.x()) / 2, (p1.y() + p2.y()) / 2);
+    const QPoint midpoint = ((p1 + p2) / 2).toPoint();
     const QFontMetrics fm(painter.font());
-    drawLabel(painter, lines, QPoint(midpoint.x(), midpoint.y() + kLabelOffsetY - fm.ascent()));
+    const QRect rect = keepInsideImage(
+        labelRect(fm, lines, QPoint(midpoint.x(), midpoint.y() + kLabelOffsetY - fm.ascent())));
+    paintLabel(painter, lines, rect);
 
     painter.restore();
+}
+
+QString MeasureToolHandler::hoverLabelText(Qt::Orientation orientation) const
+{
+    const std::optional<MeasureEdgeScanner::Span>& span =
+        orientation == Qt::Horizontal ? m_hoverHorizontal : m_hoverVertical;
+    if (!span) {
+        return QString();
+    }
+    return QString(kApproxSign) + QLatin1Char(' ') + formatLength(span->length(), m_imageDpr);
+}
+
+QRect MeasureToolHandler::hoverLabelRect(Qt::Orientation orientation, const QFontMetrics& fm) const
+{
+    const QPointF anchor = toTool(QPointF(m_hoverPixel.x() + 0.5, m_hoverPixel.y() + 0.5));
+    const QStringList lines{hoverLabelText(orientation)};
+
+    if (orientation == Qt::Horizontal) {
+        if (!m_hoverHorizontal) {
+            return QRect();
+        }
+        const qreal x1 = toTool(QPointF(m_hoverHorizontal->first, 0)).x();
+        const qreal x2 = toTool(QPointF(m_hoverHorizontal->last + 1, 0)).x();
+        const int centerX = qRound((x1 + x2) / 2);
+        const int y = qRound(anchor.y());
+        // Above the span line, or below it when the pin has no room above.
+        QRect rect = labelRect(fm, lines, QPoint(centerX, y - kSpanLabelGap - fm.height()));
+        if (hasImageGeometry() && rect.top() < 0) {
+            rect = labelRect(fm, lines, QPoint(centerX, y + kSpanLabelGap + kLabelPaddingV));
+        }
+        return keepInsideImage(rect);
+    }
+
+    if (!m_hoverVertical) {
+        return QRect();
+    }
+    const qreal y1 = toTool(QPointF(0, m_hoverVertical->first)).y();
+    const qreal y2 = toTool(QPointF(0, m_hoverVertical->last + 1)).y();
+    const int x = qRound(anchor.x());
+    const int textTop = qRound((y1 + y2) / 2) - fm.height() / 2;
+    const int textWidth = fm.horizontalAdvance(lines.first());
+    // Right of the span line, or left of it when the pin has no room right.
+    QRect rect = labelRect(fm, lines, QPoint(x + kSpanLabelGap + kLabelPaddingH + textWidth / 2, textTop));
+    if (hasImageGeometry() && rect.right() > m_toolSize.width() - 1) {
+        rect = labelRect(fm, lines,
+                         QPoint(x - kSpanLabelGap - kLabelPaddingH - (textWidth - textWidth / 2), textTop));
+    }
+    return keepInsideImage(rect);
 }
 
 void MeasureToolHandler::drawHoverOverlay(QPainter& painter) const
@@ -352,19 +452,15 @@ void MeasureToolHandler::drawHoverOverlay(QPainter& painter) const
     setLabelFont(painter);
 
     const QColor measureColor = DesignSystem::instance().accentDefault();
-    const QPointF scale = pixelsPerToolUnit();
     // Pixel edges in tool coordinates: a span covers [first, last + 1).
     // The lines run through the middle of the hovered pixel.
-    auto toToolX = [&](qreal px) { return px / scale.x(); };
-    auto toToolY = [&](qreal py) { return py / scale.y(); };
-    const QPointF anchor(toToolX(m_hoverPixel.x() + 0.5), toToolY(m_hoverPixel.y() + 0.5));
-    const QString approx = QString(kApproxSign) + QLatin1Char(' ');
+    const QPointF anchor = toTool(QPointF(m_hoverPixel.x() + 0.5, m_hoverPixel.y() + 0.5));
     const QFontMetrics fm(painter.font());
 
     if (m_hoverHorizontal) {
         const qreal y = anchor.y();
-        const qreal x1 = toToolX(m_hoverHorizontal->first);
-        const qreal x2 = toToolX(m_hoverHorizontal->last + 1);
+        const qreal x1 = toTool(QPointF(m_hoverHorizontal->first, 0)).x();
+        const qreal x2 = toTool(QPointF(m_hoverHorizontal->last + 1, 0)).x();
         painter.setPen(QPen(measureColor, 1, Qt::SolidLine));
         painter.drawLine(QPointF(x1, y), QPointF(x2, y));
         // Ticks only on found edges; an image border is not an edge.
@@ -374,16 +470,13 @@ void MeasureToolHandler::drawHoverOverlay(QPainter& painter) const
         if (m_hoverHorizontal->lastIsEdge) {
             painter.drawLine(QPointF(x2, y - kSpanTickHalfLength), QPointF(x2, y + kSpanTickHalfLength));
         }
-        const QString text = approx + formatLength(m_hoverHorizontal->length(), m_imageDpr);
-        drawLabel(painter, {text}, QPoint(qRound((x1 + x2) / 2),
-                                          qRound(y) - kSpanLabelGap - fm.height()));
+        paintLabel(painter, {hoverLabelText(Qt::Horizontal)}, hoverLabelRect(Qt::Horizontal, fm));
     }
 
     if (m_hoverVertical) {
-        painter.save();
         const qreal x = anchor.x();
-        const qreal y1 = toToolY(m_hoverVertical->first);
-        const qreal y2 = toToolY(m_hoverVertical->last + 1);
+        const qreal y1 = toTool(QPointF(0, m_hoverVertical->first)).y();
+        const qreal y2 = toTool(QPointF(0, m_hoverVertical->last + 1)).y();
         painter.setPen(QPen(measureColor, 1, Qt::SolidLine));
         painter.drawLine(QPointF(x, y1), QPointF(x, y2));
         if (m_hoverVertical->firstIsEdge) {
@@ -392,11 +485,7 @@ void MeasureToolHandler::drawHoverOverlay(QPainter& painter) const
         if (m_hoverVertical->lastIsEdge) {
             painter.drawLine(QPointF(x - kSpanTickHalfLength, y2), QPointF(x + kSpanTickHalfLength, y2));
         }
-        const QString text = approx + formatLength(m_hoverVertical->length(), m_imageDpr);
-        const int textWidth = fm.horizontalAdvance(text);
-        drawLabel(painter, {text}, QPoint(qRound(x) + kSpanLabelGap + kLabelPaddingH + textWidth / 2,
-                                          qRound((y1 + y2) / 2) - fm.height() / 2));
-        painter.restore();
+        paintLabel(painter, {hoverLabelText(Qt::Vertical)}, hoverLabelRect(Qt::Vertical, fm));
     }
 
     painter.restore();
