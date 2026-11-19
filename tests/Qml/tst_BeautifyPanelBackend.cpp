@@ -54,6 +54,7 @@ private slots:
     void cleanup();
 
     void testChangingAndReplacingBackground();
+    void testHistoryBackgroundOutlivesItsEntry();
     void testDefaultState_UsesBeautifyDefaults();
     void testApplyPreset_UpdatesGradientState();
     void testPreviewDebounce_CoalescesRapidChanges();
@@ -528,6 +529,34 @@ void tst_BeautifyPanelBackend::testChangingAndReplacingBackground()
     QVERIFY(replace(settings.backgroundImagePath, Qt::red));
     QTRY_VERIFY(backend.imageReady());
     QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::red));
+}
+
+void tst_BeautifyPanelBackend::testHistoryBackgroundOutlivesItsEntry()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QImage image(200, 100, QImage::Format_RGB32);
+    image.fill(Qt::magenta);
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImagePath = dir.filePath("chosen.png");
+    settings.historyBackgroundPath = dir.filePath("background.image");
+    QBuffer buffer(&settings.backgroundImageData);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(image.save(&buffer, "PNG"));
+    buffer.close();
+    const QByteArray asset = settings.backgroundImageData;
+    // The entry was pruned before the panel opened: neither file exists.
+    SnapTray::BeautifyPanelBackend backend;
+    backend.setSettings(settings);
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::magenta));
+    QCOMPARE(backend.settings().backgroundImageData, asset);
+    // Switching away and back keeps the snapshot.
+    backend.setBackgroundType(int(BeautifyBackgroundType::Solid));
+    backend.setBackgroundType(int(BeautifyBackgroundType::Image));
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.settings().backgroundImageData, asset);
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

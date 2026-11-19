@@ -143,6 +143,9 @@ BeautifySettings BeautifyPanelBackend::settingsFor(const FrameStyle& style) cons
 void BeautifyPanelBackend::setSettings(const BeautifySettings& settings)
 {
     m_settings = settings;
+    // A reopened history entry brings its background with it: the entry can
+    // be pruned while its pin stays open.
+    m_historyBackground = settings.historyBackgroundPath.isEmpty() ? QByteArray() : settings.backgroundImageData;
     reloadBackground();
 }
 
@@ -176,6 +179,7 @@ void BeautifyPanelBackend::pickBackgroundImage()
         m_settings.backgroundImagePath, beautifyText("Images") + QStringLiteral(" (*.png *.jpg *.jpeg *.jfif)"));
     if (path.isEmpty()) return;
     m_settings.historyBackgroundPath.clear();
+    m_historyBackground.clear();
     m_settings.backgroundImagePath = path;
     m_settings.backgroundType = BeautifyBackgroundType::Image;
     reloadBackground();
@@ -208,7 +212,10 @@ void BeautifyPanelBackend::reloadBackground()
     m_settings.backgroundImageData.clear();
     const auto watched = m_imageWatcher->files() + m_imageWatcher->directories();
     if (!watched.isEmpty()) m_imageWatcher->removePaths(watched);
-    if (m_previewActive && imageBackground() && !m_settings.imageSourcePath().isEmpty()) {
+    if (m_previewActive && imageBackground() && !m_historyBackground.isEmpty()) {
+        // Nothing to watch: the snapshot cannot change.
+        if (!m_imageLoading) startBackgroundLoad();
+    } else if (m_previewActive && imageBackground() && !m_settings.imageSourcePath().isEmpty()) {
         const QFileInfo file(m_settings.imageSourcePath());
         m_imageWatcher->addPath(file.absolutePath());
         if (file.isFile()) m_imageWatcher->addPath(file.absoluteFilePath());
@@ -232,12 +239,14 @@ void BeautifyPanelBackend::startBackgroundLoad()
             m_originalBackgroundSize = result.originalSize;
             m_settings.backgroundImageData = result.original;
         } else if (m_previewActive && imageBackground()
-                   && !m_settings.imageSourcePath().isEmpty()) {
+                   && (!m_historyBackground.isEmpty() || !m_settings.imageSourcePath().isEmpty())) {
             startBackgroundLoad();
         }
         commitSettingsChange();
     });
-    watcher->setFuture(QtConcurrent::run(BeautifyBackgroundImage::loadPreview, m_settings.imageSourcePath()));
+    watcher->setFuture(m_historyBackground.isEmpty()
+        ? QtConcurrent::run(BeautifyBackgroundImage::loadPreview, m_settings.imageSourcePath())
+        : QtConcurrent::run(BeautifyBackgroundImage::previewFromOriginal, m_historyBackground));
 }
 
 QColor BeautifyPanelBackend::primaryColor() const

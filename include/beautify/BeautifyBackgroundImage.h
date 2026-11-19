@@ -14,8 +14,12 @@ struct Preview {
     QSize originalSize; // after applying the file orientation
 };
 
+// The encoded file, or empty when it is missing, unreadable or too large.
+QByteArray readOriginal(const QString& path);
 Preview loadPreview(const QString& path);
-QImage decode(const QByteArray& original, int maximumSide = 0, QSize* originalSize = nullptr);
+Preview previewFromOriginal(const QByteArray& original);
+// maximumPixels > 0 area-samples the image down to at most that many pixels.
+QImage decode(const QByteArray& original, qint64 maximumPixels = 0, QSize* originalSize = nullptr);
 qsizetype cachedBytes();
 
 } // namespace SnapTray::BeautifyBackgroundImage

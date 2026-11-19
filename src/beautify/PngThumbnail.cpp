@@ -15,6 +15,45 @@ namespace {
 constexpr std::array<int, 7> kFirstX{0, 4, 0, 2, 0, 1, 0};
 constexpr std::array<int, 7> kStepX{8, 8, 4, 4, 2, 2, 1};
 
+// libspng caches decoded metadata without a bound by default. Neither ICC
+// profiles nor eXIf need more than a few megabytes, and IDAT is unaffected.
+constexpr size_t kMaxMetadataChunkBytes = 16 * 1024 * 1024;
+constexpr size_t kMaxMetadataBytes = 32 * 1024 * 1024;
+
+using Context = std::unique_ptr<spng_ctx, decltype(&spng_ctx_free)>;
+
+Context openPng(const QByteArray& encoded)
+{
+    Context ctx(spng_ctx_new(0), spng_ctx_free);
+    if (!ctx || spng_set_chunk_limits(ctx.get(), kMaxMetadataChunkBytes, kMaxMetadataBytes)
+        || spng_set_png_buffer(ctx.get(), encoded.constData(), encoded.size())) {
+        return Context(nullptr, spng_ctx_free);
+    }
+    return ctx;
+}
+
+// Qt cannot tag an RGB image with a grayscale profile, so convert the gray
+// levels through it here. The decoder expanded them to R = G = B.
+void convertGrayLevels(QImage& image, const QColorSpace& gray)
+{
+    constexpr int kLevels = 256;
+    QImage ramp(kLevels, 1, QImage::Format_Grayscale8);
+    for (int level = 0; level < kLevels; ++level) ramp.scanLine(0)[level] = uchar(level);
+    ramp.setColorSpace(gray);
+    const QImage mapped = ramp.convertedToColorSpace(QColorSpace::SRgb, QImage::Format_RGB32);
+    if (mapped.isNull()) return;
+    const auto* table = reinterpret_cast<const QRgb*>(mapped.constScanLine(0));
+    for (int y = 0; y < image.height(); ++y) {
+        auto* row = reinterpret_cast<QRgb*>(image.scanLine(y));
+        for (int x = 0; x < image.width(); ++x) {
+            const QRgb pixel = qUnpremultiply(row[x]);
+            const QRgb level = table[qRed(pixel)];
+            row[x] = qPremultiply(qRgba(qRed(level), qGreen(level), qBlue(level), qAlpha(pixel)));
+        }
+    }
+    image.setColorSpace(QColorSpace::SRgb);
+}
+
 struct Bin {
     quint64 r = 0, g = 0, b = 0, a = 0;
     quint32 count = 0;
@@ -44,10 +83,9 @@ QColorSpace pngColors(spng_ctx* ctx)
 
 QTransform SnapTray::pngOrientation(const QByteArray& encoded)
 {
-    std::unique_ptr<spng_ctx, decltype(&spng_ctx_free)> ctx(spng_ctx_new(0), spng_ctx_free);
+    const auto ctx = openPng(encoded);
     spng_exif exif{};
-    if (!ctx || spng_set_png_buffer(ctx.get(), encoded.constData(), encoded.size())
-        || spng_get_exif(ctx.get(), &exif) || exif.length < 8) return {};
+    if (!ctx || spng_get_exif(ctx.get(), &exif) || exif.length < 8) return {};
 
     // PNG's eXIf chunk starts directly with the TIFF header. Read only the
     // orientation SHORT in IFD0. Other directories and offsets are irrelevant.
@@ -83,15 +121,15 @@ QTransform SnapTray::pngOrientation(const QByteArray& encoded)
 
 QImage SnapTray::readPngThumbnail(const QByteArray& encoded, QSize target)
 {
-    std::unique_ptr<spng_ctx, decltype(&spng_ctx_free)> ctx(spng_ctx_new(0), spng_ctx_free);
-    if (!ctx || spng_set_png_buffer(ctx.get(), encoded.constData(), encoded.size())) return {};
+    const auto ctx = openPng(encoded);
+    if (!ctx) return {};
     spng_ihdr header{};
     if (spng_get_ihdr(ctx.get(), &header) || target.isEmpty()) return {};
     if (spng_decode_image(ctx.get(), nullptr, 0, SPNG_FMT_RGBA8, SPNG_DECODE_PROGRESSIVE | SPNG_DECODE_TRNS)) return {};
 
     QImage result(target, QImage::Format_ARGB32_Premultiplied);
     if (result.isNull()) return {};
-    result.setColorSpace(pngColors(ctx.get()));
+    const QColorSpace colors = pngColors(ctx.get());
     // Ordinary PNGs arrive in order, so keep just one output row of sums.
     // Interlaced images revisit rows and need sums for the thumbnail canvas.
     const bool interlaced = header.interlace_method == SPNG_INTERLACE_ADAM7;
@@ -139,6 +177,11 @@ QImage SnapTray::readPngThumbnail(const QByteArray& encoded, QSize target)
         }
     } else if (!finishRow(previousY, bins.data())) {
         return {};
+    }
+    if (colors.colorModel() == QColorSpace::ColorModel::Gray) {
+        convertGrayLevels(result, colors);
+    } else {
+        result.setColorSpace(colors);
     }
     return result;
 }

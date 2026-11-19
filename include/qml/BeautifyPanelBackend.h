@@ -149,6 +149,7 @@ private:
     QPixmap m_sourcePixmap;
     QImage m_backgroundPreview;
     QSize m_originalBackgroundSize;
+    QByteArray m_historyBackground; // owned copy of a reopened entry's asset
     QFileSystemWatcher* m_imageWatcher;
     quint64 m_imageRevision = 0;
     bool m_imageLoading = false;

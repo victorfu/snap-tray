@@ -8173,6 +8173,14 @@ BeautifySettings PinWindow::beautifyPanelSettings() const
                               : BeautifySettingsManager::instance().loadSettings();
 }
 
+void PinWindow::rememberBeautifyLook(const BeautifySettings& settings)
+{
+    m_beautifySettings = settings;
+    // A chosen file is reread when the panel reopens. A reopened history
+    // entry's asset is kept, since the entry can be pruned meanwhile.
+    if (settings.historyBackgroundPath.isEmpty()) m_beautifySettings->backgroundImageData.clear();
+}
+
 void PinWindow::setHistoryOrigin(const QString& entryId,
                                  const std::optional<BeautifySettings>& beautify)
 {
@@ -8233,8 +8241,7 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         return;
     }
 
-    m_beautifySettings = settings;
-    m_beautifySettings->backgroundImageData.clear();
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
     QPixmap source = beautifySourcePixmap();
     if (source.isNull()) {
@@ -8299,8 +8306,7 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 void PinWindow::onBeautifyExport(const BeautifySettings& settings)
 {
     if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) return;
-    m_beautifySettings = settings;
-    m_beautifySettings->backgroundImageData.clear();
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
     SnapTray::PinExportRequest request;
     request.destination = SnapTray::PinExportRequest::Destination::ExportDialog;
@@ -8330,8 +8336,7 @@ void PinWindow::onBeautifySave(BeautifySettings settings)
         return;
     }
 
-    m_beautifySettings = settings;
-    m_beautifySettings->backgroundImageData.clear();
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
     const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
     if (sizeReferencePixmap.isNull()) {

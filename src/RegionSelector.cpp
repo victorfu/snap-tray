@@ -4,6 +4,7 @@
 #include "annotation/AnnotationSelectionController.h"
 #include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
+#include "beautify/BeautifyBackgroundImage.h"
 #include "history/AnnotationSerializer.h"
 #include "history/HistoryReplayDocument.h"
 #include "history/HistoryRecorder.h"
@@ -1938,6 +1939,12 @@ void RegionSelector::commitHistoryReplayEntry(const SnapTray::HistoryEntry& entr
 
     setSelectionWindowMetadata(entry.windowTitle, entry.ownerApp);
     m_historyReplayBeautify = entry.beautify;
+    if (m_historyReplayBeautify && !m_historyReplayBeautify->historyBackgroundPath.isEmpty()) {
+        // Take the background now: pinning or saving records a new entry,
+        // which can prune this one before Beautify ever opens.
+        m_historyReplayBeautify->backgroundImageData =
+            SnapTray::BeautifyBackgroundImage::readOriginal(m_historyReplayBeautify->historyBackgroundPath);
+    }
     update();
 }
 

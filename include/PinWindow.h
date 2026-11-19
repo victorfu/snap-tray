@@ -772,6 +772,7 @@ private:
 
     // Beautify
     void showBeautifyPanel();
+    void rememberBeautifyLook(const BeautifySettings& settings);
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(BeautifySettings settings);
     void onBeautifyExport(const BeautifySettings& settings);
