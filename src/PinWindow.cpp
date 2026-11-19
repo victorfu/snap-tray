@@ -53,6 +53,7 @@
 #include "tools/handlers/CropToolHandler.h"
 #include "qml/ImageExportDialogController.h"
 #include "tools/handlers/CutOutToolHandler.h"
+#include "tools/handlers/MeasureToolHandler.h"
 #include "pinwindow/ImageStripTransform.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "settings/AutoBlurSettingsManager.h"
@@ -2608,6 +2609,11 @@ QRectF PinWindow::transformedSourceSampleRect() const
         return sampleRect;
     }
 
+    return sourceOrientationTransform().mapRect(sampleRect);
+}
+
+QTransform PinWindow::sourceOrientationTransform() const
+{
     QTransform transform;
     if (m_rotationAngle != 0) {
         transform.rotate(m_rotationAngle);
@@ -2615,10 +2621,7 @@ QRectF PinWindow::transformedSourceSampleRect() const
     if (m_flipHorizontal || m_flipVertical) {
         transform.scale(m_flipHorizontal ? -1.0 : 1.0, m_flipVertical ? -1.0 : 1.0);
     }
-
-    const QTransform mappedTransform =
-        QPixmap::trueMatrix(transform, m_originalPixmap.width(), m_originalPixmap.height());
-    return mappedTransform.mapRect(sampleRect);
+    return QPixmap::trueMatrix(transform, m_originalPixmap.width(), m_originalPixmap.height());
 }
 
 void PinWindow::resetSourceSampleRect()
@@ -3118,6 +3121,9 @@ void PinWindow::ensureLiveTooltip()
 void PinWindow::leaveEvent(QEvent* event)
 {
     if (m_hoverBar) m_hoverBar->pointerLeft();
+    if (auto* measureHandler = measureToolHandler(); measureHandler && measureHandler->clearHover()) {
+        update();
+    }
     QWidget::leaveEvent(event);
 }
 
@@ -3526,6 +3532,11 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
             // In annotation mode, check for annotation hovers
             // updateAnnotationCursor uses state-driven API and handles cursor automatically
             updateAnnotationCursor(event->pos());
+            // Auto measure follows a hovering pointer (#348).
+            if (isMeasureHoverActive()) {
+                m_toolManager->handleMouseMove(measureHoverToolPosition(event->position()),
+                                               event->modifiers());
+            }
         }
     }
 }
@@ -4305,6 +4316,11 @@ void PinWindow::initializeAnnotationComponents()
         });
         cutOutHandler->setDraftChangedCallback([this]() { syncCutOutDraftUi(); });
     }
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setRasterProvider([this]() { return measureRaster(); },
+                                          [this]() { m_measureRaster.reset(); });
+        measureHandler->setAutoMode(PinWindowSettingsManager::instance().loadMeasureAutoMode());
+    }
     syncCropHandlerImageSize();
 
     // Load saved annotation settings
@@ -4418,6 +4434,13 @@ void PinWindow::initializeAnnotationComponents()
             update();
         }
     });
+    connect(optionsVM, &PinToolOptionsViewModel::measureModeSelected, this, [this](int mode) {
+        setMeasureAutoMode(mode == PinToolOptionsViewModel::MeasureAuto);
+    });
+    if (const MeasureToolHandler* measureHandler = measureToolHandler()) {
+        optionsVM->setMeasureMode(measureHandler->autoMode()
+            ? PinToolOptionsViewModel::MeasureAuto : PinToolOptionsViewModel::MeasureManual);
+    }
     connect(optionsVM, &PinToolOptionsViewModel::cutOutApplyRequested, this, [this]() {
         commitCutOutDraft();
     });
@@ -4700,6 +4723,12 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     if (CropToolHandler* cropHandler = cropToolHandler()) {
         cropHandler->discardDraft();
     }
+    // Measure stays the current tool without a deactivate: drop its spans
+    // and the image copy they were read from.
+    if (MeasureToolHandler* measureHandler = measureToolHandler()) {
+        measureHandler->clearHover();
+    }
+    m_measureRaster.reset();
     if (CutOutToolHandler* cutOutHandler = cutOutToolHandler()) {
         cutOutHandler->discardDraft();
     }
@@ -4998,6 +5027,123 @@ void PinWindow::syncCropHandlerImageSize()
                 cutOutHandler->canMarkStrip(), !qFuzzyCompare(m_zoomLevel, 1.0));
         }
     }
+    // Measure values are in the image's own pixels, whatever the zoom.
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setImageGeometry(cropToolImageSize(),
+                                         cropSourcePixelSize(),
+                                         m_originalPixmap.devicePixelRatio(),
+                                         m_originalPixmap.cacheKey());
+    }
+}
+
+MeasureToolHandler* PinWindow::measureToolHandler() const
+{
+    return m_toolManager
+        ? dynamic_cast<MeasureToolHandler*>(m_toolManager->handler(ToolId::Measure))
+        : nullptr;
+}
+
+bool PinWindow::isMeasureHoverActive() const
+{
+    if (!m_annotationMode || m_currentToolId != ToolId::Measure) {
+        return false;
+    }
+    // Every live frame is a new image: rescanning it per move would copy the
+    // whole frame each time. Manual measuring still works; pause to hover.
+    if (m_isLiveMode && !m_livePaused) {
+        return false;
+    }
+    const MeasureToolHandler* measureHandler = measureToolHandler();
+    return measureHandler && measureHandler->autoMode();
+}
+
+void PinWindow::setMeasureAutoMode(bool enabled)
+{
+    if (auto* measureHandler = measureToolHandler()) {
+        measureHandler->setAutoMode(enabled);
+    }
+    PinWindowSettingsManager::instance().saveMeasureAutoMode(enabled);
+    if (m_subToolbar) {
+        m_subToolbar->viewModel()->setMeasureMode(
+            enabled ? PinToolOptionsViewModel::MeasureAuto : PinToolOptionsViewModel::MeasureManual);
+    }
+    update();
+}
+
+std::shared_ptr<const QImage> PinWindow::measureRaster() const
+{
+    if (m_originalPixmap.isNull()) {
+        return nullptr;
+    }
+    const QRect rect = measureSourcePixelRect();
+    if (rect.isEmpty()) {
+        return nullptr;
+    }
+    const qint64 key = m_originalPixmap.cacheKey();
+    if (m_measureRaster && key == m_measureRasterKey && rect == m_measureRasterRect) {
+        return m_measureRaster;
+    }
+    // One 32-bit copy of the shown pixels (width x height x 4 bytes); released
+    // when the Measure tool stops using it.
+    m_measureRaster.reset();
+    QImage image = m_originalPixmap.toImage();
+    if (rect != image.rect()) {
+        image = image.copy(rect);
+    }
+    if (!MeasureEdgeScanner::isSupportedFormat(image.format())) {
+        image = std::move(image).convertToFormat(QImage::Format_ARGB32);
+    }
+    image.setDevicePixelRatio(1.0);
+    m_measureRaster = std::make_shared<const QImage>(std::move(image));
+    m_measureRasterKey = key;
+    m_measureRasterRect = rect;
+    ++m_measureRasterBuildCount;
+    return m_measureRaster;
+}
+
+QRect PinWindow::measureSourcePixelRect() const
+{
+    const QRectF sampleRect = sourceSampleRect();
+    const QSize pixelSize = cropSourcePixelSize();
+    if (m_originalPixmap.isNull() || sampleRect.isEmpty() || pixelSize.isEmpty()) {
+        return QRect();
+    }
+
+    QPoint origin(qFloor(sampleRect.x()), qFloor(sampleRect.y()));
+    // Resolve the origin the way buildDisplayPixmap() does, in the rotated and
+    // flipped image, then map it back: at native zoom a fractional origin
+    // (a capture at an odd logical x on a 150% screen) is rounded there, and
+    // a flip mirrors which way it rounds.
+    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
+        ? m_originalPixmap.devicePixelRatio()
+        : 1.0;
+    const QTransform orientation = sourceOrientationTransform();
+    const QSize orientedSize =
+        orientation.mapRect(QRectF(m_originalPixmap.rect())).size().toSize();
+    const QRectF shown = displaySourceRectForTarget(orientation.mapRect(sampleRect),
+                                                    orientedSize,
+                                                    CoordinateHelper::toPhysical(size(), dpr));
+    if (shown.isValid() && !shown.isEmpty()) {
+        // Whole pixels map back to whole pixels; the tolerance only absorbs
+        // floating-point error.
+        constexpr qreal kPixelTolerance = 1e-6;
+        const QRectF source = orientation.inverted().mapRect(shown);
+        origin = QPoint(qFloor(source.x() + kPixelTolerance), qFloor(source.y() + kPixelTolerance));
+    }
+    return QRect(origin, pixelSize).intersected(m_originalPixmap.rect());
+}
+
+QPointF PinWindow::measureHoverToolPosition(const QPointF& displayPos) const
+{
+    // A pointer on the left edge of a displayed pixel maps, through a flip, to
+    // the right edge of the source pixel shown there: the next pixel over, or
+    // outside the image. Its center maps inside the pixel whatever the view.
+    const qreal dpr = m_originalPixmap.devicePixelRatio() > 0.0
+        ? m_originalPixmap.devicePixelRatio()
+        : 1.0;
+    const QPointF center((qFloor(displayPos.x() * dpr) + 0.5) / dpr,
+                         (qFloor(displayPos.y() * dpr) + 0.5) / dpr);
+    return mapToOriginalCoords(center);
 }
 
 CutOutToolHandler* PinWindow::cutOutToolHandler() const

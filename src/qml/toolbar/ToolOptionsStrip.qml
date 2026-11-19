@@ -328,6 +328,14 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
         }
 
+        // Measure mode (#348).
+        MeasureSection {
+            objectName: "toolOptionsMeasureSection"
+            visible: root.hasViewModel && root.viewModel.showMeasureSection
+            viewModel: root.viewModel
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
         // Drawing order of the selected annotation (#268).
         ArrangeSection {
             objectName: "toolOptionsArrangeSection"

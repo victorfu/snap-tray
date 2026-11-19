@@ -1609,6 +1609,14 @@ File size: %3</source>
     </message>
 </context>
 <context>
+    <name>MeasureSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
+        <source>Hover to measure. Values are image estimates.</source>
+        <translation>วางตัวชี้เพื่อวัด ค่าเป็นการประมาณจากภาพ</translation>
+    </message>
+</context>
+<context>
     <name>MultiRegionListPanel</name>
     <message>
         <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
@@ -2024,6 +2032,31 @@ English is always included and cannot be removed.</source>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="0" />
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>รีเซ็ตการซูมเป็น 100% เพื่อตัดแถบออก</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
+        <source>Manual</source>
+        <translation>ด้วยตนเอง</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="283" />
+        <source>Measure by dragging a line</source>
+        <translation>วัดโดยลากเส้น</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="285" />
+        <source>Auto</source>
+        <translation>อัตโนมัติ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="286" />
+        <source>Estimate the spans around the pointer from the image</source>
+        <translation>ประมาณระยะรอบตัวชี้จากภาพ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="781" />
+        <source>Measure</source>
+        <translation>วัด</translation>
     </message>
 </context>
 <context>

@@ -10,6 +10,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 - Export a smaller copy of a still image from a pin, Beautify or the Library: keep the size, scale by percent or limit the long edge, choose PNG or JPEG with an adjustable quality, and see the real size of the file before saving. The original image and its edits stay at full resolution.
 - Remove Background for pinned images on macOS: keeps the subjects and makes the rest transparent with on-device segmentation, on the full canvas so nothing moves, as one undoable step. It runs in the background and can be cancelled with Esc; annotations stay editable and a mosaic over the removed background has no original pixels left to sample. Saving a transparent image as JPEG now fills it with white instead of black, as Export As already did.
+- Auto mode for the pin Measure tool: hover to see the width, height or spacing around the pointer, found from the image's edges. Gradients, soft shadows and noise are not taken as edges, and nothing is shown unless clear edges are found on both sides. Values are marked as estimates; manual line measuring stays the default.
 - Cut Out tool for pinned images: remove a band across the image and join the rest, or insert a transparent band, horizontally or vertically, as one undoable step. Redactions keep covering the same pixels; an annotation crossing the band blocks the operation instead of being distorted.
 - Recording shapes and numbered steps, with editable timing, fades, and a choice of following the content or staying fixed on screen.
 - Imported music and narration clips with volume, looping, source offsets and fades, preserved in editable projects and recovery.
@@ -21,6 +22,7 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ### Improved
 
+- Measure values in a pin are in the image's own pixels whatever the zoom, with logical units (`pt`) added for images from high-DPI displays.
 - Cropping a pinned image now leaves an adjustable selection first: move it, resize it by its handles, pick an aspect ratio (Free, Original, 1:1, 16:9, 9:16, 4:3, 3:2), nudge it one image pixel at a time with the arrow keys, then press Enter to apply or Esc to cancel. Sizes are shown in real image pixels.
 - Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
 - GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.

@@ -79,7 +79,7 @@ bool PinToolOptionsViewModel::hasContent() const
 {
     return m_showColor || m_showWidth || m_showText ||
            m_showArrowStyle || m_showLineStyle || m_showShape ||
-           m_showSize || m_showAutoBlur || m_showCrop || m_showCutOut;
+           m_showSize || m_showAutoBlur || m_showCrop || m_showCutOut || m_showMeasure;
 }
 
 void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
@@ -100,11 +100,12 @@ void PinToolOptionsViewModel::applySectionVisibility(bool showColor,
     m_showSize = showSize;
     m_showAutoBlur = showAutoBlur;
     // Only showForTool() turns the crop section on.
-    const bool hadCrop = m_showCrop || m_showCutOut;
+    const bool hadToolLabel = m_showCrop || m_showCutOut || m_showMeasure;
     m_showCrop = false;
     m_showCutOut = false;
+    m_showMeasure = false;
     emit sectionVisibilityChanged();
-    if (hadCrop) emit targetChanged();   // the strip label said "Crop"
+    if (hadToolLabel) emit targetChanged();   // the strip label named the tool
 }
 
 void PinToolOptionsViewModel::setShowingEmojiPicker(bool visible)
@@ -166,9 +167,10 @@ void PinToolOptionsViewModel::showForTool(int toolId)
                            config.showShapeSection,
                            config.showSizeSection,
                            config.showAutoBlurSection);
-    if (config.showCropSection || config.showCutOutSection) {
+    if (config.showCropSection || config.showCutOutSection || config.showMeasureSection) {
         m_showCrop = config.showCropSection;
         m_showCutOut = config.showCutOutSection;
+        m_showMeasure = config.showMeasureSection;
         emit sectionVisibilityChanged();
         emit targetChanged();
     }
@@ -271,6 +273,37 @@ void PinToolOptionsViewModel::handleCutOutApply()
 void PinToolOptionsViewModel::handleCutOutCancel()
 {
     emit cutOutCancelRequested();
+}
+
+QVariantList PinToolOptionsViewModel::measureModeOptions() const
+{
+    return {
+        QVariantMap{{"value", static_cast<int>(MeasureManual)},
+                    {"label", tr("Manual")},
+                    {"name", tr("Measure by dragging a line")}},
+        QVariantMap{{"value", static_cast<int>(MeasureAuto)},
+                    {"label", tr("Auto")},
+                    {"name", tr("Estimate the spans around the pointer from the image")}},
+    };
+}
+
+void PinToolOptionsViewModel::setMeasureMode(int mode)
+{
+    if (mode != MeasureManual && mode != MeasureAuto) {
+        return;
+    }
+    if (m_measureMode == mode) {
+        return;
+    }
+    m_measureMode = mode;
+    emit measureModeChanged();
+}
+
+void PinToolOptionsViewModel::handleMeasureModeSelected(int mode)
+{
+    if (mode == MeasureManual || mode == MeasureAuto) {
+        emit measureModeSelected(mode);
+    }
 }
 
 QVariantList PinToolOptionsViewModel::cropAspectOptions() const
@@ -745,6 +778,7 @@ QString PinToolOptionsViewModel::targetLabel() const
 {
     if (m_showCrop) return tr("Crop");
     if (m_showCutOut) return tr("Cut Out");
+    if (m_showMeasure) return tr("Measure");
     if (!m_editingSelection) return tr("New object");
     QString name;
     switch (m_targetKind) {
