@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Интенсивность размытия</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Копировать снимки экрана как</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Изображение</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Изображение и файл PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Файл PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9161,6 +9177,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>Применить</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Копирование не завершено. Содержимое буфера обмена могло измениться. Попробуйте скопировать ещё раз.</translation>
     </message>
 </context>
 </TS>

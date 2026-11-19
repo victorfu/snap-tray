@@ -35,6 +35,12 @@ On macOS and Windows, **Capture → Auto Blur** can also look for email addresse
 
 Check the finished image before sharing. For example, the phone rule flags `Order #202-555-0142` and misses the unformatted mobile number `0912345678`. The IPv4 rule flags `Version: 1.2.3.4`. Pixelation and Gaussian blur retain visual information. For opaque coverage, use a filled opaque rectangle and export the composited image.
 
+**Copy screenshots as** defaults to **Image**. Choose **Image and PNG file** to paste the same finished screenshot into an image editor or a file manager. Choose **PNG file** when a receiver needs a file by itself. This setting also applies to CLI screenshot copies.
+
+SnapTray stores a separate PNG for each file copy. Closing the pin, quitting SnapTray, and restarting keep the file available. On X11 the tray serves GUI copies while running and hands the active file copy to a background owner on normal exit. CLI copies start that owner immediately. The owner exits when another application takes ownership or the X session ends. A clipboard manager controls which formats it keeps when it takes ownership.
+
+SnapTray checks for expired files at startup and before a file copy. It removes files older than seven days when the current clipboard no longer references them. Files retained only in a clipboard manager’s history can therefore expire. Cleanup waits if the clipboard cannot be read. On X11 it also checks expired files from terminated local displays. Remote display stores are checked when that display is used again. Each store has a 512 MiB limit (per X display on Linux). If it is full, copying as a file fails and the current clipboard stays available. Use **Image** to copy without writing a PNG.
+
 ### Pin Windows
 
 Default opacity, **Show controls on hover**, and how much each opacity or zoom step changes.

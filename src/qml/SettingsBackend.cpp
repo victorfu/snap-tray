@@ -130,6 +130,7 @@ struct ResettableSetting {
 
 const ResettableSetting kResettableSettings[] = {
     // Capture
+    {"clipboardImageMode", [] { return QVariant(int(FileSettingsManager::ClipboardImageMode::ImageOnly)); }},
     {"fullScreenCaptureAction", [] { return QVariant(int(RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction)); }},
     {"cursorCompanionStyle", [] { return QVariant(cursorCompanionStyleToUiValue(RegionCaptureSettingsManager::kDefaultCursorCompanionStyle)); }},
     {"shortcutHintsEnabled", [] { return QVariant(RegionCaptureSettingsManager::kDefaultShortcutHintsEnabled); }},
@@ -689,6 +690,20 @@ void SettingsBackend::setShortcutHintsEnabled(bool v) {
         RegionCaptureSettingsManager::instance().setShortcutHintsEnabled(v);
         emit shortcutHintsEnabledChanged();
     }
+}
+
+int SettingsBackend::clipboardImageMode() const
+{
+    return int(FileSettingsManager::instance().clipboardImageMode());
+}
+
+void SettingsBackend::setClipboardImageMode(int value)
+{
+    using Mode = FileSettingsManager::ClipboardImageMode;
+    if (value < int(Mode::ImageOnly) || value > int(Mode::FileOnly) || value == clipboardImageMode())
+        return;
+    FileSettingsManager::instance().setClipboardImageMode(static_cast<Mode>(value));
+    emit clipboardImageModeChanged();
 }
 
 int SettingsBackend::fullScreenCaptureAction() const { return m_fullScreenCaptureAction; }

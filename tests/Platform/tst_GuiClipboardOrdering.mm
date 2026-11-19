@@ -1,6 +1,10 @@
 #include <QtTest/QtTest>
 
 #include <QImage>
+#include <QTemporaryDir>
+#include <QScopeGuard>
+#include "platform/ClipboardImageFile.h"
+#include "platform/ClipboardImageFile_mac.h"
 #include <QClipboard>
 #include <QColorSpace>
 #include <QBuffer>
@@ -44,9 +48,31 @@ class tst_GuiClipboardOrdering : public QObject
 
 private slots:
     void latestQueuedGuiCopyWins();
+    void nativeFileAndPixelsAreOneItem();
     void colorSpaceTaggedImageCanFulfillNativePasteboardData_data();
     void colorSpaceTaggedImageCanFulfillNativePasteboardData();
 };
+
+void tst_GuiClipboardOrdering::nativeFileAndPixelsAreOneItem()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto file = SnapTray::prepareClipboardImageFile(makeLatestImage(), dir.path());
+    QVERIFY(file);
+    @autoreleasepool {
+        NSPasteboard* board = [NSPasteboard pasteboardWithUniqueName];
+        const auto cleanup = qScopeGuard([&] { [board releaseGlobally]; });
+        QCOMPARE(SnapTray::writeClipboardImageFile(board, *file, true),
+                 PlatformFeatures::ClipboardCopyResult::Success);
+        QCOMPARE(board.pasteboardItems.count, NSUInteger(1));
+        NSPasteboardItem* item = board.pasteboardItems.firstObject;
+        NSURL* url = [NSURL URLWithString:[item stringForType:NSPasteboardTypeFileURL]];
+        QCOMPARE(QString::fromNSString(url.path), file->path);
+        NSData* pixels = [item dataForType:NSPasteboardTypePNG];
+        QVERIFY(pixels != nil);
+        QCOMPARE(QByteArray(static_cast<const char*>(pixels.bytes), pixels.length), file->png);
+    }
+}
 
 void tst_GuiClipboardOrdering::latestQueuedGuiCopyWins()
 {

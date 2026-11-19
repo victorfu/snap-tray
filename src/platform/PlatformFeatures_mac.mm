@@ -1,5 +1,6 @@
 #include "PlatformFeatures.h"
-#include <QScopedValueRollback>
+#include "platform/ClipboardImageFile.h"
+#include "platform/ClipboardImageFile_mac.h"
 #include "platform/MacCLIInstaller.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
@@ -10,7 +11,6 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QMetaObject>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
@@ -142,65 +142,50 @@ QPixmap PlatformFeatures::createTrayPixmap() const
     return pixmap;
 }
 
-bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
+bool PlatformFeatures::copyImageOnlyPersistently(const QImage& image) const
 {
     return writePngImageToGeneralPasteboard(image);
 }
 
-bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+bool PlatformFeatures::clipboardIsDefinitelyEmpty()
 {
-    if (image.isNull()) {
-        return false;
-    }
-
-    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
-        clipboard->setImage(image);
-        return true;
-    }
-    return false;
+    NSArray* types = [NSPasteboard generalPasteboard].types;
+    return types != nil && types.count == 0;
 }
 
-void PlatformFeatures::copyImageToClipboardForGuiAsync(
-    const QImage& image,
-    QObject* context,
-    ClipboardCopyCompletion completion,
-    quint64 reservedRequest) const
+quint64 PlatformFeatures::nativeClipboardRevision()
 {
-    // A request reserved earlier is dropped if a newer copy was requested
-    // since; any other request is the newest and is always written.
-    const quint64 request = reservedRequest ? reservedRequest : reserveClipboardRequest();
-    const bool reserved = reservedRequest != 0;
-    QObject* target = context ? context : QCoreApplication::instance();
-    if (!target) {
-        if (reserved && !isLatestClipboardRequest(request)) {
-            if (completion) {
-                completion(ClipboardCopyResult::Superseded);
-            }
-            return;
-        }
-        const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
-        const bool success = copyImageToClipboardForGui(image);
-        if (completion) {
-            completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-        }
-        return;
-    }
+    return [NSPasteboard generalPasteboard].changeCount;
+}
 
-    QMetaObject::invokeMethod(target,
-        [this, image, request, reserved, completion = std::move(completion)]() mutable {
-            if (reserved && !isLatestClipboardRequest(request)) {
-                if (completion) {
-                    completion(ClipboardCopyResult::Superseded);
-                }
-                return;
-            }
-            const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
-            const bool success = copyImageToClipboardForGui(image);
-            if (completion) {
-                completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-            }
-        },
-        Qt::QueuedConnection);
+PlatformFeatures::ClipboardCopyResult PlatformFeatures::publishClipboardImageFile(
+    const QImage& image, SnapTray::ClipboardImageFile& file, bool includePixels, bool persistent) const
+{
+    Q_UNUSED(persistent);
+    Q_UNUSED(image);
+    return SnapTray::writeClipboardImageFile([NSPasteboard generalPasteboard], file, includePixels);
+}
+
+PlatformFeatures::ClipboardCopyResult SnapTray::writeClipboardImageFile(
+    NSPasteboard* board, ClipboardImageFile& file, bool includePixels)
+{
+    using Result = PlatformFeatures::ClipboardCopyResult;
+    @autoreleasepool {
+        NSURL* url = [NSURL fileURLWithPath:file.path.toNSString()];
+        NSData* png = includePixels
+            ? [NSData dataWithBytes:file.png.constData() length:file.png.size()] : nil;
+        if (!url || !board || (includePixels && !png))
+            return Result::Failed;
+        [board clearContents];
+        // Write the NSURL itself so sandboxed receivers get native file access.
+        if (![board writeObjects:@[url]])
+            return Result::Incomplete;
+        file.offeredToClipboard = true;
+        if (includePixels && (![board addTypes:@[NSPasteboardTypePNG] owner:nil]
+            || ![board setData:png forType:NSPasteboardTypePNG]))
+            return Result::Incomplete;
+        return Result::Success;
+    }
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

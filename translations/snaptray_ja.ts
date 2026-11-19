@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>ぼかしの強度</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>スクリーンショットのコピー形式</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>画像</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>画像と PNG ファイル</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG ファイル</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9153,6 +9169,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>適用</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>コピーが完了しませんでした。クリップボードの内容が変わった可能性があります。もう一度コピーしてください。</translation>
     </message>
 </context>
 </TS>

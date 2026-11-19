@@ -133,7 +133,13 @@ void HistoryBackend::copy(int index)
 
     QScreen* exportScreen = QGuiApplication::primaryScreen();
     const QImage clipboardImage = normalizeImageForExport(pixmap.toImage(), exportScreen);
-    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
+    PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp,
+        [](PlatformFeatures::ClipboardCopyResult result) {
+            if (result == PlatformFeatures::ClipboardCopyResult::Failed
+                || result == PlatformFeatures::ClipboardCopyResult::Incomplete)
+                SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
+                    PlatformFeatures::clipboardErrorMessage(result));
+        });
 
     emit closeRequested();
 }

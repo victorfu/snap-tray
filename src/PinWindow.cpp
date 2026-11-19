@@ -2051,7 +2051,7 @@ void PinWindow::copyToClipboard()
             const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
             safeThis->m_toast->showToast(
                 success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
-                success ? tr("Copied to clipboard") : tr("Copy failed"));
+                success ? tr("Copied to clipboard") : PlatformFeatures::clipboardErrorMessage(result));
         });
 }
 
@@ -8293,7 +8293,7 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
                     const bool success = result == PlatformFeatures::ClipboardCopyResult::Success;
                     safeThis->m_toast->showToast(
                         success ? SnapTray::QmlToast::Level::Success : SnapTray::QmlToast::Level::Error,
-                        success ? tr("Beautified image copied") : tr("Copy failed"));
+                        success ? tr("Beautified image copied") : PlatformFeatures::clipboardErrorMessage(result));
                 },
                 clipboardRequest);
         });

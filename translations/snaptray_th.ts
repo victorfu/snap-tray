@@ -486,6 +486,22 @@
         <source>Blur intensity</source>
         <translation>ความเข้มการเบลอ</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>คัดลอกภาพหน้าจอเป็น</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>รูปภาพ</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>รูปภาพและไฟล์ PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>ไฟล์ PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -8838,6 +8854,13 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
     <message>
         <source>Apply</source>
         <translation>นำไปใช้</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>คัดลอกไม่สมบูรณ์ คลิปบอร์ดอาจมีการเปลี่ยนแปลง โปรดลองคัดลอกอีกครั้ง</translation>
     </message>
 </context>
 </TS>

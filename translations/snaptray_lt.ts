@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Suliejimo intensyvumas</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Kopijuoti ekrano nuotraukas kaip</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Paveikslas</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Paveikslas ir PNG failas</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG failas</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9161,6 +9177,13 @@ Jį gali naudoti kita programa.</translation>
     <message>
         <source>Apply</source>
         <translation>Taikyti</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopijavimas nebaigtas. Iškarpinės turinys galėjo pasikeisti. Pabandykite kopijuoti dar kartą.</translation>
     </message>
 </context>
 </TS>

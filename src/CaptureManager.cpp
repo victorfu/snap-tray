@@ -743,9 +743,10 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
                 emit copyCompleted(pixmap);
                 emit captureCompleted(pixmap);
                 break;
+            case PlatformFeatures::ClipboardCopyResult::Incomplete:
             case PlatformFeatures::ClipboardCopyResult::Failed:
                 qWarning() << "CaptureManager: Failed to copy full screen capture to clipboard";
-                emit copyFailed();
+                emit copyFailed(PlatformFeatures::clipboardErrorMessage(result));
                 break;
             case PlatformFeatures::ClipboardCopyResult::Superseded:
                 emit captureCancelled();

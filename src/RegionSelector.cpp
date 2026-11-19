@@ -4368,12 +4368,12 @@ void RegionSelector::copyToClipboard()
                 return;
             }
 
-            if (result == PlatformFeatures::ClipboardCopyResult::Failed) {
+            if (result != PlatformFeatures::ClipboardCopyResult::Superseded) {
                 qWarning() << "RegionSelector: Failed to copy image to clipboard";
                 if (safeThis->m_selectionToast) {
                     safeThis->m_selectionToast->showNearRect(
                         SnapTray::QmlToast::Level::Error,
-                        safeThis->tr("Copy failed"),
+                        PlatformFeatures::clipboardErrorMessage(result),
                         safeThis->m_selectionManager->selectionRect());
                 }
             }

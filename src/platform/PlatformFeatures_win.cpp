@@ -1,5 +1,5 @@
 #include "PlatformFeatures.h"
-#include <QScopedValueRollback>
+#include "platform/ClipboardImageFile.h"
 #include "OCRManager.h"
 #include "WindowDetector.h"
 #include "platform/PathEnvUtils_win.h"
@@ -8,7 +8,6 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QGuiApplication>
-#include <QMetaObject>
 #include <QMimeData>
 #include <QPainter>
 #include <QPainterPath>
@@ -16,6 +15,7 @@
 #include <QSettings>
 
 #include <windows.h>
+#include <ole2.h>
 
 namespace {
 
@@ -101,7 +101,7 @@ QPixmap PlatformFeatures::createTrayPixmap() const
     return pixmap;
 }
 
-bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) const
+bool PlatformFeatures::copyImageOnlyPersistently(const QImage& image) const
 {
     if (image.isNull()) {
         return false;
@@ -122,60 +122,40 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image) con
     return true;
 }
 
-bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
+bool PlatformFeatures::clipboardIsDefinitelyEmpty()
 {
-    if (image.isNull()) {
+    if (!OpenClipboard(nullptr))
         return false;
-    }
-
-    if (QClipboard* clipboard = QGuiApplication::clipboard()) {
-        clipboard->setImage(image);
-        return true;
-    }
-    return false;
+    SetLastError(ERROR_SUCCESS);
+    const bool empty = CountClipboardFormats() == 0 && GetLastError() == ERROR_SUCCESS;
+    CloseClipboard();
+    return empty;
 }
 
-void PlatformFeatures::copyImageToClipboardForGuiAsync(
-    const QImage& image,
-    QObject* context,
-    ClipboardCopyCompletion completion,
-    quint64 reservedRequest) const
+quint64 PlatformFeatures::nativeClipboardRevision()
 {
-    // A request reserved earlier is dropped if a newer copy was requested
-    // since; any other request is the newest and is always written.
-    const quint64 request = reservedRequest ? reservedRequest : reserveClipboardRequest();
-    const bool reserved = reservedRequest != 0;
-    QObject* target = context ? context : QCoreApplication::instance();
-    if (!target) {
-        if (reserved && !isLatestClipboardRequest(request)) {
-            if (completion) {
-                completion(ClipboardCopyResult::Superseded);
-            }
-            return;
-        }
-        const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
-        const bool success = copyImageToClipboardForGui(image);
-        if (completion) {
-            completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-        }
-        return;
-    }
+    return GetClipboardSequenceNumber();
+}
 
-    QMetaObject::invokeMethod(target,
-        [this, image, request, reserved, completion = std::move(completion)]() mutable {
-            if (reserved && !isLatestClipboardRequest(request)) {
-                if (completion) {
-                    completion(ClipboardCopyResult::Superseded);
-                }
-                return;
-            }
-            const QScopedValueRollback<bool> ownWrite(s_writingImageCopy, true);
-            const bool success = copyImageToClipboardForGui(image);
-            if (completion) {
-                completion(success ? ClipboardCopyResult::Success : ClipboardCopyResult::Failed);
-            }
-        },
-        Qt::QueuedConnection);
+PlatformFeatures::ClipboardCopyResult PlatformFeatures::publishClipboardImageFile(
+    const QImage& image, SnapTray::ClipboardImageFile& file, bool includePixels, bool persistent) const
+{
+    Q_UNUSED(persistent);
+    auto* clipboard = QGuiApplication::clipboard();
+    if (!clipboard)
+        return ClipboardCopyResult::Failed;
+    auto* data = new QMimeData;
+    data->setUrls({QUrl::fromLocalFile(file.path)});
+    if (includePixels) {
+        data->setImageData(image);
+        data->setData(QStringLiteral("image/png"), file.png);
+    }
+    clipboard->setMimeData(data);
+    file.offeredToClipboard = true;
+    // Materialize the OLE data object now so Explorer can paste after exit.
+    if (!clipboard->ownsClipboard() || FAILED(OleFlushClipboard()) || !IsClipboardFormatAvailable(CF_HDROP))
+        return ClipboardCopyResult::Incomplete;
+    return ClipboardCopyResult::Success;
 }
 
 QString PlatformFeatures::getAppExecutablePath() const

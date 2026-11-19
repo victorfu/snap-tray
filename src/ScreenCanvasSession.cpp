@@ -1502,7 +1502,13 @@ void ScreenCanvasSession::handleCopyAction(ToolId)
             clipboardWriter(clipboardImage);
         });
     } else {
-        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp);
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(clipboardImage, qApp,
+            [](PlatformFeatures::ClipboardCopyResult result) {
+                if (result == PlatformFeatures::ClipboardCopyResult::Failed
+                    || result == PlatformFeatures::ClipboardCopyResult::Incomplete)
+                    SnapTray::QmlToast::screenToast().showToast(SnapTray::QmlToast::Level::Error,
+                        PlatformFeatures::clipboardErrorMessage(result));
+            });
     }
     close();
 }

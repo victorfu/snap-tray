@@ -100,6 +100,23 @@ void FileSettingsManager::saveFilenameTemplate(const QString& templ)
     settings.setValue(kSettingsKeyFilenameTemplate, templ.trimmed());
 }
 
+namespace {
+constexpr char kClipboardImageMode[] = "files/clipboardImageMode";
+}
+
+FileSettingsManager::ClipboardImageMode FileSettingsManager::clipboardImageMode() const
+{
+    const int value = SnapTray::getSettings().value(kClipboardImageMode, 0).toInt();
+    if (value == int(ClipboardImageMode::ImageAndFile) || value == int(ClipboardImageMode::FileOnly))
+        return static_cast<ClipboardImageMode>(value);
+    return ClipboardImageMode::ImageOnly;
+}
+
+void FileSettingsManager::setClipboardImageMode(ClipboardImageMode mode)
+{
+    SnapTray::getSettings().setValue(kClipboardImageMode, int(mode));
+}
+
 bool FileSettingsManager::loadAutoSaveScreenshots() const
 {
     auto settings = SnapTray::getSettings();

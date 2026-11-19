@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Intensità sfocatura</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Copia schermate come</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Immagine</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Immagine e file PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>File PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9157,6 +9173,13 @@ Potrebbe essere in uso da un'altra applicazione.</translation>
     <message>
         <source>Apply</source>
         <translation>Applica</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Copia incompleta. Il contenuto degli appunti potrebbe essere cambiato. Riprova a copiare.</translation>
     </message>
 </context>
 </TS>

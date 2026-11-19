@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Cường độ làm mờ</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Sao chép ảnh chụp màn hình dưới dạng</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Hình ảnh</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Hình ảnh và tệp PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Tệp PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9153,6 +9169,13 @@ Có thể phím này đang được ứng dụng khác sử dụng.</translation
     <message>
         <source>Apply</source>
         <translation>Áp dụng</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Sao chép chưa hoàn tất. Nội dung bảng nhớ tạm có thể đã thay đổi. Hãy thử sao chép lại.</translation>
     </message>
 </context>
 </TS>

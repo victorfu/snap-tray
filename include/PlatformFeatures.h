@@ -12,6 +12,8 @@
 
 #include "platform/PlatformCapabilities.h"
 
+namespace SnapTray { struct ClipboardImageFile; }
+
 class OCRManager;
 class QObject;
 class WindowDetector;
@@ -22,8 +24,11 @@ public:
     enum class ClipboardCopyResult {
         Success,
         Failed,
+        Incomplete,
         Superseded,
     };
+
+    static QString clipboardErrorMessage(ClipboardCopyResult result);
 
     using ClipboardCopyCompletion = std::function<void(ClipboardCopyResult)>;
 
@@ -40,7 +45,7 @@ public:
 
     // Copy image to clipboard using native APIs for flows that must survive process exit,
     // such as the CLI capture command.
-    bool copyImageToClipboardPersistently(const QImage& image) const;
+    bool copyImageToClipboardPersistently(const QImage& image, QString* error = nullptr) const;
 
     // Copy image to clipboard for interactive GUI flows.
     bool copyImageToClipboardForGui(const QImage& image) const;
@@ -58,6 +63,8 @@ public:
         QObject* context = nullptr,
         ClipboardCopyCompletion completion = {},
         quint64 reservedRequest = 0) const;
+
+    static void cleanClipboardImageFiles();
 
     // CLI installation
     bool isCLIInstalled() const;
@@ -77,6 +84,13 @@ public:
 #endif
 
 private:
+    bool copyImageOnlyPersistently(const QImage& image) const;
+    ClipboardCopyResult publishClipboardImageFile(const QImage& image,
+        SnapTray::ClipboardImageFile& file, bool includePixels, bool persistent) const;
+    static quint64 nativeClipboardRevision();
+    static bool clipboardIsDefinitelyEmpty();
+    static inline quint64 s_clipboardRevision = 0;
+
     PlatformFeatures();
     ~PlatformFeatures();
 

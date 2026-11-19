@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Интензитет замућења</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Копирај снимке екрана као</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Слика</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Слика и PNG датотека</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG датотека</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9161,6 +9177,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>Примени</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Копирање није завршено. Садржај оставе се можда променио. Покушајте поново.</translation>
     </message>
 </context>
 </TS>

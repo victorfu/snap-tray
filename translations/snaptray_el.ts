@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Ένταση θολώματος</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Αντιγραφή στιγμιοτύπων ως</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Εικόνα και αρχείο PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Αρχείο PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9157,6 +9173,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>Εφαρμογή</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Η αντιγραφή δεν ολοκληρώθηκε. Το πρόχειρο ενδέχεται να έχει αλλάξει. Δοκιμάστε ξανά.</translation>
     </message>
 </context>
 </TS>

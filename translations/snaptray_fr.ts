@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Intensité du flou</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Copier les captures sous forme de</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Image</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Image et fichier PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Fichier PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9157,6 +9173,13 @@ Il est peut-être utilisé par une autre application.</translation>
     <message>
         <source>Apply</source>
         <translation>Appliquer</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Copie incomplète. Le presse-papiers a peut-être changé. Réessayez de copier.</translation>
     </message>
 </context>
 </TS>

@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Oskärpeintensitet</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Kopiera skärmbilder som</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Bild och PNG-fil</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG-fil</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9157,6 +9173,13 @@ Den kan användas av ett annat program.</translation>
     <message>
         <source>Apply</source>
         <translation>Tillämpa</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopieringen slutfördes inte. Urklippet kan ha ändrats. Försök kopiera igen.</translation>
     </message>
 </context>
 </TS>
