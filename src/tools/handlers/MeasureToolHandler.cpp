@@ -105,7 +105,9 @@ QPointF snapLinePoint(const QImage& image, const QPointF& origin, const QPointF&
             inspect(axis, false);
         }
     }
-    if (!closest && axes == (Qt::Horizontal | Qt::Vertical)) {
+    // A corner on a nearby row can be closer than an edge on the pointer's
+    // own row. The probes search only within the best distance so far.
+    if (axes == (Qt::Horizontal | Qt::Vertical)) {
         inspect(Qt::Horizontal, true);
         inspect(Qt::Vertical, true);
     }

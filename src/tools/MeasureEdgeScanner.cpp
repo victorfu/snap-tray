@@ -242,23 +242,43 @@ private:
         }
         if (best >= 0 && bestStrength > m_threshold) {
             // Neighbors of a blurred ramp are nearly as large as its middle.
-            int before = best > 0 ? steps[best - 1].size : 0;
-            const QPoint precedingPixel = m_origin + (start - 2) * m_step;
-            if (best == 0 && m_image.rect().contains(precedingPixel)) {
-                // A ramp can already be moving when it crosses the threshold.
-                // Count its preceding same-direction step in the sharpness check.
-                before = std::max(0, direction * (channelValue(start - 1, channel)
-                                                  - channelValue(start - 2, channel)));
-            }
+            // A ramp can already be moving when it crosses the threshold, so
+            // the first step is compared with the same-direction step before it.
+            const int preceding = precedingStep(start, direction, channel);
+            const int before = best > 0 ? steps[best - 1].size : preceding;
             const int afterIndex = best + bestWidth;
             const int after = afterIndex < static_cast<int>(steps.size()) ? steps[afterIndex].size : 0;
             if (bestStrength > kSharpnessRatio * std::max(before, after) * bestWidth) {
                 return {placeEdge(steps[best].index, bestWidth == 2, channel), end};
             }
+            // Starting on an anti-aliased pixel, the preceding step is the
+            // other half of the same edge: judge both steps together.
+            const int pairStrength = preceding + steps[0].size;
+            const int pairBefore = precedingStep(start - 1, direction, channel);
+            const int pairAfter = steps.size() > 1 ? steps[1].size : 0;
+            if (best == 0 && preceding > 0
+                && pairStrength > 2 * kSharpnessRatio * std::max(pairBefore, pairAfter)) {
+                const int edge = placeEdge(start - 1, true, channel);
+                // An edge behind the origin belongs to the opposite direction.
+                if (edge > 0) {
+                    return {edge, end};
+                }
+            }
         }
         // A soft ramp. Scanning resumes where it ended, so a sharp step back
         // there (a card at the end of its shadow) is found as the next edge.
         return {std::nullopt, end};
+    }
+
+    // Size of the step into pixel @p index - 1 when it moves in @p direction,
+    // otherwise 0. The pixels can lie behind the origin while in the image.
+    int precedingStep(int index, int direction, int channel) const
+    {
+        if (!m_image.rect().contains(m_origin + (index - 2) * m_step)) {
+            return 0;
+        }
+        return std::max(0, direction * (channelValue(index - 1, channel)
+                                        - channelValue(index - 2, channel)));
     }
 
     // First pixel past the edge. With an anti-aliased pair, the partial pixel

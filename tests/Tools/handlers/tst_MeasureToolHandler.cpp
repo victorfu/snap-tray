@@ -31,6 +31,7 @@ private slots:
     void autoHoverReusesTheImageAndRescansOnlyOnNewPixels();
     void autoDragKeepsShiftAndEscape();
     void lineSnapsToACornerFromOutside();
+    void lineSnapsToACloserCornerThanTheRowEdge();
     void lineDoesNotCombineUnrelatedEdges();
     void autoDragWithoutEdgesKeepsPointerPositions_data();
     void autoDragWithoutEdgesKeepsPointerPositions();
@@ -358,6 +359,30 @@ void TestMeasureToolHandler::lineSnapsToACornerFromOutside()
     QVERIFY(handler.m_hasCompletedMeasurement);
     QCOMPARE(handler.m_completedStart, QPointF(40, 20));
     QCOMPARE(handler.m_completedEnd, QPointF(120, 60));
+}
+
+// An edge on the pointer's row does not hide a closer corner on a nearby row.
+void TestMeasureToolHandler::lineSnapsToACloserCornerThanTheRowEdge()
+{
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    {
+        QPainter painter(&image);
+        painter.fillRect(QRect(20, 0, 15, 100), Qt::black);   // edge at x = 35
+        painter.fillRect(QRect(42, 42, 20, 20), Qt::black);   // corner at (42, 42)
+    }
+    Host host;
+    host.raster = std::make_shared<const QImage>(image);
+    MeasureToolHandler handler;
+    handler.setAutoMode(true);
+    handler.setImageGeometry(image.size(), image.size(), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    handler.onMousePressF(&host.context, QPointF(10.5, 90.5));
+    handler.onMouseReleaseF(&host.context, QPointF(40, 40));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(10.5, 90.5));
+    QCOMPARE(handler.m_completedEnd, QPointF(42, 42));
 }
 
 void TestMeasureToolHandler::lineDoesNotCombineUnrelatedEdges()

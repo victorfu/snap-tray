@@ -30,6 +30,8 @@ private slots:
     void nearbyEdgesUsePixelBoundaries();
     void nearbyEdgeRejectsEasedGradient_data();
     void nearbyEdgeRejectsEasedGradient();
+    void edgeFoundFromItsAntiAliasedPixel_data();
+    void edgeFoundFromItsAntiAliasedPixel();
     void transparentStripIsAnEdge();
     void originOutsideIsClampedAndOtherFormatsRefused();
     void largeImageHoverIsFast();
@@ -271,6 +273,41 @@ void TestMeasureEdgeScanner::nearbyEdgeRejectsEasedGradient()
         fillRect(image, QRect(x, 0, 1, image.height()), gray(levels.at(i)));
     }
     QVERIFY(!MeasureEdgeScanner::nearbyEdge(image, QPointF(startX, 20.5), Qt::Horizontal, 6));
+}
+
+void TestMeasureEdgeScanner::edgeFoundFromItsAntiAliasedPixel_data()
+{
+    QTest::addColumn<int>("partialLevel");
+    QTest::addColumn<int>("edge");
+    QTest::addColumn<int>("spanFirst");
+    QTest::addColumn<int>("spanLast");
+    // Mostly white: the partial pixel ends the gap.
+    QTest::newRow("gap-side") << 180 << 40 << 20 << 39;
+    // Mostly black: the partial pixel starts the element.
+    QTest::newRow("element-side") << 75 << 39 << 39 << 79;
+}
+
+// Starting on the partial pixel of an anti-aliased edge, the step before the
+// origin is the other half of the same edge.
+void TestMeasureEdgeScanner::edgeFoundFromItsAntiAliasedPixel()
+{
+    QFETCH(int, partialLevel);
+    QFETCH(int, edge);
+    QFETCH(int, spanFirst);
+    QFETCH(int, spanLast);
+    QImage image = filled(100, 40, Qt::white);
+    fillRect(image, QRect(0, 0, 20, 40), Qt::black);
+    fillRect(image, QRect(40, 0, 40, 40), Qt::black);
+    fillRect(image, QRect(39, 0, 1, 40), gray(partialLevel));
+    const auto edgeAt = [&](qreal x) {
+        return MeasureEdgeScanner::nearbyEdge(image, QPointF(x, 20.5), Qt::Horizontal, 2);
+    };
+
+    QCOMPARE(edgeAt(38.5), std::optional<int>(edge));
+    QCOMPARE(edgeAt(39.4), std::optional<int>(edge));
+    QCOMPARE(edgeAt(39.6), std::optional<int>(edge));
+    QCOMPARE(edgeAt(40.5), std::optional<int>(edge));
+    verifySpan(scanned(image, QPoint(39, 20), Qt::Horizontal), spanFirst, spanLast, true, true);
 }
 
 // A cut-out insert leaves transparent pixels: alpha alone makes an edge.
