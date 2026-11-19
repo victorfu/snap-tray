@@ -295,27 +295,31 @@ FrameStyle RecordingAppearance::frameStyle() const
 void RecordingAppearance::applyFrameStyle(const FrameStyle& style)
 {
     enabled = true;
-    const bool recordingBackground = background == Background::BlurredVideo || background == Background::Image;
-    // Both colors are taken, so the style reads back from frameStyle() (with
-    // opaque colors), whatever background is drawn over it.
-    solidColor = opaque(style.solidColor);
-    const auto presets = beautifyPresets();
-    gradientPreset = kCustomGradient;
-    for (int i = 0; style.background != FrameStyle::Background::RadialGradient && i < presets.size(); ++i) {
-        if (presets[i].gradientStart == style.gradientStart && presets[i].gradientEnd == style.gradientEnd
-            && presets[i].gradientAngle == style.gradientAngle) {
-            gradientPreset = i;
-            break;
+    // Screenshot image assets, transparent canvases and alignment are local to
+    // Beautify. A recording keeps its background when applying those styles.
+    if (style.background != FrameStyle::Background::Image && style.background != FrameStyle::Background::Transparent) {
+        const bool recordingBackground = background == Background::BlurredVideo || background == Background::Image;
+        // Both colors are taken, so the style reads back from frameStyle() (with
+        // opaque colors), whatever background is drawn over it.
+        solidColor = opaque(style.solidColor);
+        const auto presets = beautifyPresets();
+        gradientPreset = kCustomGradient;
+        for (int i = 0; style.background != FrameStyle::Background::RadialGradient && i < presets.size(); ++i) {
+            if (presets[i].gradientStart == style.gradientStart && presets[i].gradientEnd == style.gradientEnd
+                && presets[i].gradientAngle == style.gradientAngle) {
+                gradientPreset = i;
+                break;
+            }
         }
+        gradientStart = opaque(style.gradientStart);
+        gradientEnd = opaque(style.gradientEnd);
+        gradientAngle = style.gradientAngle;
+        gradientRadial = style.background == FrameStyle::Background::RadialGradient;
+        if (!recordingBackground) {
+            background = style.background == FrameStyle::Background::Solid ? Background::Solid : Background::Gradient;
+        }
+        solidUnderneath = style.background == FrameStyle::Background::Solid;
     }
-    gradientStart = opaque(style.gradientStart);
-    gradientEnd = opaque(style.gradientEnd);
-    gradientAngle = style.gradientAngle;
-    gradientRadial = style.background == FrameStyle::Background::RadialGradient;
-    if (!recordingBackground) {
-        background = style.background == FrameStyle::Background::Solid ? Background::Solid : Background::Gradient;
-    }
-    solidUnderneath = style.background == FrameStyle::Background::Solid;
     // A style saved from a tiny screenshot can be wider than the picture;
     // keep it within the range the recording JSON accepts.
     const auto size = [](double fraction) { return std::clamp(fraction, 0.0, kMaxFraction); };

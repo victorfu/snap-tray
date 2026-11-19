@@ -860,6 +860,7 @@ private:
     SnapTray::AnimatedExportOptions m_gifOptions, m_webpOptions;
     qint64 m_animatedBytes = 0;
     SnapTray::RecordingAppearance m_appearance;
+    QString m_selectedFrameStyleName;
     SnapTray::TimelineEdit m_timeline;
     std::shared_ptr<const SnapTray::KeyTimeline> m_keyTimeline;
     SnapTray::KeyOverlaySettings m_keyOverlay;

@@ -12,7 +12,7 @@ namespace {
 constexpr int kArgbNameLength = 9; // "#AARRGGBB"
 constexpr int kMaxAngle = 360;
 constexpr int kMaxSizePixels = 4096;
-constexpr int kMaxBackgroundType = static_cast<int>(BeautifyBackgroundType::RadialGradient);
+constexpr int kMaxBackgroundType = static_cast<int>(BeautifyBackgroundType::Image);
 constexpr int kMaxAspectRatio = static_cast<int>(BeautifyAspectRatio::Twitter_2_1);
 
 bool readInt(const QJsonObject& json, const char* key, int minimum, int maximum, int* out)
@@ -69,12 +69,13 @@ namespace SnapTray {
 
 QJsonObject beautifySettingsToJson(const BeautifySettings& settings)
 {
-    return QJsonObject{
+    QJsonObject json{
         {QStringLiteral("backgroundType"), static_cast<int>(settings.backgroundType)},
         {QStringLiteral("backgroundColor"), colorName(settings.backgroundColor)},
         {QStringLiteral("gradientStartColor"), colorName(settings.gradientStartColor)},
         {QStringLiteral("gradientEndColor"), colorName(settings.gradientEndColor)},
         {QStringLiteral("gradientAngle"), settings.gradientAngle},
+        {QStringLiteral("alignment"), int(settings.alignment)},
         {QStringLiteral("padding"), settings.padding},
         {QStringLiteral("cornerRadius"), settings.cornerRadius},
         {QStringLiteral("shadowEnabled"), settings.shadowEnabled},
@@ -87,6 +88,9 @@ QJsonObject beautifySettingsToJson(const BeautifySettings& settings)
         {QStringLiteral("borderColor"), colorName(settings.borderColor)},
         {QStringLiteral("aspectRatio"), static_cast<int>(settings.aspectRatio)},
     };
+    if (settings.backgroundType == BeautifyBackgroundType::Image)
+        json.insert(QStringLiteral("backgroundImagePath"), settings.backgroundImagePath);
+    return json;
 }
 
 std::optional<BeautifySettings> beautifySettingsFromJson(const QJsonObject& json)
@@ -114,7 +118,13 @@ std::optional<BeautifySettings> beautifySettingsFromJson(const QJsonObject& json
     if (!ok) {
         return std::nullopt;
     }
+    int anchor = int(BeautifyAlignment::Center);
+    if (json.contains(QStringLiteral("alignment"))
+        && !readInt(json, "alignment", 0, int(BeautifyAlignment::BottomRight), &anchor)) return std::nullopt;
+    s.alignment = BeautifyAlignment(anchor);
     s.backgroundType = static_cast<BeautifyBackgroundType>(backgroundType);
+    if (s.backgroundType == BeautifyBackgroundType::Image)
+        s.backgroundImagePath = json.value(QStringLiteral("backgroundImagePath")).toString();
     s.aspectRatio = static_cast<BeautifyAspectRatio>(aspectRatio);
     return s;
 }

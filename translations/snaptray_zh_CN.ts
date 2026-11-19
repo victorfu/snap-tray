@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>导出...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>透明</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>图片</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>选择背景图片</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>图片</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>选择图片</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>正在加载图片…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>无法打开图片，请选择其他图片。</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>选择图片…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>对齐</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>左上</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>顶部居中</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>右上</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>左侧居中</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>居中</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>右侧居中</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>左下</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>底部居中</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>右下</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

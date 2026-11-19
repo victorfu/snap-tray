@@ -8,7 +8,13 @@
 enum class BeautifyBackgroundType {
     Solid = 0,
     LinearGradient = 1,
-    RadialGradient = 2
+    RadialGradient = 2,
+    Transparent = 3,
+    Image = 4
+};
+
+enum class BeautifyAlignment {
+    TopLeft, Top, TopRight, Left, Center, Right, BottomLeft, Bottom, BottomRight
 };
 
 enum class BeautifyAspectRatio {
@@ -27,6 +33,14 @@ struct BeautifySettings {
     QColor gradientStartColor{0, 180, 219};
     QColor gradientEndColor{0, 131, 176};
     int gradientAngle = 135;
+
+    QString backgroundImagePath;
+    // Set only for reopened history. Its asset takes precedence over the original path.
+    QString historyBackgroundPath;
+    QString imageSourcePath() const { return historyBackgroundPath.isEmpty() ? backgroundImagePath : historyBackgroundPath; }
+    // Immutable encoded original for an in-flight export and its history entry.
+    QByteArray backgroundImageData;
+    BeautifyAlignment alignment = BeautifyAlignment::Center;
 
     // Padding (space around screenshot in result image)
     int padding = 64;

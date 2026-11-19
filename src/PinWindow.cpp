@@ -1975,6 +1975,7 @@ void PinWindow::exportImage()
 
 void PinWindow::openImageExport(const QPixmap& composed)
 {
+    ++m_exportDialogRevision;
     if (composed.isNull()) {
         emit saveFailed(QString(), tr("No image available to save"));
         return;
@@ -2003,6 +2004,7 @@ void PinWindow::openImageExport(const QPixmap& composed)
 
 void PinWindow::closeStaleImageExport()
 {
+    ++m_exportDialogRevision;
     if (m_imageExport && m_imageExport->isOpen()) {
         m_imageExport->close();
     }
@@ -4166,7 +4168,8 @@ PinWindow::FileSaveOutcome PinWindow::waitForActiveExport()
         QEventLoop loop;
         connect(m_exportRunner.get(), &SnapTray::PinExportRunner::finished, &loop,
                 [&](SnapTray::PinExportRequest::Destination destination, bool success) {
-            if (destination != SnapTray::PinExportRequest::Destination::Clipboard) {
+            if (destination == SnapTray::PinExportRequest::Destination::ExactFile
+                || destination == SnapTray::PinExportRequest::Destination::UniqueFile) {
                 outcome = success ? FileSaveOutcome::Saved : FileSaveOutcome::Failed;
             }
             loop.quit();
@@ -8150,14 +8153,32 @@ void PinWindow::showBeautifyPanel()
             return;
         }
 
-        beautifyPanel->setSourcePixmap(safeThis->getExportPixmapWithAnnotations());
+        beautifyPanel->setSourcePixmap(safeThis->beautifySourcePixmap());
     });
+}
+
+QPixmap PinWindow::beautifySourcePixmap() const
+{
+    const auto source = getExportPixmapWithAnnotations();
+    // Compose the background in the same space Save will tag the capture with.
+    const auto image = source.toImage();
+    if (image.isNull() || image.colorSpace().isValid()) return source;
+    const auto tagged = tagImageWithScreenColorSpace(image, m_sourceScreen ? m_sourceScreen.data() : screen());
+    return tagged.colorSpace().isValid() ? QPixmap::fromImage(tagged) : source;
 }
 
 BeautifySettings PinWindow::beautifyPanelSettings() const
 {
     return m_beautifySettings ? *m_beautifySettings
                               : BeautifySettingsManager::instance().loadSettings();
+}
+
+void PinWindow::rememberBeautifyLook(const BeautifySettings& settings)
+{
+    m_beautifySettings = settings;
+    // A chosen file is reread when the panel reopens. A reopened history
+    // entry's asset is kept, since the entry can be pruned meanwhile.
+    if (settings.historyBackgroundPath.isEmpty()) m_beautifySettings->backgroundImageData.clear();
 }
 
 void PinWindow::setHistoryOrigin(const QString& entryId,
@@ -8220,9 +8241,9 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
         return;
     }
 
-    m_beautifySettings = settings;
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
-    QPixmap source = getExportPixmapWithAnnotations();
+    QPixmap source = beautifySourcePixmap();
     if (source.isNull()) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("Copy failed"));
         return;
@@ -8284,26 +8305,28 @@ void PinWindow::onBeautifyCopy(const BeautifySettings& settings)
 
 void PinWindow::onBeautifyExport(const BeautifySettings& settings)
 {
-    if (!ensureAutoBlurReadyForExport()) {
-        return;
-    }
-
-    m_beautifySettings = settings;
+    if (!ensureAutoBlurReadyForExport() || rejectIfExportInProgress()) return;
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
-    const QPixmap source = getExportPixmapWithAnnotations();
-    if (source.isNull()) {
-        emit saveFailed(QString(), tr("No image available to save"));
-        return;
+    SnapTray::PinExportRequest request;
+    request.destination = SnapTray::PinExportRequest::Destination::ExportDialog;
+    request.source = beautifySourcePixmap().toImage();
+    request.beautify = settings;
+    const quint64 revision = ++m_exportDialogRevision;
+    const bool started = m_exportRunner->start(std::move(request), [this, revision](const auto& result) {
+        if (m_isDestructing || m_confirmingClose || revision != m_exportDialogRevision) return;
+        if (!result.success) {
+            emit saveFailed(QString(), tr("Beautify rendering failed"));
+            return;
+        }
+        openImageExport(QPixmap::fromImage(result.image));
+    });
+    if (!started) {
+        m_toast->showToast(SnapTray::QmlToast::Level::Info, tr("Still exporting the previous image"));
     }
-    const QPixmap result = BeautifyRenderer::applyToPixmap(source, settings);
-    if (result.isNull()) {
-        emit saveFailed(QString(), tr("Beautify rendering failed"));
-        return;
-    }
-    openImageExport(result);
 }
 
-void PinWindow::onBeautifySave(const BeautifySettings& settings)
+void PinWindow::onBeautifySave(BeautifySettings settings)
 {
     if (m_choosingSavePath) {
         return;
@@ -8313,7 +8336,7 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
         return;
     }
 
-    m_beautifySettings = settings;
+    rememberBeautifyLook(settings);
     BeautifySettingsManager::instance().saveSettings(settings);
     const QPixmap sizeReferencePixmap = !m_displayPixmap.isNull() ? m_displayPixmap : m_originalPixmap;
     if (sizeReferencePixmap.isNull()) {
@@ -8365,7 +8388,7 @@ void PinWindow::onBeautifySave(const BeautifySettings& settings)
 
     // The snapshot is taken on the GUI thread; beautifying, encoding and
     // writing are not.
-    const QPixmap source = getExportPixmapWithAnnotations();
+    const QPixmap source = beautifySourcePixmap();
     if (source.isNull()) {
         emit saveFailed(request.filePath, tr("No image available to save"));
         return;

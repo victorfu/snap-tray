@@ -299,6 +299,18 @@ void tst_RecordingPreviewAppearance::savedStylesAreShared()
     backend.deleteFrameStyle(0);
     QCOMPARE(library.count(), 1);
     QCOMPARE(library.styles().at(0).name, QStringLiteral("Docs"));
+    auto imageStyle = library.styles().first().style;
+    imageStyle.background = SnapTray::FrameStyle::Background::Image;
+    QVERIFY(SnapTray::FrameStyleLibrary::instance().save("Photo", imageStyle));
+    backend.applyFrameStyle(1);
+    QCOMPARE(backend.currentFrameStyle(), 1);
+    backend.applyFrameStyle(0);
+    QCOMPARE(backend.currentFrameStyle(), 0);
+    backend.applyFrameStyle(1);
+    QVERIFY(backend.renameFrameStyle(backend.currentFrameStyle(), "Wallpaper"));
+    QCOMPARE(backend.currentFrameStyle(), 1);
+    backend.deleteFrameStyle(backend.currentFrameStyle());
+    QCOMPARE(library.styles().first().name, QStringLiteral("Docs"));
     backend.applyFrameStyle(7); // out of range: nothing
 }
 

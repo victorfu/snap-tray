@@ -412,6 +412,20 @@ void tst_RegionSelectorHistoryReplay::testReplayedBeautifySettingsReachThePin()
     QVERIFY(selector.historyReplayBeautify());
     QCOMPARE(selector.historyReplayBeautify()->padding, 17);
 
+    // An image background is taken when the entry is reopened: pinning
+    // records a new entry, which can prune this one and its asset.
+    const QString assetPath = tempDir.filePath(QStringLiteral("background.image"));
+    QVERIFY(replayPixmap.save(assetPath, "PNG"));
+    QFile asset(assetPath);
+    QVERIFY(asset.open(QIODevice::ReadOnly));
+    const QByteArray assetBytes = asset.readAll();
+    asset.close();
+    entry.beautify->backgroundType = BeautifyBackgroundType::Image;
+    entry.beautify->historyBackgroundPath = assetPath;
+    QVERIFY(RegionSelectorTestAccess::invokeApplyHistoryReplayEntry(selector, entry));
+    QVERIFY(QFile::remove(assetPath));
+    QCOMPARE(selector.historyReplayBeautify()->backgroundImageData, assetBytes);
+
     // Every recorded capture knows its history id before it is written, so
     // the pin can name the entry that holds its document.
     const auto request = RegionSelectorTestAccess::currentHistoryRequest(selector);

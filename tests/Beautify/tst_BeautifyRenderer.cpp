@@ -1,5 +1,13 @@
 #include <QtTest/QtTest>
 #include <QPainter>
+#include <QBuffer>
+#include <QFile>
+#include <QImageReader>
+#include <QTemporaryDir>
+#include <QColorSpace>
+#include <QElapsedTimer>
+#include <QtEndian>
+#include "beautify/BeautifyBackgroundImage.h"
 #include "beautify/BeautifyRenderer.h"
 #include "beautify/BeautifySettings.h"
 
@@ -34,6 +42,15 @@ private slots:
     void testApplyToImage_MatchesApplyToPixmap_data();
     void testApplyToImage_MatchesApplyToPixmap();
 
+    void transparentCanvas();
+    void previewMatchesOutputAtEveryAnchor();
+    void orientedBackgroundPreviewAndFullDecode();
+    void thumbnailCacheBudget();
+    void pngThumbnailAndDecodeLimit();
+    void previewKeepsTheCropOfAVeryWideImage();
+    void previewConvertsGrayscaleProfiles();
+    void pngMetadataIsBounded();
+
     // render tests
     void testRender_NullSource_NoOp();
     void testRender_FitsTargetRect();
@@ -41,6 +58,259 @@ private slots:
 private:
     QPixmap createTestPixmap(int w, int h, QColor fill = Qt::red);
 };
+
+void tst_BeautifyRenderer::transparentCanvas()
+{
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Transparent;
+    settings.shadowEnabled = false;
+    const auto source = createTestPixmap(16, 16);
+    const auto result = BeautifyRenderer::applyToImage(source.toImage(), settings);
+    QCOMPARE(result.pixelColor(0, 0).alpha(), 0);
+}
+
+void tst_BeautifyRenderer::previewMatchesOutputAtEveryAnchor()
+{
+    BeautifySettings s;
+    s.padding = 8;
+    s.cornerRadius = 0;
+    s.shadowEnabled = false;
+    s.backgroundType = BeautifyBackgroundType::Transparent;
+    for (QSize size : {QSize(144, 12), QSize(12, 144)}) {
+        QPixmap source = createTestPixmap(size.width(), size.height());
+        source.setDevicePixelRatio(1.5);
+        const QSize logical = source.deviceIndependentSize().toSize();
+        for (int ratio = 0; ratio <= int(BeautifyAspectRatio::Twitter_2_1); ++ratio) {
+            s.aspectRatio = BeautifyAspectRatio(ratio);
+            const auto canvas = BeautifyRenderer::calculateOutputSize(logical, s);
+            for (int anchor = 0; anchor <= int(BeautifyAlignment::BottomRight); ++anchor) {
+                s.alignment = BeautifyAlignment(anchor);
+                const auto inset = BeautifyRenderer::calculateInsetRect(canvas, logical, s);
+                const QPoint topLeft(s.padding, s.padding);
+                const QPoint bottomRight(canvas.width() - s.padding - logical.width(),
+                                         canvas.height() - s.padding - logical.height());
+                QCOMPARE(inset.x(), topLeft.x() + (bottomRight.x() - topLeft.x()) * (anchor % 3) / 2);
+                QCOMPARE(inset.y(), topLeft.y() + (bottomRight.y() - topLeft.y()) * (anchor / 3) / 2);
+                auto out = BeautifyRenderer::applyToImage(source.toImage(), s);
+                QImage preview(out.size(), out.format());
+                preview.setDevicePixelRatio(1.5);
+                preview.fill(Qt::transparent);
+                QPainter painter(&preview);
+                BeautifyRenderer::render(painter, QRect(QPoint(), canvas), source, s);
+                painter.end();
+                QCOMPARE(preview, out);
+            }
+        }
+    }
+}
+
+void tst_BeautifyRenderer::orientedBackgroundPreviewAndFullDecode()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QImage src(3072, 768, QImage::Format_RGB32);
+    src.fill(QColor(201, 88, 41));
+    src.setColorSpace(QColorSpace::DisplayP3);
+    const QString path = dir.filePath("oriented.jpg");
+    // EXIF orientation 6 rotates the stored pixels 90 degrees clockwise.
+    QByteArray jpeg;
+    QBuffer buffer(&jpeg);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(src.save(&buffer, "JPEG", 100));
+    jpeg.insert(2, QByteArray::fromHex("ffe1002245786966000049492a0008000000010012010300010000000600000000000000"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write(jpeg), jpeg.size());
+    file.close();
+    QImageReader expectedReader(path);
+    QVERIFY(expectedReader.transformation().testFlag(QImageIOHandler::TransformationRotate90));
+    const auto expected = expectedReader.read().transformed(QTransform().rotate(90));
+    QElapsedTimer timer;
+    timer.start();
+    const auto preview = SnapTray::BeautifyBackgroundImage::loadPreview(path);
+    const auto previewMs = timer.restart();
+    const auto full = SnapTray::BeautifyBackgroundImage::decode(preview.original);
+    QCOMPARE(full, expected);
+    QCOMPARE(full.size(), QSize(768, 3072));
+    // Bounded by pixel count, not by the longest side.
+    QVERIFY(qint64(preview.thumbnail.width()) * preview.thumbnail.height() <= 1024 * 1024);
+    QVERIFY(preview.thumbnail.height() > 1024);
+    QCOMPARE(preview.thumbnail.height() / preview.thumbnail.width(), 4);
+    QVERIFY(preview.thumbnail.sizeInBytes() < full.sizeInBytes());
+    qInfo() << "thumbnail ms, full ms, thumbnail bytes, full bytes, cached bytes"
+            << previewMs << timer.elapsed() << preview.thumbnail.sizeInBytes() << full.sizeInBytes()
+            << SnapTray::BeautifyBackgroundImage::cachedBytes();
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImageData = preview.original;
+    settings.shadowEnabled = false;
+    QImage screenshot(48, 32, QImage::Format_RGB32);
+    screenshot.fill(Qt::white);
+    screenshot.setColorSpace(QColorSpace::SRgb);
+    const auto rendered = BeautifyRenderer::applyToImage(screenshot, settings);
+    QCOMPARE(rendered.pixelColor(0, 0), full.convertedToColorSpace(QColorSpace::SRgb).pixelColor(0, 0));
+    settings.backgroundImageData.clear();
+    QVERIFY(BeautifyRenderer::applyToImage(screenshot, settings).isNull());
+}
+
+void tst_BeautifyRenderer::thumbnailCacheBudget()
+{
+    using namespace SnapTray::BeautifyBackgroundImage;
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath("working.png");
+    QImage frame(1024, 1024, QImage::Format_RGB32);
+    for (int i = 0; i < 15; ++i) {
+        frame.fill(QColor(i, 150, 90));
+        QVERIFY(frame.save(path));
+        const auto preview = loadPreview(path);
+        QCOMPARE(preview.thumbnail.pixelColor(0, 0), QColor(i, 150, 90));
+        QCOMPARE(loadPreview(path).thumbnail.cacheKey(), preview.thumbnail.cacheKey());
+        QVERIFY(cachedBytes() <= 24 * 1024 * 1024);
+    }
+    qInfo() << "resident thumbnail bytes after 15 images:" << cachedBytes();
+}
+
+void tst_BeautifyRenderer::pngThumbnailAndDecodeLimit()
+{
+    QImage source(2048, 1536, QImage::Format_ARGB32);
+    source.fill(Qt::transparent);
+    source.setColorSpace(QColorSpace::DisplayP3);
+    {
+        QPainter painter(&source);
+        painter.fillRect(QRect(0, 0, 1024, 768), QColor(200, 100, 25, 128));
+    }
+    QByteArray png;
+    QBuffer buffer(&png);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(source.save(&buffer, "PNG"));
+    const auto thumbnail = SnapTray::BeautifyBackgroundImage::decode(png, 128 * 96);
+    QCOMPARE(thumbnail.size(), QSize(128, 96));
+    QCOMPARE(thumbnail.colorSpace(), source.colorSpace());
+    QCOMPARE(thumbnail.pixel(0, 0), qPremultiply(source.pixel(0, 0)));
+    QCOMPARE(thumbnail.pixelColor(127, 95).alpha(), 0);
+
+    // eXIf orientation 6 in a valid ancillary chunk, following IHDR.
+    QByteArray rotated = png;
+    rotated.insert(33, QByteArray::fromHex("0000001a6558496649492a0008000000010012010300010000000600000000000000b7481129"));
+    QSize orientedSize;
+    QCOMPARE(SnapTray::BeautifyBackgroundImage::decode(rotated, 128 * 96, &orientedSize),
+             thumbnail.transformed(QTransform().rotate(90)));
+    QCOMPARE(orientedSize, source.size().transposed());
+    QCOMPARE(SnapTray::BeautifyBackgroundImage::decode(rotated),
+             SnapTray::BeautifyBackgroundImage::decode(png).transformed(QTransform().rotate(90)));
+
+    // A 16x16 Adam7 RGBA fixture with four solid quadrants.
+    const auto interlaced = QByteArray::fromBase64(
+        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAFo9M/3AAAAS0lEQVR4nGP4z/D/PwMIg0gGEMYuAheFycBlcaggrAWHGRha0c3EowBVhAEdE6GAcjcMBl9QOxwIOpqQL4ekAfhVYAQaoVAeegYAANMK/hCJ0SAtAAAAAElFTkSuQmCC");
+    const auto reduced = SnapTray::BeautifyBackgroundImage::decode(interlaced, 4 * 4);
+    QCOMPARE(reduced.size(), QSize(4, 4));
+    QCOMPARE(reduced.pixelColor(0, 0), QColor(Qt::magenta));
+    QCOMPARE(reduced.pixelColor(3, 0), QColor(Qt::blue));
+    QCOMPARE(reduced.pixelColor(0, 3), QColor(Qt::red));
+    QCOMPARE(reduced.pixelColor(3, 3), QColor(Qt::black));
+
+    QByteArray bmp;
+    QBuffer other(&bmp);
+    QVERIFY(other.open(QIODevice::WriteOnly));
+    QVERIFY(source.save(&other, "BMP"));
+    QVERIFY(SnapTray::BeautifyBackgroundImage::decode(bmp, 128 * 96).isNull());
+
+    const int previousLimit = QImageReader::allocationLimit();
+    auto restore = qScopeGuard([=] { QImageReader::setAllocationLimit(previousLimit); });
+    QImageReader::setAllocationLimit(8);
+    QVERIFY(SnapTray::BeautifyBackgroundImage::decode(png, 128 * 96).isNull());
+    QVERIFY(SnapTray::BeautifyBackgroundImage::decode(png).isNull());
+}
+
+namespace {
+// What the panel shows for an image background, and what Save writes.
+std::pair<QColor, QColor> previewAndExportCorner(const QByteArray& encoded)
+{
+    const auto preview = SnapTray::BeautifyBackgroundImage::previewFromOriginal(encoded);
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImageData = encoded;
+    settings.shadowEnabled = false;
+    QImage screenshot(32, 32, QImage::Format_RGB32);
+    screenshot.fill(Qt::white);
+    screenshot.setColorSpace(QColorSpace::SRgb);
+    const auto exported = BeautifyRenderer::applyToImage(screenshot, settings);
+    QImage shown(exported.size(), QImage::Format_ARGB32_Premultiplied);
+    shown.fill(Qt::transparent);
+    QPainter painter(&shown);
+    BeautifyRenderer::render(painter, shown.rect(), QPixmap::fromImage(screenshot), settings,
+                             preview.thumbnail, preview.originalSize);
+    painter.end();
+    return {shown.pixelColor(0, 0), exported.pixelColor(0, 0)};
+}
+
+QByteArray encodePng(const QImage& image)
+{
+    QByteArray png;
+    QBuffer buffer(&png);
+    buffer.open(QIODevice::WriteOnly);
+    image.save(&buffer, "PNG");
+    return png;
+}
+} // namespace
+
+void tst_BeautifyRenderer::pngMetadataIsBounded()
+{
+    QImage source(1600, 1200, QImage::Format_RGB32);
+    source.fill(Qt::blue);
+    QByteArray png = encodePng(source);
+    // A compressed iCCP chunk that inflates to 64 MiB, placed after IHDR.
+    constexpr qsizetype kInflated = 64 * 1024 * 1024;
+    const QByteArray zlib = qCompress(QByteArray(kInflated, '\0'), 9).mid(4);
+    QByteArray body = QByteArray("iCCP") + QByteArray("bomb\0\0", 6) + zlib;
+    const auto crc = [](const QByteArray& data) {
+        quint32 c = 0xffffffffu;
+        for (const char byte : data) {
+            c ^= quint8(byte);
+            for (int k = 0; k < 8; ++k) c = (c >> 1) ^ (0xedb88320u & (0u - (c & 1u)));
+        }
+        return c ^ 0xffffffffu;
+    };
+    QByteArray chunk(4, Qt::Uninitialized);
+    qToBigEndian<quint32>(quint32(body.size() - 4), chunk.data());
+    chunk += body;
+    QByteArray tail(4, Qt::Uninitialized);
+    qToBigEndian<quint32>(crc(body), tail.data());
+    chunk += tail;
+    constexpr int kAfterIhdr = 33;
+    png.insert(kAfterIhdr, chunk);
+    // The profile exceeds the metadata limit, so the preview is refused
+    // instead of inflating it.
+    QVERIFY(SnapTray::BeautifyBackgroundImage::decode(png, 128 * 96).isNull());
+}
+
+void tst_BeautifyRenderer::previewKeepsTheCropOfAVeryWideImage()
+{
+    // The square canvas covers exactly the green stripe in the middle.
+    QImage source(16384, 16, QImage::Format_RGB32);
+    source.fill(Qt::red);
+    QPainter(&source).fillRect(QRect(8184, 0, 16, 16), Qt::green);
+    const auto [shown, exported] = previewAndExportCorner(encodePng(source));
+    QCOMPARE(exported, QColor(Qt::green));
+    QCOMPARE(shown, exported);
+}
+
+void tst_BeautifyRenderer::previewConvertsGrayscaleProfiles()
+{
+    // Wide enough for the area-sampled thumbnail path.
+    QImage source(1600, 1600, QImage::Format_Grayscale8);
+    source.fill(128);
+    source.setColorSpace(QColorSpace(QColorSpace(QColorSpace::SRgb).whitePoint(),
+                                     QColorSpace::TransferFunction::Linear));
+    const QByteArray png = encodePng(source);
+    QCOMPARE(QImage::fromData(png).colorSpace().colorModel(), QColorSpace::ColorModel::Gray);
+    const auto [shown, exported] = previewAndExportCorner(png);
+    QVERIFY2(qAbs(shown.red() - exported.red()) <= 1 && shown.red() == shown.green() && shown.green() == shown.blue(),
+             qPrintable(shown.name() + " vs " + exported.name()));
+    // Linear 50% gray is about #bcbcbc in sRGB.
+    QVERIFY(qAbs(exported.red() - 0xbc) <= 1);
+}
 
 QPixmap tst_BeautifyRenderer::createTestPixmap(int w, int h, QColor fill)
 {

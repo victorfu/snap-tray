@@ -1,5 +1,7 @@
 #include "beautify/BeautifyRenderer.h"
 #include "utils/CoordinateHelper.h"
+#include "beautify/BeautifyBackgroundImage.h"
+#include <QColorSpace>
 #include <QPainterPath>
 #include <QPen>
 #include <QLinearGradient>
@@ -19,6 +21,29 @@ void paintSource(QPainter& painter, const QRect& target, const QImage& source)
 {
     painter.drawImage(target, source);
 }
+
+// Cover the canvas with a centered crop. All coordinates refer to image
+// pixels, independently of the source file's DPR metadata.
+bool drawImageBackground(QPainter& painter, const QRect& rect, QImage image,
+                         const QColorSpace& targetSpace, QSize originalSize = {})
+{
+    if (image.isNull()) return false;
+    if (!image.colorSpace().isValid()) image.setColorSpace(QColorSpace::SRgb);
+    image.convertToColorSpace(targetSpace.isValid() ? targetSpace : QColorSpace(QColorSpace::SRgb));
+    if (image.isNull()) return false;
+    if (originalSize.isEmpty()) originalSize = image.size();
+    const qreal scale = qMax(qreal(rect.width()) / originalSize.width(), qreal(rect.height()) / originalSize.height());
+    // A very thin thumbnail can round to one pixel. Compute the crop against
+    // the original aspect and map it into the thumbnail's pixel coordinates.
+    const QSizeF crop(rect.width() / scale * image.width() / originalSize.width(),
+                      rect.height() / scale * image.height() / originalSize.height());
+    const QPointF origin((image.width() - crop.width()) / 2, (image.height() - crop.height()) / 2);
+    painter.drawImage(rect, image, QRectF(origin, crop));
+    return true;
+}
+
+QColorSpace sourceColorSpace(const QPixmap& source) { return source.toImage().colorSpace(); }
+QColorSpace sourceColorSpace(const QImage& source) { return source.colorSpace(); }
 
 // The picture inside the frame, clipped to the rounded corners. False, with
 // nothing drawn, when an intermediate image cannot be allocated.
@@ -79,7 +104,13 @@ bool paintBeautified(QPaintDevice& target, const QSize& logicalSource, const QSi
 
     // Draw in logical coordinates (QPainter scales by DPR automatically)
     QRect logicalRect(0, 0, logicalOutput.width(), logicalOutput.height());
-    BeautifyRenderer::drawBackground(painter, logicalRect, settings);
+    if (settings.backgroundType == BeautifyBackgroundType::Image) {
+        if (!drawImageBackground(painter, logicalRect,
+                SnapTray::BeautifyBackgroundImage::decode(settings.backgroundImageData),
+                sourceColorSpace(source))) return false;
+    } else {
+        BeautifyRenderer::drawBackground(painter, logicalRect, settings);
+    }
 
     QRect insetRect = BeautifyRenderer::calculateInsetRect(logicalOutput, logicalSource, settings);
     BeautifyRenderer::drawShadow(painter, insetRect, settings);
@@ -95,6 +126,9 @@ bool paintBeautified(QPaintDevice& target, const QSize& logicalSource, const QSi
 QPixmap BeautifyRenderer::applyToPixmap(const QPixmap& source, const BeautifySettings& settings)
 {
     if (source.isNull()) return {};
+    if (settings.backgroundType == BeautifyBackgroundType::Image) {
+        return QPixmap::fromImage(applyToImage(source.toImage(), settings));
+    }
 
     const qreal dpr = source.devicePixelRatio() > 0.0 ? source.devicePixelRatio() : 1.0;
     const QSize logicalSource = CoordinateHelper::toLogical(source.size(), dpr);
@@ -122,6 +156,7 @@ QImage BeautifyRenderer::applyToImage(const QImage& source, const BeautifySettin
     if (result.isNull()) return {};
     result.fill(Qt::transparent);
     result.setDevicePixelRatio(dpr);
+    result.setColorSpace(source.colorSpace());
     if (!paintBeautified(result, logicalSource, logicalOutput, source, settings)) return {};
     return result;
 }
@@ -134,7 +169,8 @@ QSize BeautifyRenderer::calculateOutputSize(const QSize& sourceSize, const Beaut
 }
 
 void BeautifyRenderer::render(QPainter& painter, const QRect& targetRect,
-                               const QPixmap& source, const BeautifySettings& settings)
+                               const QPixmap& source, const BeautifySettings& settings,
+                               const QImage& backgroundPreview, QSize originalBackgroundSize)
 {
     if (source.isNull()) return;
 
@@ -162,9 +198,14 @@ void BeautifyRenderer::render(QPainter& painter, const QRect& targetRect,
     painter.scale(scale, scale);
 
     QRect fullRect(0, 0, outputSize.width(), outputSize.height());
-    drawBackground(painter, fullRect, settings);
+    if (settings.backgroundType == BeautifyBackgroundType::Image) {
+        drawImageBackground(painter, fullRect, backgroundPreview, sourceColorSpace(source), originalBackgroundSize);
+    } else {
+        drawBackground(painter, fullRect, settings);
+    }
 
     QRect insetRect = calculateInsetRect(outputSize, logicalSource, settings);
+    painter.setClipRect(fullRect, Qt::IntersectClip);
     drawShadow(painter, insetRect, settings);
     drawScreenshot(painter, insetRect, source, settings);
     drawBorder(painter, insetRect, settings);
@@ -179,6 +220,8 @@ void BeautifyRenderer::drawBackground(QPainter& painter, const QRect& rect,
     painter.setPen(Qt::NoPen);
 
     switch (settings.backgroundType) {
+    case BeautifyBackgroundType::Transparent:
+        break;
     case BeautifyBackgroundType::Solid:
         painter.setBrush(settings.backgroundColor);
         painter.drawRect(rect);
@@ -277,10 +320,15 @@ void BeautifyRenderer::drawBorder(QPainter& painter, const QRect& insetRect,
 QRect BeautifyRenderer::calculateInsetRect(const QSize& outputSize, const QSize& sourceSize,
                                             const BeautifySettings& settings)
 {
-    Q_UNUSED(settings)
-    // Center the source within the output
-    int x = (outputSize.width() - sourceSize.width()) / 2;
-    int y = (outputSize.height() - sourceSize.height()) / 2;
+    const int anchor = int(settings.alignment);
+    const int slackX = outputSize.width() - sourceSize.width();
+    const int slackY = outputSize.height() - sourceSize.height();
+    // Anchor within the padded canvas. With Auto, the canvas wraps the
+    // padded screenshot exactly; a fixed aspect ratio can add extra space.
+    const int paddingX = qMin(settings.padding, slackX / 2);
+    const int paddingY = qMin(settings.padding, slackY / 2);
+    const int x = paddingX + (anchor % 3) * (slackX - 2 * paddingX) / 2;
+    const int y = paddingY + (anchor / 3) * (slackY - 2 * paddingY) / 2;
     return QRect(x, y, sourceSize.width(), sourceSize.height());
 }
 

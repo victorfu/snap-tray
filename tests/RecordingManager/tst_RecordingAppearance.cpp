@@ -42,6 +42,7 @@ class TestRecordingAppearance : public QObject
     Q_OBJECT
 
 private slots:
+    void screenshotOnlyBackgroundKeepsRecordingLook();
     void disabledIsIdentity();
     void sizesFollowThePicture();
     void composePlacesThePicture();
@@ -582,6 +583,22 @@ void TestRecordingAppearance::sameStyleMatchesScreenshot()
         qInfo("background %d: worst channel difference %d, %.4f%% of pixels beyond %d", int(background), worst,
               share * 100.0, kChannelTolerance);
         QVERIFY2(share <= kMaxDifferingShare, qPrintable(QStringLiteral("%1 pixels differ").arg(differing)));
+    }
+}
+
+void TestRecordingAppearance::screenshotOnlyBackgroundKeepsRecordingLook()
+{
+    for (auto mode : {FrameStyle::Background::Transparent, FrameStyle::Background::Image}) {
+        RecordingAppearance recording;
+        recording.background = RecordingAppearance::Background::Solid;
+        recording.solidColor = Qt::green;
+        FrameStyle style = customStyle();
+        style.background = mode;
+        style.alignment = BeautifyAlignment::TopLeft;
+        recording.applyFrameStyle(style);
+        QCOMPARE(recording.background, RecordingAppearance::Background::Solid);
+        QCOMPARE(recording.solidColor, QColor(Qt::green));
+        QCOMPARE(recording.beautifyFor(QSize(320, 240)).alignment, BeautifyAlignment::Center);
     }
 }
 

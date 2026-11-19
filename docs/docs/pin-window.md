@@ -85,6 +85,12 @@ Choose **Manual** to restore the free layout you had before trying automatic arr
 
 Layouts support up to 20 images, 10,000 logical units per canvas dimension, and 64 megapixels of output. Invalid or oversized layouts are rejected before composition. Saved images and history continue using the existing output pipeline.
 
+### Choose a screenshot background
+
+In **Beautify → Customize**, choose **Transparent** for a clear canvas or **Image** to fill it with a centered crop of a local PNG or JPEG. With a fixed aspect ratio, **Alignment** places the screenshot within the extra space and keeps the chosen padding. PNG keeps transparency. Opaque formats such as JPEG, BMP and PPM fill it with white.
+
+A Library entry keeps its own copy of the background used for that screenshot. Saved styles reference the local image file. If the file becomes unavailable, choose a replacement before copying or exporting. Applying a screenshot image or transparent style to a recording keeps the recording’s background and centered placement.
+
 ### Export a smaller copy
 
 **Export As...** in the context menu, **Export...** in Beautify and **Export...** in the Library open the same dialog. It writes a derived file and leaves the pin, its annotations and the Library item at full resolution.

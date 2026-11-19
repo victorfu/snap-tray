@@ -264,14 +264,20 @@ int RecordingPreviewBackend::currentFrameStyle() const
     const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
     // Compared the way it would be applied, so a translucent screenshot
     // color still matches its opaque recording counterpart.
+    int inferred = -1;
     for (int i = 0; i < styles.size(); ++i) {
+        const auto& candidate = styles.at(i);
         SnapTray::RecordingAppearance applied = m_appearance;
         applied.applyFrameStyle(styles.at(i).style);
         if (applied.background == m_appearance.background && applied.frameStyle() == m_appearance.frameStyle()) {
-            return i;
+            if (candidate.name == m_selectedFrameStyleName) return i;
+            // A screenshot-only background matches any recording background.
+            // It can only identify a style when the user explicitly chose it.
+            if (inferred < 0 && candidate.style.background != SnapTray::FrameStyle::Background::Image
+                && candidate.style.background != SnapTray::FrameStyle::Background::Transparent) inferred = i;
         }
     }
-    return -1;
+    return inferred;
 }
 
 bool RecordingPreviewBackend::frameStylesFull() const
@@ -287,23 +293,33 @@ int RecordingPreviewBackend::maxFrameStyles() const
 void RecordingPreviewBackend::applyFrameStyle(int index)
 {
     const auto& styles = SnapTray::FrameStyleLibrary::instance().styles();
-    if (index < 0 || index >= styles.size()) return;
+    if (isProcessing() || index < 0 || index >= styles.size()) return;
+    m_selectedFrameStyleName = styles.at(index).name;
     const SnapTray::FrameStyle style = styles.at(index).style;
     editAppearance([&style](SnapTray::RecordingAppearance& a) { a.applyFrameStyle(style); });
+    emit frameStyleStateChanged();
 }
 
 bool RecordingPreviewBackend::saveFrameStyle(const QString& name)
 {
-    return SnapTray::FrameStyleLibrary::instance().save(name, m_appearance.frameStyle());
+    if (!SnapTray::FrameStyleLibrary::instance().save(name, m_appearance.frameStyle())) return false;
+    m_selectedFrameStyleName = name.trimmed();
+    emit frameStyleStateChanged();
+    return true;
 }
 
 bool RecordingPreviewBackend::renameFrameStyle(int index, const QString& name)
 {
-    return SnapTray::FrameStyleLibrary::instance().rename(index, name);
+    const bool selected = index == currentFrameStyle();
+    if (!SnapTray::FrameStyleLibrary::instance().rename(index, name)) return false;
+    if (selected) m_selectedFrameStyleName = name.trimmed();
+    emit frameStyleStateChanged();
+    return true;
 }
 
 void RecordingPreviewBackend::deleteFrameStyle(int index)
 {
+    if (index == currentFrameStyle()) m_selectedFrameStyleName.clear();
     SnapTray::FrameStyleLibrary::instance().remove(index);
 }
 

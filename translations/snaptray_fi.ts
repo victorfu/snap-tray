@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Vie...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Läpinäkyvä</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Kuva</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Valitse taustakuva</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Kuvat</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Valitse kuva</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Ladataan kuvaa…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Kuva ei ole käytettävissä. Valitse toinen kuva.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Valitse kuva…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Tasaus</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Vasen yläkulma</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Ylhäällä keskellä</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Oikea yläkulma</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Vasemmalla keskellä</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Keskellä</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Oikealla keskellä</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Vasen alakulma</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Alhaalla keskellä</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Oikea alakulma</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

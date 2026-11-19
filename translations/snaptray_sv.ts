@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Exportera...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Genomskinlig</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Bild</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Välj bakgrundsbild</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Bilder</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Välj en bild</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Läser in bild…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Bilden är inte tillgänglig. Välj en annan bild.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Välj bild…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Justering</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Överst till vänster</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Överst i mitten</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Överst till höger</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Mitten till vänster</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Mitten</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Mitten till höger</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Nederst till vänster</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Nederst i mitten</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Nederst till höger</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

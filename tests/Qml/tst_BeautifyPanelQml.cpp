@@ -53,6 +53,7 @@ private slots:
     void testPositionNearRightEdge_data();
     void testPositionNearRightEdge();
     void testStyleCardAndShadowToggle();
+    void testCustomizeAlignmentAndImageExportState();
     void testTallPanelScrollsOnShortScreen();
     void testCustomizeNearScreenBottomStaysOnScreen();
     void testSaveStyleByName();
@@ -353,6 +354,29 @@ void tst_BeautifyPanelQml::testStyleCardAndShadowToggle()
     QTRY_COMPARE(root->property("customizeExpanded").toBool(), !expanded);
     QTest::keyClick(view, Qt::Key_Return);
     QTRY_COMPARE(root->property("customizeExpanded").toBool(), expanded);
+}
+
+void tst_BeautifyPanelQml::testCustomizeAlignmentAndImageExportState()
+{
+    SnapTray::QmlBeautifyPanel panel;
+    panel.setSettings(BeautifySettings{});
+    panel.showNear(QRect(80, 80, 320, 240));
+    auto* view = qobject_cast<QQuickView*>(panel.window());
+    QVERIFY(view && view->rootObject());
+    auto* backend = panel.findChild<SnapTray::BeautifyPanelBackend*>();
+    QVERIFY(backend);
+    auto* root = view->rootObject();
+    root->setProperty("customizeExpanded", true);
+    auto* anchor = findItem(root, "beautifyAnchor8");
+    auto* exportButton = findItem(root, "beautifyExportButton");
+    QVERIFY(anchor && exportButton && anchor->isVisible());
+    anchor->forceActiveFocus();
+    QTest::keyClick(view, Qt::Key_Space);
+    QCOMPARE(backend->alignment(), int(BeautifyAlignment::BottomRight));
+    backend->setBackgroundType(int(BeautifyBackgroundType::Image));
+    QVERIFY(!exportButton->isEnabled());
+    backend->setBackgroundType(int(BeautifyBackgroundType::Transparent));
+    QVERIFY(exportButton->isEnabled());
 }
 
 void tst_BeautifyPanelQml::testTallPanelScrollsOnShortScreen()

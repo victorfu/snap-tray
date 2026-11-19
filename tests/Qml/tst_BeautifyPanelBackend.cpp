@@ -6,12 +6,16 @@
 #include "settings/Settings.h"
 
 #include <QSignalSpy>
+#include <QTemporaryDir>
+#include <QSaveFile>
 
 namespace {
 
 void clearBeautifySettings()
 {
     auto settings = SnapTray::getSettings();
+    settings.remove(QStringLiteral("beautify/backgroundImagePath"));
+    settings.remove(QStringLiteral("beautify/alignment"));
     settings.remove(QStringLiteral("beautify/backgroundType"));
     settings.remove(QStringLiteral("beautify/backgroundColor"));
     settings.remove(QStringLiteral("beautify/gradientStartColor"));
@@ -49,6 +53,8 @@ private slots:
     void init();
     void cleanup();
 
+    void testChangingAndReplacingBackground();
+    void testHistoryBackgroundOutlivesItsEntry();
     void testDefaultState_UsesBeautifyDefaults();
     void testApplyPreset_UpdatesGradientState();
     void testPreviewDebounce_CoalescesRapidChanges();
@@ -94,7 +100,7 @@ void tst_BeautifyPanelBackend::testDefaultState_UsesBeautifyDefaults()
     QCOMPARE(backend.aspectRatio(), static_cast<int>(BeautifyAspectRatio::Auto));
     QVERIFY(backend.shadowEnabled());
     QCOMPARE(backend.shadowBlur(), 40);
-    QCOMPARE(backend.backgroundTypeModel().size(), 3);
+    QCOMPARE(backend.backgroundTypeModel().size(), 5);
     QCOMPARE(backend.aspectRatioModel().size(), 6);
     QCOMPARE(backend.presetModel().size(), 8);
 }
@@ -485,6 +491,72 @@ void tst_BeautifyPanelBackend::testBorder_SavedWithTheLook()
     QVERIFY(reopened.saveCustomStyle(QStringLiteral("Bordered")));
     reopened.setBorderEnabled(false);
     QCOMPARE(reopened.currentCustomStyle(), -1); // the border is part of the look
+}
+
+void tst_BeautifyPanelBackend::testChangingAndReplacingBackground()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    auto replace = [](const QString& path, QColor color) {
+        QSaveFile file(path);
+        QImage image(200, 100, QImage::Format_RGB32);
+        image.fill(color);
+        return file.open(QIODevice::WriteOnly) && image.save(&file, "PNG") && file.commit();
+    };
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImagePath = dir.filePath("one.png");
+    QVERIFY(replace(settings.backgroundImagePath, Qt::red));
+    SnapTray::BeautifyPanelBackend backend;
+    backend.setSettings(settings);
+    settings.backgroundImagePath = dir.filePath("two.png");
+    QVERIFY(replace(settings.backgroundImagePath, Qt::blue));
+    backend.setSettings(settings);
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::blue));
+    QVERIFY(replace(settings.backgroundImagePath, Qt::green));
+    QTRY_COMPARE(backend.backgroundPreview().isNull() ? QColor() : backend.backgroundPreview().pixelColor(0, 0),
+                 QColor(Qt::green));
+    QVERIFY(QFile::remove(settings.backgroundImagePath));
+    QTRY_VERIFY(!backend.imageReady());
+    QFile corrupt(settings.backgroundImagePath);
+    QVERIFY(corrupt.open(QIODevice::WriteOnly));
+    corrupt.write("bad");
+    corrupt.close();
+    backend.setSettings(settings);
+    QTRY_VERIFY(backend.imageStatus().contains("unavailable"));
+    QVERIFY(backend.settings().backgroundImageData.isEmpty());
+    QVERIFY(replace(settings.backgroundImagePath, Qt::red));
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::red));
+}
+
+void tst_BeautifyPanelBackend::testHistoryBackgroundOutlivesItsEntry()
+{
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QImage image(200, 100, QImage::Format_RGB32);
+    image.fill(Qt::magenta);
+    BeautifySettings settings;
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    settings.backgroundImagePath = dir.filePath("chosen.png");
+    settings.historyBackgroundPath = dir.filePath("background.image");
+    QBuffer buffer(&settings.backgroundImageData);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(image.save(&buffer, "PNG"));
+    buffer.close();
+    const QByteArray asset = settings.backgroundImageData;
+    // The entry was pruned before the panel opened: neither file exists.
+    SnapTray::BeautifyPanelBackend backend;
+    backend.setSettings(settings);
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::magenta));
+    QCOMPARE(backend.settings().backgroundImageData, asset);
+    // Switching away and back keeps the snapshot.
+    backend.setBackgroundType(int(BeautifyBackgroundType::Solid));
+    backend.setBackgroundType(int(BeautifyBackgroundType::Image));
+    QTRY_VERIFY(backend.imageReady());
+    QCOMPARE(backend.settings().backgroundImageData, asset);
 }
 
 QTEST_MAIN(tst_BeautifyPanelBackend)

@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Εξαγωγή...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Διαφανές</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Εικόνα</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Επιλογή εικόνας φόντου</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Εικόνες</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Επιλέξτε εικόνα</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Φόρτωση εικόνας…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Η εικόνα δεν είναι διαθέσιμη. Επιλέξτε άλλη εικόνα.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Επιλογή εικόνας…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Στοίχιση</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Επάνω αριστερά</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Επάνω στο κέντρο</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Επάνω δεξιά</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Μέση αριστερά</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Κέντρο</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Μέση δεξιά</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Κάτω αριστερά</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Κάτω στο κέντρο</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Κάτω δεξιά</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

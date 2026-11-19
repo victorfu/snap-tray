@@ -16,12 +16,14 @@ namespace SnapTray {
 // them into pixels for the video at hand, so a style fits a 720p and a 4K
 // recording alike.
 //
-// Recording-only choices (a blurred-video or image background) are not part
-// of a style: applying one to a recording keeps them.
+// Recording keeps its own image/blurred-video asset. Screenshot image and
+// transparent modes and alignment apply only to screenshots.
 struct FrameStyle {
-    enum class Background { Solid, LinearGradient, RadialGradient };
+    enum class Background { Solid, LinearGradient, RadialGradient, Transparent, Image };
 
     Background background = Background::LinearGradient;
+    QString backgroundImagePath;
+    BeautifyAlignment alignment = BeautifyAlignment::Center;
     QColor solidColor{0, 180, 219};
     QColor gradientStart{0, 180, 219};
     QColor gradientEnd{0, 131, 176};

@@ -208,6 +208,10 @@ set(WITH_JASPER OFF CACHE BOOL "" FORCE)
 set(WITH_TIFF OFF CACHE BOOL "" FORCE)
 set(WITH_WEBP OFF CACHE BOOL "" FORCE)
 set(WITH_PNG OFF CACHE BOOL "" FORCE)
+# Reuse the pinned OpenCV distribution's streaming PNG reader for wallpaper
+# thumbnails. Qt's PNG reader scales only after allocating the full image.
+set(WITH_SPNG ON CACHE BOOL "" FORCE)
+set(BUILD_SPNG ON CACHE BOOL "" FORCE)
 set(WITH_JPEG OFF CACHE BOOL "" FORCE)
 set(WITH_VTK OFF CACHE BOOL "VTK: Not needed" FORCE)
 set(WITH_OBSENSOR OFF CACHE BOOL "" FORCE)
@@ -327,6 +331,8 @@ add_library(snaptray_core STATIC
     src/settings/BeautifySettingsManager.cpp
     src/settings/WindowsPrintScreenSettingsManager.cpp
     src/settings/LanguageManager.cpp
+    src/beautify/PngThumbnail.cpp
+    src/beautify/BeautifyBackgroundImage.cpp
     src/beautify/BeautifyRenderer.cpp
     src/beautify/BeautifySettingsJson.cpp
     src/beautify/FrameStyle.cpp
@@ -428,10 +434,12 @@ target_include_directories(snaptray_core
         ${CMAKE_BINARY_DIR}/generated
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
+        ${SPNG_INCLUDE_DIR}
         ${CMAKE_BINARY_DIR}
 )
 
 target_link_libraries(snaptray_core
+    PRIVATE libspng
     PUBLIC
         Qt6::Svg
         Qt6::Core
@@ -440,6 +448,11 @@ target_link_libraries(snaptray_core
         Qt6::Concurrent
         Qt6::Network
 )
+
+qt_add_resources(snaptray_core "spng_license"
+    PREFIX "/licenses/spng"
+    BASE "${SPNG_INCLUDE_DIR}"
+    FILES "${SPNG_INCLUDE_DIR}/LICENSE")
 
 # Disable qDebug() output in Release builds for core library
 target_compile_definitions(snaptray_core PRIVATE

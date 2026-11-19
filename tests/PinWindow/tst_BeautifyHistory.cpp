@@ -3,6 +3,10 @@
 // than from the global last-used ones.
 #include <QtTest/QtTest>
 #include <QGuiApplication>
+#include <QApplication>
+#include <QBuffer>
+#include <QFileDialog>
+#include <QTimer>
 #include <QColorSpace>
 #include <QImage>
 #include <QPainter>
@@ -121,6 +125,7 @@ private slots:
     void editedPinIsFlattenedButKeepsBeautify();
     void pinWithoutCaptureIsFlattened();
     void failedSaveAddsNoEntry();
+    void manualSaveKeepsBackgroundWhileChoosingFile();
 
 private:
     // Saves through the same path as the panel's Save button.
@@ -352,6 +357,49 @@ void TestPinWindowBeautifyHistory::failedSaveAddsNoEntry()
     QCOMPARE(saved.count(), 0);
     QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
     QVERIFY(SnapTray::HistoryStore::loadEntries().isEmpty());
+}
+
+void TestPinWindowBeautifyHistory::manualSaveKeepsBackgroundWhileChoosingFile()
+{
+    FileSettingsManager::instance().saveAutoSaveScreenshots(false);
+    const bool previous = qApp->testAttribute(Qt::AA_DontUseNativeDialogs);
+    qApp->setAttribute(Qt::AA_DontUseNativeDialogs);
+    const auto restore = qScopeGuard([=] { qApp->setAttribute(Qt::AA_DontUseNativeDialogs, previous); });
+
+    BeautifySettings settings = pinLook();
+    settings.backgroundType = BeautifyBackgroundType::Image;
+    QImage image(16, 16, QImage::Format_RGB32);
+    image.fill(Qt::green);
+    QBuffer buffer(&settings.backgroundImageData);
+    QVERIFY(buffer.open(QIODevice::WriteOnly));
+    QVERIFY(image.save(&buffer, "PNG"));
+    buffer.close();
+    const QByteArray original = settings.backgroundImageData;
+    FileSettingsManager::instance().saveUseLastScreenshotSaveLocation(false);
+    PinWindow window(patternPixmap(QSize(80, 60), 1.0), QPoint(0, 0), nullptr, false, false);
+    QSignalSpy completed(&window, &PinWindow::saveCompleted);
+    QTimer::singleShot(0, &window, [&] {
+        // A file-watcher notification can clear or replace the panel's current
+        // settings while the native picker runs a nested event loop.
+        settings.backgroundImageData.clear();
+        if (auto* picker = window.findChild<QFileDialog*>()) {
+            QMetaObject::invokeMethod(picker, "accept");
+        }
+    });
+    beautifySave(window, settings);
+    const auto entries = SnapTray::HistoryStore::loadEntries();
+    QCOMPARE(entries.size(), 1);
+    QVERIFY(entries.first().beautify);
+    QCOMPARE(fileBytes(entries.first().beautify->imageSourcePath()), original);
+    QVERIFY(settings.backgroundImageData.isEmpty());
+    QCOMPARE(completed.size(), 1);
+    const QString savedPath = completed.first().at(1).toString();
+    QVERIFY(savedPath.startsWith(m_dir.path()));
+    const QImage saved(savedPath);
+    QVERIFY(!saved.isNull());
+    image.setColorSpace(QColorSpace::SRgb);
+    if (saved.colorSpace().isValid()) image.convertToColorSpace(saved.colorSpace());
+    QCOMPARE(saved.pixelColor(0, 0), image.pixelColor(0, 0));
 }
 
 QTEST_MAIN(TestPinWindowBeautifyHistory)

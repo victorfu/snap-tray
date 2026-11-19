@@ -6,6 +6,13 @@
 #include <QCoreApplication>
 #include <QList>
 #include <QColorDialog>
+#include "beautify/BeautifyBackgroundImage.h"
+
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFileSystemWatcher>
+#include <QFutureWatcher>
+#include <QtConcurrentRun>
 #include <QTimer>
 #include <QVariantMap>
 
@@ -58,7 +65,7 @@ constexpr int kMaxShadowOffset = 50;
 // The parts of a look the panel shows; a saved style matches when they agree.
 bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
 {
-    if (a.backgroundType != b.backgroundType || a.padding != b.padding
+    if (a.alignment != b.alignment || a.backgroundType != b.backgroundType || a.padding != b.padding
         || a.cornerRadius != b.cornerRadius || a.shadowEnabled != b.shadowEnabled
         || a.borderEnabled != b.borderEnabled || a.aspectRatio != b.aspectRatio) {
         return false;
@@ -69,6 +76,8 @@ bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
     if (a.borderEnabled && (a.borderWidth != b.borderWidth || a.borderColor != b.borderColor)) {
         return false;
     }
+    if (a.backgroundType == BeautifyBackgroundType::Image) return a.backgroundImagePath == b.backgroundImagePath;
+    if (a.backgroundType == BeautifyBackgroundType::Transparent) return true;
     if (a.backgroundType == BeautifyBackgroundType::Solid) {
         return a.backgroundColor == b.backgroundColor;
     }
@@ -77,8 +86,10 @@ bool sameLook(const BeautifySettings& a, const BeautifySettings& b)
 
 } // namespace
 
-BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
+BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent, bool previewActive)
     : QObject(parent)
+    , m_imageWatcher(new QFileSystemWatcher(this))
+    , m_previewActive(previewActive)
     , m_previewTimer(new QTimer(this))
 {
     m_previewTimer->setSingleShot(true);
@@ -88,6 +99,11 @@ BeautifyPanelBackend::BeautifyPanelBackend(QObject* parent)
         emit previewRevisionChanged();
     });
 
+    connect(m_imageWatcher, &QFileSystemWatcher::fileChanged, this, &BeautifyPanelBackend::reloadBackground);
+    connect(m_imageWatcher, &QFileSystemWatcher::directoryChanged, this, [this] {
+        // Atomic replacement or recreation can remove the file watch.
+        if (!m_imageWatcher->files().contains(m_settings.imageSourcePath())) reloadBackground();
+    });
     rebuildPresetModel();
     connect(this, &BeautifyPanelBackend::settingsStateChanged,
             this, &BeautifyPanelBackend::customStyleStateChanged);
@@ -127,8 +143,10 @@ BeautifySettings BeautifyPanelBackend::settingsFor(const FrameStyle& style) cons
 void BeautifyPanelBackend::setSettings(const BeautifySettings& settings)
 {
     m_settings = settings;
-    emit settingsStateChanged();
-    schedulePreviewUpdate();
+    // A reopened history entry brings its background with it: the entry can
+    // be pruned while its pin stays open.
+    m_historyBackground = settings.historyBackgroundPath.isEmpty() ? QByteArray() : settings.backgroundImageData;
+    reloadBackground();
 }
 
 int BeautifyPanelBackend::backgroundType() const
@@ -138,18 +156,103 @@ int BeautifyPanelBackend::backgroundType() const
 
 void BeautifyPanelBackend::setBackgroundType(int type)
 {
-    const auto bounded = qBound(0, type, 2);
+    const auto bounded = qBound(0, type, int(BeautifyBackgroundType::Image));
     const auto newType = static_cast<BeautifyBackgroundType>(bounded);
     if (m_settings.backgroundType == newType) {
         return;
     }
 
     m_settings.backgroundType = newType;
+    reloadBackground();
+}
+
+void BeautifyPanelBackend::setAlignment(int anchor)
+{
+    if (anchor < 0 || anchor > int(BeautifyAlignment::BottomRight) || anchor == alignment()) return;
+    m_settings.alignment = BeautifyAlignment(anchor);
     commitSettingsChange();
+}
+
+void BeautifyPanelBackend::pickBackgroundImage()
+{
+    const QString path = QFileDialog::getOpenFileName(nullptr, beautifyText("Select Background Image"),
+        m_settings.backgroundImagePath, beautifyText("Images") + QStringLiteral(" (*.png *.jpg *.jpeg *.jfif)"));
+    if (path.isEmpty()) return;
+    m_settings.historyBackgroundPath.clear();
+    m_historyBackground.clear();
+    m_settings.backgroundImagePath = path;
+    m_settings.backgroundType = BeautifyBackgroundType::Image;
+    reloadBackground();
+}
+
+bool BeautifyPanelBackend::imageReady() const
+{
+    return m_settings.backgroundType != BeautifyBackgroundType::Image || !m_backgroundPreview.isNull();
+}
+
+QString BeautifyPanelBackend::imageStatus() const
+{
+    if (m_settings.backgroundImagePath.isEmpty()) return beautifyText("Choose an image");
+    if (m_imageLoading) return beautifyText("Loading image…");
+    if (!imageReady()) return beautifyText("Image unavailable. Choose another image.");
+    return QFileInfo(m_settings.backgroundImagePath).fileName();
+}
+
+void BeautifyPanelBackend::setPreviewActive(bool active)
+{
+    if (m_previewActive == active) return;
+    m_previewActive = active;
+    if (imageBackground()) reloadBackground();
+}
+
+void BeautifyPanelBackend::reloadBackground()
+{
+    ++m_imageRevision;
+    m_backgroundPreview = {};
+    m_settings.backgroundImageData.clear();
+    const auto watched = m_imageWatcher->files() + m_imageWatcher->directories();
+    if (!watched.isEmpty()) m_imageWatcher->removePaths(watched);
+    if (m_previewActive && imageBackground() && !m_historyBackground.isEmpty()) {
+        // Nothing to watch: the snapshot cannot change.
+        if (!m_imageLoading) startBackgroundLoad();
+    } else if (m_previewActive && imageBackground() && !m_settings.imageSourcePath().isEmpty()) {
+        const QFileInfo file(m_settings.imageSourcePath());
+        m_imageWatcher->addPath(file.absolutePath());
+        if (file.isFile()) m_imageWatcher->addPath(file.absoluteFilePath());
+        if (!m_imageLoading) startBackgroundLoad();
+    }
+    commitSettingsChange();
+}
+
+void BeautifyPanelBackend::startBackgroundLoad()
+{
+    using Preview = BeautifyBackgroundImage::Preview;
+    const auto revision = m_imageRevision;
+    m_imageLoading = true;
+    auto* watcher = new QFutureWatcher<Preview>(this);
+    connect(watcher, &QFutureWatcher<Preview>::finished, this, [this, watcher, revision] {
+        watcher->deleteLater();
+        m_imageLoading = false;
+        if (revision == m_imageRevision) {
+            const Preview result = watcher->result();
+            m_backgroundPreview = result.thumbnail;
+            m_originalBackgroundSize = result.originalSize;
+            m_settings.backgroundImageData = result.original;
+        } else if (m_previewActive && imageBackground()
+                   && (!m_historyBackground.isEmpty() || !m_settings.imageSourcePath().isEmpty())) {
+            startBackgroundLoad();
+        }
+        commitSettingsChange();
+    });
+    watcher->setFuture(m_historyBackground.isEmpty()
+        ? QtConcurrent::run(BeautifyBackgroundImage::loadPreview, m_settings.imageSourcePath())
+        : QtConcurrent::run(BeautifyBackgroundImage::previewFromOriginal, m_historyBackground));
 }
 
 QColor BeautifyPanelBackend::primaryColor() const
 {
+    if (m_settings.backgroundType == BeautifyBackgroundType::Transparent ||
+        m_settings.backgroundType == BeautifyBackgroundType::Image) return Qt::transparent;
     return m_settings.backgroundType == BeautifyBackgroundType::Solid
         ? m_settings.backgroundColor
         : m_settings.gradientStartColor;
@@ -162,7 +265,8 @@ QColor BeautifyPanelBackend::secondaryColor() const
 
 bool BeautifyPanelBackend::secondaryColorVisible() const
 {
-    return m_settings.backgroundType != BeautifyBackgroundType::Solid;
+    return m_settings.backgroundType == BeautifyBackgroundType::LinearGradient
+        || m_settings.backgroundType == BeautifyBackgroundType::RadialGradient;
 }
 
 void BeautifyPanelBackend::setPadding(int padding)
@@ -241,6 +345,8 @@ QVariantList BeautifyPanelBackend::backgroundTypeModel() const
         QVariantMap{{QStringLiteral("text"), beautifyText("Solid")}, {QStringLiteral("value"), 0}},
         QVariantMap{{QStringLiteral("text"), beautifyText("Linear Gradient")}, {QStringLiteral("value"), 1}},
         QVariantMap{{QStringLiteral("text"), beautifyText("Radial Gradient")}, {QStringLiteral("value"), 2}},
+        QVariantMap{{QStringLiteral("text"), beautifyText("Transparent")}, {QStringLiteral("value"), 3}},
+        QVariantMap{{QStringLiteral("text"), beautifyText("Image")}, {QStringLiteral("value"), 4}},
     };
 }
 
@@ -268,7 +374,7 @@ void BeautifyPanelBackend::applyPreset(int index)
     m_settings.gradientStartColor = preset.gradientStart;
     m_settings.gradientEndColor = preset.gradientEnd;
     m_settings.gradientAngle = preset.gradientAngle;
-    commitSettingsChange();
+    reloadBackground();
 }
 
 QVariantList BeautifyPanelBackend::styleModel() const
@@ -335,14 +441,19 @@ QVariantList BeautifyPanelBackend::customStyleModel() const
     for (const auto& style : FrameStyleLibrary::instance().styles()) {
         const BeautifySettings look = settingsFor(style.style);
         const bool solid = look.backgroundType == BeautifyBackgroundType::Solid;
+        const bool colorBackground = look.backgroundType != BeautifyBackgroundType::Image
+            && look.backgroundType != BeautifyBackgroundType::Transparent;
+        QColor start = solid ? look.backgroundColor : look.gradientStartColor;
+        QColor end = solid ? look.backgroundColor : look.gradientEndColor;
+        if (!colorBackground) start = end = Qt::transparent;
         model.append(QVariantMap{
             {QStringLiteral("name"), style.name},
             {QStringLiteral("padding"), look.padding},
             {QStringLiteral("cornerRadius"), look.cornerRadius},
             {QStringLiteral("shadowEnabled"), look.shadowEnabled},
             {QStringLiteral("shadowBlur"), look.shadowBlur},
-            {QStringLiteral("startColor"), solid ? look.backgroundColor : look.gradientStartColor},
-            {QStringLiteral("endColor"), solid ? look.backgroundColor : look.gradientEndColor},
+            {QStringLiteral("startColor"), start},
+            {QStringLiteral("endColor"), end},
         });
     }
     return model;
@@ -440,18 +551,21 @@ void BeautifyPanelBackend::pickSecondaryColor()
 
 void BeautifyPanelBackend::requestCopy()
 {
+    if (!imageReady()) return;
     BeautifySettingsManager::instance().saveSettings(m_settings);
     emit copyRequested(m_settings);
 }
 
 void BeautifyPanelBackend::requestSave()
 {
+    if (!imageReady()) return;
     BeautifySettingsManager::instance().saveSettings(m_settings);
     emit saveRequested(m_settings);
 }
 
 void BeautifyPanelBackend::requestExport()
 {
+    if (!imageReady()) return;
     BeautifySettingsManager::instance().saveSettings(m_settings);
     emit exportRequested(m_settings);
 }

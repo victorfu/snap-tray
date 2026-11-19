@@ -330,6 +330,78 @@
         <source>Export...</source>
         <translation>Извези...</translation>
     </message>
+    <message>
+        <source>Transparent</source>
+        <translation>Провидно</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Слика</translation>
+    </message>
+    <message>
+        <source>Select Background Image</source>
+        <translation>Изаберите позадинску слику</translation>
+    </message>
+    <message>
+        <source>Images</source>
+        <translation>Слике</translation>
+    </message>
+    <message>
+        <source>Choose an image</source>
+        <translation>Изаберите слику</translation>
+    </message>
+    <message>
+        <source>Loading image…</source>
+        <translation>Учитавање слике…</translation>
+    </message>
+    <message>
+        <source>Image unavailable. Choose another image.</source>
+        <translation>Слика није доступна. Изаберите другу слику.</translation>
+    </message>
+    <message>
+        <source>Choose image…</source>
+        <translation>Изабери слику…</translation>
+    </message>
+    <message>
+        <source>Alignment</source>
+        <translation>Поравнање</translation>
+    </message>
+    <message>
+        <source>Top left</source>
+        <translation>Горе лево</translation>
+    </message>
+    <message>
+        <source>Top center</source>
+        <translation>Горе у средини</translation>
+    </message>
+    <message>
+        <source>Top right</source>
+        <translation>Горе десно</translation>
+    </message>
+    <message>
+        <source>Middle left</source>
+        <translation>Лево у средини</translation>
+    </message>
+    <message>
+        <source>Center</source>
+        <translation>Средина</translation>
+    </message>
+    <message>
+        <source>Middle right</source>
+        <translation>Десно у средини</translation>
+    </message>
+    <message>
+        <source>Bottom left</source>
+        <translation>Доле лево</translation>
+    </message>
+    <message>
+        <source>Bottom center</source>
+        <translation>Доле у средини</translation>
+    </message>
+    <message>
+        <source>Bottom right</source>
+        <translation>Доле десно</translation>
+    </message>
 </context>
 <context>
     <name>CanvasToolbarViewModel</name>

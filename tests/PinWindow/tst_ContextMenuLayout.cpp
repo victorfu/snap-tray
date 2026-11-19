@@ -227,7 +227,7 @@ void TestPinContextMenuLayout::beautifyExportUsesTheBeautifiedImage()
     QVERIFY(expected.width() > 240);
 
     window.onBeautifyExport(settings);
-    QVERIFY(controller->isOpen());
+    QTRY_VERIFY(controller->isOpen());
     QCOMPARE(controller->viewModel()->outputPixelSize(), expected);
     controller->close();
     QCOMPARE(window.m_originalPixmap.size(), QSize(240, 160));
