@@ -111,7 +111,8 @@ public:
      * @brief start(), also returning the first error() it emitted.
      *
      * Initialization can run before any receiver is connected, so callers
-     * use this to carry the engine's own reason into their result.
+     * use this to carry the engine's own reason into their result. Only
+     * errors emitted synchronously on the calling thread are collected.
      */
     bool startCollectingError(QString *errorMessage);
 

@@ -19,6 +19,9 @@
 
 #include <QDebug>
 #include <QScreen>
+#include <QThread>
+
+#include <memory>
 
 #ifdef Q_OS_WIN
 #include <QtGui/qscreen_platform.h>
@@ -116,18 +119,27 @@ bool ICaptureEngine::setRegion(const QRect &region, const CaptureScreenInfo &scr
 
 bool ICaptureEngine::startCollectingError(QString *errorMessage)
 {
-    QString firstError;
+    // Only start()'s own synchronous reports count. Native callback threads
+    // (WGC, X11) may emit error() concurrently, and a call already running
+    // there can outlive disconnect(), so the slot captures values only and
+    // ignores every thread but the caller's.
+    struct Collector {
+        QThread *thread = QThread::currentThread();
+        QString firstError;
+    };
+    const auto collector = std::make_shared<Collector>();
     const QMetaObject::Connection connection = connect(
         this, &ICaptureEngine::error, this,
-        [&firstError](const QString &message) {
-            if (firstError.isEmpty())
-                firstError = message;
+        [collector](const QString &message) {
+            if (QThread::currentThread() != collector->thread || !collector->firstError.isEmpty())
+                return;
+            collector->firstError = message;
         },
         Qt::DirectConnection);
     const bool started = start();
     disconnect(connection);
     if (errorMessage)
-        *errorMessage = started ? QString() : firstError;
+        *errorMessage = started ? QString() : collector->firstError;
     return started;
 }
 
