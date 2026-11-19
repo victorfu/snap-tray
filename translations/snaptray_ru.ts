@@ -1674,6 +1674,14 @@ File size: %3</source>
     </message>
 </context>
 <context>
+    <name>MeasureSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
+        <source>Hover to measure. Values are image estimates.</source>
+        <translation>Наведите указатель, чтобы измерить. Значения — оценка по изображению.</translation>
+    </message>
+</context>
+<context>
     <name>MultiRegionListPanel</name>
     <message>
         <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
@@ -2207,6 +2215,31 @@ Size: %2</source>
     <message>
         <source>Font</source>
         <translation>Шрифт</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
+        <source>Manual</source>
+        <translation>Вручную</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="283" />
+        <source>Measure by dragging a line</source>
+        <translation>Измерить, протянув линию</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="285" />
+        <source>Auto</source>
+        <translation>Авто</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="286" />
+        <source>Estimate the spans around the pointer from the image</source>
+        <translation>Оценить расстояния вокруг указателя по изображению</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="781" />
+        <source>Measure</source>
+        <translation>Измерение</translation>
     </message>
 </context>
 <context>

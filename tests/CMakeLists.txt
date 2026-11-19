@@ -927,6 +927,11 @@ target_link_libraries(PinWindow_StripCutOut PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_StripCutOut COMMAND PinWindow_StripCutOut)
 set_tests_properties(PinWindow_StripCutOut PROPERTIES TIMEOUT 60 LABELS "unit;integration")
 
+add_executable(PinWindow_MeasureAuto PinWindow/tst_PinMeasureAuto.cpp)
+target_link_libraries(PinWindow_MeasureAuto PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME PinWindow_MeasureAuto COMMAND PinWindow_MeasureAuto)
+set_tests_properties(PinWindow_MeasureAuto PROPERTIES TIMEOUT 60 LABELS "unit;integration")
+
 add_executable(PinWindow_ForegroundCutout PinWindow/tst_ForegroundCutout.cpp)
 target_link_libraries(PinWindow_ForegroundCutout PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME PinWindow_ForegroundCutout COMMAND PinWindow_ForegroundCutout)
@@ -1830,6 +1835,11 @@ add_executable(Tools_MeasureToolHandler Tools/handlers/tst_MeasureToolHandler.cp
 target_link_libraries(Tools_MeasureToolHandler PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Tools_MeasureToolHandler COMMAND Tools_MeasureToolHandler)
 set_tests_properties(Tools_MeasureToolHandler PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Tools_MeasureEdgeScanner Tools/tst_MeasureEdgeScanner.cpp)
+target_link_libraries(Tools_MeasureEdgeScanner PRIVATE snaptray_ui Qt6::Test)
+add_test(NAME Tools_MeasureEdgeScanner COMMAND Tools_MeasureEdgeScanner)
+set_tests_properties(Tools_MeasureEdgeScanner PROPERTIES TIMEOUT 60 LABELS "unit")
 
 add_executable(Tools_MosaicToolHandler Tools/handlers/tst_MosaicToolHandler.cpp)
 target_link_libraries(Tools_MosaicToolHandler PRIVATE snaptray_ui Qt6::Test)

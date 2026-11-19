@@ -1673,6 +1673,14 @@ Dateigröße: %3</translation>
     </message>
 </context>
 <context>
+    <name>MeasureSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
+        <source>Hover to measure. Values are image estimates.</source>
+        <translation>Zum Messen mit dem Zeiger darüberfahren. Werte sind Schätzungen aus dem Bild.</translation>
+    </message>
+</context>
+<context>
     <name>MultiRegionListPanel</name>
     <message>
         <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
@@ -2206,6 +2214,31 @@ Größe: %2</translation>
     <message>
         <source>Font</source>
         <translation>Schrift</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
+        <source>Manual</source>
+        <translation>Manuell</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="283" />
+        <source>Measure by dragging a line</source>
+        <translation>Durch Ziehen einer Linie messen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="285" />
+        <source>Auto</source>
+        <translation>Automatisch</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="286" />
+        <source>Estimate the spans around the pointer from the image</source>
+        <translation>Abstände um den Zeiger aus dem Bild schätzen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="781" />
+        <source>Measure</source>
+        <translation>Messen</translation>
     </message>
 </context>
 <context>

@@ -1673,6 +1673,14 @@ Tiedoston koko: %3</translation>
     </message>
 </context>
 <context>
+    <name>MeasureSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
+        <source>Hover to measure. Values are image estimates.</source>
+        <translation>Mittaa viemällä osoitin kohteen päälle. Arvot ovat kuvasta tehtyjä arvioita.</translation>
+    </message>
+</context>
+<context>
     <name>MultiRegionListPanel</name>
     <message>
         <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
@@ -2206,6 +2214,31 @@ Koko: %2</translation>
     <message>
         <source>Font</source>
         <translation>Fontti</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
+        <source>Manual</source>
+        <translation>Manuaalinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="283" />
+        <source>Measure by dragging a line</source>
+        <translation>Mittaa vetämällä viiva</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="285" />
+        <source>Auto</source>
+        <translation>Automaattinen</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="286" />
+        <source>Estimate the spans around the pointer from the image</source>
+        <translation>Arvioi osoittimen ympäröivät välit kuvasta</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="781" />
+        <source>Measure</source>
+        <translation>Mittaa</translation>
     </message>
 </context>
 <context>

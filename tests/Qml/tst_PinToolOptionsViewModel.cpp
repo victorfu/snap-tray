@@ -63,6 +63,7 @@ private slots:
     void cropSectionOnlyForCropTool();
     void cropDraftStateAndRequests();
     void cutOutSectionStateAndRequests();
+    void measureSectionStateAndRequests();
 };
 
 void tst_PinToolOptionsViewModel::testDropdownRequested_PreservesCoordinates_data()
@@ -530,6 +531,46 @@ void tst_PinToolOptionsViewModel::cropDraftStateAndRequests()
     vm.handleCropCancel();
     QCOMPARE(apply.count(), 1);
     QCOMPARE(cancel.count(), 1);
+}
+
+// #348
+void tst_PinToolOptionsViewModel::measureSectionStateAndRequests()
+{
+    PinToolOptionsViewModel vm;
+    QVERIFY(!vm.showMeasureSection());
+    vm.showForTool(static_cast<int>(ToolId::Measure));
+    QVERIFY(vm.showMeasureSection());
+    QVERIFY(vm.hasContent());
+    QVERIFY(!vm.showCropSection() && !vm.showCutOutSection() && !vm.showColorSection());
+    QCOMPARE(vm.targetLabel(), PinToolOptionsViewModel::tr("Measure"));
+    vm.showForTool(static_cast<int>(ToolId::CutOut));
+    QVERIFY(!vm.showMeasureSection());
+    vm.showForTool(static_cast<int>(ToolId::Measure));
+    vm.clearSections();
+    QVERIFY(!vm.showMeasureSection());
+
+    const QVariantList options = vm.measureModeOptions();
+    QCOMPARE(options.size(), 2);
+    QCOMPARE(options.at(0).toMap().value("value").toInt(), int(PinToolOptionsViewModel::MeasureManual));
+    QCOMPARE(options.at(1).toMap().value("value").toInt(), int(PinToolOptionsViewModel::MeasureAuto));
+    for (const QVariant& option : options) {
+        QVERIFY(!option.toMap().value("label").toString().isEmpty());
+        QVERIFY(!option.toMap().value("name").toString().isEmpty());
+    }
+
+    QSignalSpy changed(&vm, &PinToolOptionsViewModel::measureModeChanged);
+    QSignalSpy selected(&vm, &PinToolOptionsViewModel::measureModeSelected);
+    QCOMPARE(vm.measureMode(), int(PinToolOptionsViewModel::MeasureManual));
+    vm.setMeasureMode(PinToolOptionsViewModel::MeasureAuto);
+    vm.setMeasureMode(PinToolOptionsViewModel::MeasureAuto);
+    vm.setMeasureMode(7);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(vm.measureMode(), int(PinToolOptionsViewModel::MeasureAuto));
+
+    vm.handleMeasureModeSelected(PinToolOptionsViewModel::MeasureManual);
+    vm.handleMeasureModeSelected(-1);
+    QCOMPARE(selected.count(), 1);
+    QCOMPARE(selected.first().first().toInt(), int(PinToolOptionsViewModel::MeasureManual));
 }
 
 void tst_PinToolOptionsViewModel::cutOutSectionStateAndRequests()

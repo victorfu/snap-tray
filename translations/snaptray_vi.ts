@@ -1672,6 +1672,14 @@ Kích thước tệp: %3</translation>
     </message>
 </context>
 <context>
+    <name>MeasureSection</name>
+    <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
+        <source>Hover to measure. Values are image estimates.</source>
+        <translation>Di chuột để đo. Giá trị là ước tính từ hình ảnh.</translation>
+    </message>
+</context>
+<context>
     <name>MultiRegionListPanel</name>
     <message>
         <location filename="../src/qml/panels/MultiRegionListPanel.qml" line="44" />
@@ -2205,6 +2213,31 @@ Kích thước: %2</translation>
     <message>
         <source>Font</source>
         <translation>Phông chữ</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
+        <source>Manual</source>
+        <translation>Thủ công</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="283" />
+        <source>Measure by dragging a line</source>
+        <translation>Đo bằng cách kéo một đường</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="285" />
+        <source>Auto</source>
+        <translation>Tự động</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="286" />
+        <source>Estimate the spans around the pointer from the image</source>
+        <translation>Ước tính khoảng cách quanh con trỏ từ hình ảnh</translation>
+    </message>
+    <message>
+        <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="781" />
+        <source>Measure</source>
+        <translation>Đo</translation>
     </message>
 </context>
 <context>

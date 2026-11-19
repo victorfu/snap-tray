@@ -74,6 +74,7 @@ class AnnotationItem;
 class ToolManager;
 class CropToolHandler;
 class CutOutToolHandler;
+class MeasureToolHandler;
 namespace ImageStrip { struct Request; }
 class InlineTextEditor;
 class TextAnnotationEditor;
@@ -209,6 +210,7 @@ protected:
 private:
     friend class TestPinWindowCropUndo;
     friend class TestPinWindowStripCutOut;
+    friend class TestPinWindowMeasure;
     friend class TestPinWindowRemoveBackground;
     friend class TestPinMergeHelper;
     friend class TestPinWindowStyleSync;
@@ -420,6 +422,22 @@ private:
     // Crop or cut-out: tools that edit the image and own every pointer press.
     bool isImageEditToolActive() const;
     void syncCutOutDraftUi();
+    // Measure tool (#348): auto mode scans the image under the pointer.
+    MeasureToolHandler* measureToolHandler() const;
+    bool isMeasureHoverActive() const;
+    void setMeasureAutoMode(bool enabled);
+    // The image under the annotations in its own pixels, unrotated; rebuilt
+    // only when the image or its sample rect changes, never per pointer move.
+    // Annotations are not measured.
+    std::shared_ptr<const QImage> measureRaster() const;
+    // The source pixels the pin shows, starting at the column and row the
+    // display path draws first (it snaps a fractional origin at native zoom).
+    QRect measureSourcePixelRect() const;
+    // A hover position as the center of the displayed device pixel under it,
+    // in tool coordinates, so flips and rotations pick the pixel shown there.
+    QPointF measureHoverToolPosition(const QPointF& displayPos) const;
+    // Rotation and flip from source pixels to the oriented pixmap.
+    QTransform sourceOrientationTransform() const;
     // Enter, Apply and double-click for the cut-out band.
     bool commitCutOutDraft();
     bool handleCutOutDraftKey(QKeyEvent* event);
@@ -545,6 +563,10 @@ private:
 
     QPixmap m_originalPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
+    mutable std::shared_ptr<const QImage> m_measureRaster;
+    mutable qint64 m_measureRasterKey = 0;
+    mutable QRect m_measureRasterRect;
+    mutable int m_measureRasterBuildCount = 0;   // for tests: rebuilds stay rare
     bool m_mosaicSourceDirty = false;
     bool m_hasVisibleMosaicAnnotations = false;
     QPixmap m_displayPixmap;

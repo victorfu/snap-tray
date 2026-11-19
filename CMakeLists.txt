@@ -345,6 +345,7 @@ add_library(snaptray_core STATIC
     src/tools/ToolSectionConfig.cpp
     src/tools/CropDraftModel.cpp
     src/tools/StripDraftModel.cpp
+    src/tools/MeasureEdgeScanner.cpp
     src/pinwindow/ImageStripTransform.cpp
     src/pinwindow/ForegroundCutout.cpp
     src/tools/ToolWidthSlot.cpp
@@ -1152,6 +1153,7 @@ set_source_files_properties(src/qml/toolbar/TextFormattingSection.qml PROPERTIES
 set_source_files_properties(src/qml/toolbar/ShapeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ShapeSection.qml)
 set_source_files_properties(src/qml/toolbar/CropSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/CropSection.qml)
 set_source_files_properties(src/qml/toolbar/CutOutSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/CutOutSection.qml)
+set_source_files_properties(src/qml/toolbar/MeasureSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/MeasureSection.qml)
 set_source_files_properties(src/qml/toolbar/ArrowStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/ArrowStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/LineStyleSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/LineStyleSection.qml)
 set_source_files_properties(src/qml/toolbar/SizeSection.qml PROPERTIES QT_RESOURCE_ALIAS toolbar/SizeSection.qml)
@@ -1324,6 +1326,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/toolbar/ShapeSection.qml
         src/qml/toolbar/CropSection.qml
         src/qml/toolbar/CutOutSection.qml
+        src/qml/toolbar/MeasureSection.qml
         src/qml/toolbar/ArrowStyleSection.qml
         src/qml/toolbar/LineStyleSection.qml
         src/qml/toolbar/SizeSection.qml

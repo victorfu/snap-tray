@@ -5,7 +5,7 @@
 namespace {
 
 // Data-driven tool section configurations
-// Key: ToolId, Value: {color, width, text, arrowStyle, lineStyle, shape, size, autoBlur, crop, cutOut}
+// Key: ToolId, Value: {color, width, text, arrowStyle, lineStyle, shape, size, autoBlur, crop, cutOut, measure}
 const std::map<ToolId, ToolSectionConfig> kToolSectionConfigs = {
     // Pencil: color, width, line style
     {ToolId::Pencil, {true, true, false, false, true, false, false, false}},
@@ -36,6 +36,9 @@ const std::map<ToolId, ToolSectionConfig> kToolSectionConfigs = {
 
     // CutOut: remove / insert, band direction, size readout, apply / cancel
     {ToolId::CutOut, {false, false, false, false, false, false, false, false, false, true}},
+
+    // Measure: manual / auto mode (#348)
+    {ToolId::Measure, {false, false, false, false, false, false, false, false, false, false, true}},
 };
 
 } // anonymous namespace
@@ -54,5 +57,6 @@ bool ToolSectionConfig::hasAnySectionEnabled() const
 {
     return showColorSection || showWidthSection || showTextSection ||
            showArrowStyleSection || showLineStyleSection || showShapeSection ||
-           showSizeSection || showAutoBlurSection || showCropSection || showCutOutSection;
+           showSizeSection || showAutoBlurSection || showCropSection || showCutOutSection ||
+           showMeasureSection;
 }

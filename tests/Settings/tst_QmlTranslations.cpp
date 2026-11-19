@@ -417,6 +417,11 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         {"PinWindow", "The image would become too large"},
         {"PinWindow", "Reset zoom to 100% to cut out a strip"},
         {"PinToolOptionsViewModel", "Reset zoom to 100% to cut out a strip"},
+        // #348: the Measure tool's modes.
+        {"PinToolOptionsViewModel", "Measure"},
+        {"PinToolOptionsViewModel", "Measure by dragging a line"},
+        {"PinToolOptionsViewModel", "Estimate the spans around the pointer from the image"},
+        {"MeasureSection", "Hover to measure. Values are image estimates."},
         {"PinWindow", "Unable to crop this selection"},
         {"PinWindow", "Pause Live Update to crop"},
     };
@@ -440,6 +445,11 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         // "Original" is spelled the same in several languages; it only has to exist.
         QVERIFY2(!translator.translate("PinToolOptionsViewModel", "Original").isEmpty(),
                  qPrintable(qmFile));
+        // So are the Measure modes "Manual" and "Auto" (#348).
+        for (const char* source : {"Manual", "Auto"}) {
+            QVERIFY2(!translator.translate("PinToolOptionsViewModel", source).isEmpty(),
+                     qPrintable(QStringLiteral("%1: %2").arg(qmFile, QLatin1String(source))));
+        }
     }
 }
 
