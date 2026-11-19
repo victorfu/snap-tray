@@ -1747,6 +1747,11 @@ Bestandsgrootte: %3</translation>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>Houd %1 ingedrukt wanneer je begint te slepen om een rechthoek te meten.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>Beweeg de aanwijzer om te meten. Waarden zijn schattingen uit de afbeelding.</translation>

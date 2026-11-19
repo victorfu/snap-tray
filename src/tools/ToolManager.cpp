@@ -83,6 +83,7 @@ void ToolManager::handleMousePress(const QPoint& pos, Qt::KeyboardModifiers modi
 
 void ToolManager::handleMousePress(const QPointF& pos, Qt::KeyboardModifiers modifiers) {
     m_context->shiftPressed = modifiers & Qt::ShiftModifier;
+    m_context->pressModifiers = modifiers;
     if (m_context->annotationLayer) m_context->annotationLayer->snapController().setInputModifiers(modifiers);
     if (auto* h = currentHandler()) {
         m_wasDrawing = h->isDrawing();

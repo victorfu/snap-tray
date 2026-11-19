@@ -1746,6 +1746,11 @@ File size: %3</source>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>%1 キーを押した状態でドラッグを開始すると、矩形を測定できます。</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>ポインターを重ねて測定します。値は画像からの推定値です。</translation>

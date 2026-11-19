@@ -26,6 +26,7 @@ private slots:
     void leavingThePinOrManualModeHidesTheSpans();
     void hiddenToolbarOrLiveUpdateStopsHovering();
     void finishedLineKeepsItsPixelsWhenZoomed();
+    void autoDragSnapsLineAndBox();
     void flippedPinHoversThePixelItShows();
     void fractionalOriginScansTheShownColumns_data();
     void fractionalOriginScansTheShownColumns();
@@ -35,7 +36,8 @@ private:
     static QPixmap lineAtColumn(int width, int height, int column, qreal dpr);
     static void hover(PinWindow& window, const QPointF& displayPos);
     static void sendMouse(PinWindow& window, QEvent::Type type, const QPointF& displayPos,
-                          Qt::MouseButton button, Qt::MouseButtons buttons);
+                          Qt::MouseButton button, Qt::MouseButtons buttons,
+                          Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     static void selectAutoMeasure(PinWindow& window);
 };
 
@@ -76,9 +78,10 @@ QPixmap TestPinWindowMeasure::lineAtColumn(int width, int height, int column, qr
 }
 
 void TestPinWindowMeasure::sendMouse(PinWindow& window, QEvent::Type type, const QPointF& displayPos,
-                                     Qt::MouseButton button, Qt::MouseButtons buttons)
+                                     Qt::MouseButton button, Qt::MouseButtons buttons,
+                                     Qt::KeyboardModifiers modifiers)
 {
-    QMouseEvent event(type, displayPos, window.mapToGlobal(displayPos), button, buttons, Qt::NoModifier);
+    QMouseEvent event(type, displayPos, window.mapToGlobal(displayPos), button, buttons, modifiers);
     QCoreApplication::sendEvent(&window, &event);
 }
 
@@ -309,6 +312,44 @@ void TestPinWindowMeasure::finishedLineKeepsItsPixelsWhenZoomed()
     QCOMPARE(MeasureToolHandler::manualLabelLines(tool->m_completedEnd - tool->m_completedStart, 1.0)
                  .first(),
              QStringLiteral("dx: 100  dy: 0  d: 100.0 px"));
+}
+
+void TestPinWindowMeasure::autoDragSnapsLineAndBox()
+{
+    PinWindow window(elementPixmap(1.5), QPoint(0, 0), nullptr, false);
+    selectAutoMeasure(window);
+    MeasureToolHandler* tool = window.measureToolHandler();
+    QVERIFY(tool);
+
+    const auto drag = [&](QPointF start, QPointF end, Qt::KeyboardModifiers modifiers) {
+        sendMouse(window, QEvent::MouseButtonPress, tool->toTool(start), Qt::LeftButton,
+                  Qt::LeftButton, modifiers);
+        sendMouse(window, QEvent::MouseMove, tool->toTool(end), Qt::NoButton, Qt::LeftButton, modifiers);
+        sendMouse(window, QEvent::MouseButtonRelease, tool->toTool(end), Qt::LeftButton, Qt::NoButton);
+    };
+
+    drag(QPointF(57, 80), QPointF(183, 80), Qt::NoModifier);
+    QVERIFY(tool->m_hasCompletedMeasurement);
+    QCOMPARE(tool->m_completedStart, QPointF(60, 80));
+    QCOMPARE(tool->m_completedEnd, QPointF(180, 80));
+
+    // Drag in reverse and release the modifier before releasing the mouse.
+    drag(QPointF(183, 123), QPointF(57, 37), Qt::ControlModifier);
+    QVERIFY(tool->m_hasCompletedMeasurement);
+    QCOMPARE(tool->m_completedStart, QPointF(180, 120));
+    QCOMPARE(tool->m_completedEnd, QPointF(60, 40));
+    QCOMPARE(window.m_measureRasterBuildCount, 1);
+
+    // Live Update can replace the raster every frame. Leave drags unsnapped
+    // while it runs and keep the existing cache from being rebuilt.
+    window.m_isLiveMode = true;
+    window.m_livePaused = false;
+    drag(QPointF(57, 80), QPointF(183, 80), Qt::NoModifier);
+    window.m_isLiveMode = false;
+    QVERIFY(tool->m_hasCompletedMeasurement);
+    QCOMPARE(tool->m_completedStart, QPointF(57, 80));
+    QCOMPARE(tool->m_completedEnd, QPointF(183, 80));
+    QCOMPARE(window.m_measureRasterBuildCount, 1);
 }
 
 // Mirrored 300 px pin at 1x: display column 1 shows source column 298. Its

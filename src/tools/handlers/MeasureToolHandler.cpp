@@ -16,6 +16,12 @@ constexpr QChar kMiddleDot(0x00B7);
 
 // Logical values this close to a whole number are shown without decimals.
 constexpr qreal kWholeNumberTolerance = 0.05;
+// Use tool units so the pointer can approach an edge at any zoom.
+constexpr qreal kSnapRadius = 6.0;
+// Bound neighboring scan work when a large image is zoomed far out.
+constexpr int kEndpointProbesPerSide = 8;
+constexpr int kMaxBoxSideProbes = 12;
+constexpr qreal kBoxSideSupportFraction = 0.5;
 
 QString formatLogical(qreal value)
 {
@@ -38,6 +44,113 @@ void setLabelFont(QPainter& painter)
 bool hasLogicalUnits(qreal imageDpr)
 {
     return imageDpr > 0.0 && !qFuzzyCompare(imageDpr, 1.0);
+}
+
+QPointF snapLinePoint(const QImage& image, const QPointF& origin, const QPointF& radius,
+                      Qt::Orientations axes)
+{
+    std::optional<QPointF> closest;
+    qreal bestDistanceSquared = 1.0; // Distances are normalized to the snap radius.
+    const auto inspect = [&](Qt::Orientation axis, bool checkNeighbors) {
+        const bool horizontal = axis == Qt::Horizontal;
+        const qreal along = horizontal ? origin.x() : origin.y();
+        const qreal across = horizontal ? origin.y() : origin.x();
+        const qreal alongRadius = horizontal ? radius.x() : radius.y();
+        const qreal acrossRadius = horizontal ? radius.y() : radius.x();
+        const auto point = [horizontal](qreal a, qreal b) {
+            return horizontal ? QPointF(a, b) : QPointF(b, a);
+        };
+        const auto scan = [&](qreal sampleAcross, qreal snappedAcross) {
+            const qreal acrossDistance = (snappedAcross - across) / acrossRadius;
+            const qreal remaining = bestDistanceSquared - acrossDistance * acrossDistance;
+            if (remaining < 0.0) {
+                return;
+            }
+            if (const auto edge = MeasureEdgeScanner::nearbyEdge(
+                    image, point(along, sampleAcross), axis, alongRadius * std::sqrt(remaining))) {
+                const qreal alongDistance = (*edge - along) / alongRadius;
+                const qreal distanceSquared = alongDistance * alongDistance
+                    + acrossDistance * acrossDistance;
+                if (!closest || distanceSquared < bestDistanceSquared) {
+                    closest = point(*edge, snappedAcross);
+                    bestDistanceSquared = distanceSquared;
+                }
+            }
+        };
+        if (!checkNeighbors) {
+            scan(across, across);
+            return;
+        }
+
+        // The pointer can approach a corner from outside both edges. Probe
+        // neighboring pixel rows and project onto a detected edge segment.
+        const int extent = horizontal ? image.height() : image.width();
+        const int originLine = qFloor(across);
+        const int stride = qMax(1, qFloor(acrossRadius / kEndpointProbesPerSide));
+        for (const int direction : {-1, 1}) {
+            const int first = direction < 0 ? qMin(extent - 1, originLine - 1)
+                                            : qMax(0, originLine + 1);
+            for (int line = first; line >= 0 && line < extent; line += direction * stride) {
+                const qreal projection = qBound(qreal(line), across, qreal(line + 1));
+                if (qAbs(projection - across) >= acrossRadius * std::sqrt(bestDistanceSquared)) {
+                    break;
+                }
+                scan(line + 0.5, projection);
+            }
+        }
+    };
+
+    for (const auto axis : {Qt::Horizontal, Qt::Vertical}) {
+        if (axes.testFlag(axis)) {
+            inspect(axis, false);
+        }
+    }
+    // A corner on a nearby row can be closer than an edge on the pointer's
+    // own row. The probes search only within the best distance so far.
+    if (axes == (Qt::Horizontal | Qt::Vertical)) {
+        inspect(Qt::Horizontal, true);
+        inspect(Qt::Vertical, true);
+    }
+    // Use a point on one detected edge. Combining coordinates from two
+    // unrelated scanlines can put the endpoint in empty space.
+    return closest.value_or(origin);
+}
+
+qreal snapBoxSide(const QImage& image, Qt::Orientation axis, qreal position,
+                  qreal from, qreal to, const QPointF& radius)
+{
+    const bool horizontal = axis == Qt::Horizontal;
+    const qreal alongRadius = horizontal ? radius.x() : radius.y();
+    const qreal acrossRadius = horizontal ? radius.y() : radius.x();
+    const int extent = horizontal ? image.height() : image.width();
+    const int first = qMax(0, qFloor(qMin(from, to)));
+    const int last = qMin(extent - 1, qCeil(qMax(from, to)) - 1);
+    if (first > last) {
+        return position;
+    }
+    const int stride = (last - first) / kMaxBoxSideProbes + 1;
+    // Both corners can be off by the snap radius. Require agreement over a
+    // fraction of the remaining length, wherever the component lies along it.
+    const qreal minimumLength = qMax(0.0, qAbs(to - from) - 2 * acrossRadius);
+    const int minimumSupport = qMax(1, qCeil(minimumLength * kBoxSideSupportFraction / stride));
+
+    std::optional<int> best;
+    std::optional<int> previous;
+    int bestSupport = minimumSupport - 1;
+    int support = 0;
+    for (int line = first + stride / 2; line <= last; line += stride) {
+        const qreal across = line + 0.5;
+        const QPointF point = horizontal ? QPointF(position, across) : QPointF(across, position);
+        const auto edge = MeasureEdgeScanner::nearbyEdge(image, point, axis, alongRadius);
+        support = edge && edge == previous ? support + 1 : (edge ? 1 : 0);
+        previous = edge;
+        if (support > bestSupport
+            || (edge && best && support == bestSupport && qAbs(*edge - position) < qAbs(*best - position))) {
+            best = edge;
+            bestSupport = support;
+        }
+    }
+    return best ? *best : position;
 }
 
 } // namespace
@@ -77,7 +190,10 @@ void MeasureToolHandler::onMousePressF(ToolContext* ctx, const QPointF& pos)
     m_hasCompletedMeasurement = false;
     clearHover();
     m_isDrawing = true;
-    m_startPoint = toImage(pos);
+    m_isBox = m_autoMode && ctx->pressModifiers.testFlag(Qt::ControlModifier);
+    m_isEstimate = false;
+    m_rawStart = toImage(pos);
+    m_startPoint = m_rawStart;
     m_endPoint = m_startPoint;
     ctx->repaint();
 }
@@ -90,24 +206,76 @@ void MeasureToolHandler::onMouseMoveF(ToolContext* ctx, const QPointF& pos)
         }
         return;
     }
-    m_endPoint = constrainEndpoint(m_startPoint, toImage(pos), ctx->shiftPressed);
+    updateDrag(toImage(pos), ctx->shiftPressed);
     ctx->repaint();
 }
 
 void MeasureToolHandler::onMouseReleaseF(ToolContext* ctx, const QPointF& pos)
 {
     if (!m_isDrawing) return;
-    m_endPoint = constrainEndpoint(m_startPoint, toImage(pos), ctx->shiftPressed);
     m_isDrawing = false;
 
     // The minimum is on screen (tool units): a click is not a measurement.
-    const QPointF diff = toTool(m_endPoint) - toTool(m_startPoint);
+    const QPointF imageEnd = toImage(pos);
+    const QPointF rawEnd = constrainEndpoint(m_rawStart, imageEnd, !m_isBox && ctx->shiftPressed);
+    const QPointF diff = toTool(rawEnd - m_rawStart);
     if (diff.manhattanLength() > kMinMeasureDistance) {
-        m_hasCompletedMeasurement = true;
+        updateDrag(imageEnd, ctx->shiftPressed);
+        m_hasCompletedMeasurement = !m_isBox || !QRectF(m_startPoint, m_endPoint).normalized().isEmpty();
         m_completedStart = m_startPoint;
         m_completedEnd = m_endPoint;
     }
     ctx->repaint();
+}
+
+void MeasureToolHandler::updateDrag(const QPointF& imageEnd, bool shiftHeld)
+{
+    const bool constrain = !m_isBox && shiftHeld;
+    const QPointF rawEnd = constrainEndpoint(m_rawStart, imageEnd, constrain);
+    m_startPoint = m_rawStart;
+    m_endPoint = rawEnd;
+    m_isEstimate = false;
+    if (!m_autoMode || !hasImageGeometry() || !m_rasterProvider || rawEnd == m_rawStart) {
+        return;
+    }
+    const auto raster = m_rasterProvider();
+    if (!raster || raster->size() != m_pixelSize) {
+        return;
+    }
+
+    const QPointF radius = toImage(QPointF(kSnapRadius, kSnapRadius));
+    if (m_isBox) {
+        m_startPoint.setX(snapBoxSide(*raster, Qt::Horizontal, m_rawStart.x(),
+                                     m_rawStart.y(), rawEnd.y(), radius));
+        m_endPoint.setX(snapBoxSide(*raster, Qt::Horizontal, rawEnd.x(),
+                                   m_rawStart.y(), rawEnd.y(), radius));
+        m_startPoint.setY(snapBoxSide(*raster, Qt::Vertical, m_rawStart.y(),
+                                     m_rawStart.x(), rawEnd.x(), radius));
+        m_endPoint.setY(snapBoxSide(*raster, Qt::Vertical, rawEnd.y(),
+                                   m_rawStart.x(), rawEnd.x(), radius));
+        // Nearby sides can find the same edge. Keep the original extent on
+        // that axis if snapping would collapse the box or invert its sides.
+        if ((m_endPoint.x() - m_startPoint.x()) * (rawEnd.x() - m_rawStart.x()) <= 0) {
+            m_startPoint.setX(m_rawStart.x());
+            m_endPoint.setX(rawEnd.x());
+        }
+        if ((m_endPoint.y() - m_startPoint.y()) * (rawEnd.y() - m_rawStart.y()) <= 0) {
+            m_startPoint.setY(m_rawStart.y());
+            m_endPoint.setY(rawEnd.y());
+        }
+    } else {
+        Qt::Orientations axes = Qt::Horizontal | Qt::Vertical;
+        if (constrain) {
+            axes = rawEnd.y() == m_rawStart.y() ? Qt::Horizontal : Qt::Vertical;
+        }
+        m_startPoint = snapLinePoint(*raster, m_rawStart, radius, axes);
+        m_endPoint = snapLinePoint(*raster, rawEnd, radius, axes);
+        if (m_endPoint == m_startPoint) {
+            m_startPoint = m_rawStart;
+            m_endPoint = rawEnd;
+        }
+    }
+    m_isEstimate = m_startPoint != m_rawStart || m_endPoint != rawEnd;
 }
 
 QPointF MeasureToolHandler::constrainEndpoint(const QPointF& start, const QPointF& end, bool shiftHeld) const
@@ -149,6 +317,9 @@ void MeasureToolHandler::setImageGeometry(const QSize& toolSize, const QSize& pi
     // A zoom or rotation only changes the tool size: the line, kept in image
     // pixels, still measures the same pixels. Another image or crop does not.
     if (pixelSize != m_pixelSize || imageKey != m_imageKey) {
+        if (m_isEstimate) {
+            cancelDrawing();
+        }
         m_hasCompletedMeasurement = false;
     }
     m_toolSize = toolSize;
@@ -284,6 +455,28 @@ QStringList MeasureToolHandler::manualLabelLines(const QPointF& deltaPixels, qre
     return lines;
 }
 
+QStringList MeasureToolHandler::measurementLabelLines(const QPointF& deltaPixels) const
+{
+    QStringList lines;
+    if (m_isBox) {
+        const qreal width = qAbs(deltaPixels.x());
+        const qreal height = qAbs(deltaPixels.y());
+        lines.append(QStringLiteral("%1 \u00d7 %2 px").arg(qRound(width)).arg(qRound(height)));
+        if (hasLogicalUnits(m_imageDpr)) {
+            lines.append(QStringLiteral("%1 \u00d7 %2 pt").arg(formatLogical(width / m_imageDpr),
+                                                               formatLogical(height / m_imageDpr)));
+        }
+    } else {
+        lines = manualLabelLines(deltaPixels, m_imageDpr);
+    }
+    if (m_isEstimate) {
+        for (QString& line : lines) {
+            line.prepend(QString(kApproxSign) + QLatin1Char(' '));
+        }
+    }
+    return lines;
+}
+
 // ── Drawing ──
 
 void MeasureToolHandler::drawPreview(QPainter& painter) const
@@ -367,31 +560,32 @@ void MeasureToolHandler::drawMeasurementOverlay(QPainter& painter,
     const QPointF p1 = toTool(imageP1);
     const QPointF p2 = toTool(imageP2);
 
-    // Measurement line
+    // Draw the snapped geometry at the pin's current zoom.
     painter.setPen(QPen(measureColor, 2, Qt::SolidLine));
-    painter.drawLine(p1, p2);
-
-    // Endpoint circles
-    painter.setBrush(measureColor);
-    painter.setPen(Qt::NoPen);
-    painter.drawEllipse(p1, kEndpointRadius, kEndpointRadius);
-    painter.drawEllipse(p2, kEndpointRadius, kEndpointRadius);
-
-    // Dashed dx/dy guide lines (right-angle triangle)
-    painter.setPen(QPen(guideColor, 1, Qt::DashLine));
     painter.setBrush(Qt::NoBrush);
-    const QPointF corner(p2.x(), p1.y());
-    painter.drawLine(p1, corner);
-    painter.drawLine(corner, p2);
+    if (m_isBox) {
+        painter.drawRect(QRectF(p1, p2).normalized());
+    } else {
+        painter.drawLine(p1, p2);
 
-    // Distances in the image's own pixels, so zooming the pin does not change them.
-    const QStringList lines = manualLabelLines(imageP2 - imageP1, m_imageDpr);
+        painter.setBrush(measureColor);
+        painter.setPen(Qt::NoPen);
+        painter.drawEllipse(p1, kEndpointRadius, kEndpointRadius);
+        painter.drawEllipse(p2, kEndpointRadius, kEndpointRadius);
 
-    // Label position: below midpoint of measurement line
-    const QPoint midpoint = ((p1 + p2) / 2).toPoint();
+        // Dashed dx/dy guide lines (right-angle triangle).
+        painter.setPen(QPen(guideColor, 1, Qt::DashLine));
+        const QPointF corner(p2.x(), p1.y());
+        painter.drawLine(p1, corner);
+        painter.drawLine(corner, p2);
+    }
+
+    const QStringList lines = measurementLabelLines(imageP2 - imageP1);
+    const QPointF midpoint = (p1 + p2) / 2;
+    const qreal labelY = m_isBox ? qMax(p1.y(), p2.y()) : midpoint.y();
     const QFontMetrics fm(painter.font());
     const QRect rect = keepInsideImage(
-        labelRect(fm, lines, QPoint(midpoint.x(), midpoint.y() + kLabelOffsetY - fm.ascent())));
+        labelRect(fm, lines, QPoint(qRound(midpoint.x()), qRound(labelY) + kLabelOffsetY - fm.ascent())));
     paintLabel(painter, lines, rect);
 
     painter.restore();

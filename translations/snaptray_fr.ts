@@ -1747,6 +1747,11 @@ Taille du fichier : %3</translation>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>Maintenez %1 enfoncé au début du glissement pour mesurer un rectangle.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>Survolez pour mesurer. Les valeurs sont des estimations d'après l'image.</translation>

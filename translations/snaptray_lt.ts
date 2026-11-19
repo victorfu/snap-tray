@@ -1748,6 +1748,11 @@ Failo dydis: %3</translation>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>Norėdami išmatuoti stačiakampį, pradėkite vilkti laikydami nuspaudę %1.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>Užveskite žymeklį, kad išmatuotumėte. Reikšmės yra vaizdo įverčiai.</translation>

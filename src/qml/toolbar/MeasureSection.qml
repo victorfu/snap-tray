@@ -12,6 +12,8 @@ Item {
     property var viewModel: null
     readonly property bool hasViewModel: root.viewModel !== null && root.viewModel !== undefined
     readonly property bool autoMode: root.hasViewModel && root.viewModel.measureAutoMode
+    signal tooltipRequested(string controlName, string text)
+    signal tooltipDismissed(string controlName)
 
     readonly property int sectionPadding: 3
     readonly property int buttonHeight: 22
@@ -92,12 +94,25 @@ Item {
             Text {
                 id: hintLabel
                 objectName: "measureHintLabel"
+                readonly property string boxShortcutTip: root.hasViewModel
+                    ? qsTr("Hold %1 when you start dragging to measure a box.").arg(root.viewModel.measureBoxModifierText)
+                    : ""
                 anchors.centerIn: parent
                 text: qsTr("Hover to measure. Values are image estimates.")
                 font.pixelSize: root.labelPixelSize
                 color: ComponentTokens.toolbarIcon
                 Accessible.role: Accessible.StaticText
                 Accessible.name: text
+                Accessible.description: boxShortcutTip
+
+                HoverHandler {
+                    onHoveredChanged: {
+                        if (hovered)
+                            root.tooltipRequested(hintLabel.objectName, hintLabel.boxShortcutTip)
+                        else
+                            root.tooltipDismissed(hintLabel.objectName)
+                    }
+                }
             }
         }
     }

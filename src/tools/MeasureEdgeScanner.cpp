@@ -1,6 +1,7 @@
 #include "tools/MeasureEdgeScanner.h"
 
 #include <QtGlobal>
+#include <QtMath>
 
 #include <algorithm>
 #include <array>
@@ -241,16 +242,43 @@ private:
         }
         if (best >= 0 && bestStrength > m_threshold) {
             // Neighbors of a blurred ramp are nearly as large as its middle.
-            const int before = best > 0 ? steps[best - 1].size : 0;
+            // A ramp can already be moving when it crosses the threshold, so
+            // the first step is compared with the same-direction step before it.
+            const int preceding = precedingStep(start, direction, channel);
+            const int before = best > 0 ? steps[best - 1].size : preceding;
             const int afterIndex = best + bestWidth;
             const int after = afterIndex < static_cast<int>(steps.size()) ? steps[afterIndex].size : 0;
-            if (bestStrength >= kSharpnessRatio * std::max(before, after) * bestWidth) {
+            if (bestStrength > kSharpnessRatio * std::max(before, after) * bestWidth) {
                 return {placeEdge(steps[best].index, bestWidth == 2, channel), end};
+            }
+            // Starting on an anti-aliased pixel, the preceding step is the
+            // other half of the same edge: judge both steps together.
+            const int pairStrength = preceding + steps[0].size;
+            const int pairBefore = precedingStep(start - 1, direction, channel);
+            const int pairAfter = steps.size() > 1 ? steps[1].size : 0;
+            if (best == 0 && preceding > 0
+                && pairStrength > 2 * kSharpnessRatio * std::max(pairBefore, pairAfter)) {
+                const int edge = placeEdge(start - 1, true, channel);
+                // An edge behind the origin belongs to the opposite direction.
+                if (edge > 0) {
+                    return {edge, end};
+                }
             }
         }
         // A soft ramp. Scanning resumes where it ended, so a sharp step back
         // there (a card at the end of its shadow) is found as the next edge.
         return {std::nullopt, end};
+    }
+
+    // Size of the step into pixel @p index - 1 when it moves in @p direction,
+    // otherwise 0. The pixels can lie behind the origin while in the image.
+    int precedingStep(int index, int direction, int channel) const
+    {
+        if (!m_image.rect().contains(m_origin + (index - 2) * m_step)) {
+            return 0;
+        }
+        return std::max(0, direction * (channelValue(index - 1, channel)
+                                        - channelValue(index - 2, channel)));
     }
 
     // First pixel past the edge. With an anti-aliased pair, the partial pixel
@@ -314,7 +342,10 @@ double noiseLevel(const QImage& image, const QPoint& origin, Qt::Orientation ori
     return trimmedMean(samples);
 }
 
-std::optional<Span> scan(const QImage& image, const QPoint& origin, Qt::Orientation orientation)
+namespace {
+
+std::optional<Span> scanLine(const QImage& image, const QPoint& origin, Qt::Orientation orientation,
+                             int searchExtent)
 {
     if (image.isNull() || !isSupportedFormat(image.format())) {
         return std::nullopt;
@@ -335,15 +366,63 @@ std::optional<Span> scan(const QImage& image, const QPoint& origin, Qt::Orientat
 
     Span span;
     const std::optional<int> back =
-        LineScanner(image, start, -forward, position + 1, threshold, noisy).edgeIndex();
+        LineScanner(image, start, -forward, std::min(position + 1, searchExtent),
+                    threshold, noisy).edgeIndex();
     span.firstIsEdge = back.has_value();
     span.first = back ? position - (*back - 1) : 0;
 
     const std::optional<int> ahead =
-        LineScanner(image, start, forward, extent - position, threshold, noisy).edgeIndex();
+        LineScanner(image, start, forward, std::min(extent - position, searchExtent),
+                    threshold, noisy).edgeIndex();
     span.lastIsEdge = ahead.has_value();
     span.last = ahead ? position + (*ahead - 1) : extent - 1;
     return span;
+}
+
+} // namespace
+
+std::optional<Span> scan(const QImage& image, const QPoint& origin, Qt::Orientation orientation)
+{
+    return scanLine(image, origin, orientation, std::max(image.width(), image.height()));
+}
+
+std::optional<int> nearbyEdge(const QImage& image, const QPointF& origin,
+                              Qt::Orientation orientation, qreal radius)
+{
+    const bool horizontal = orientation == Qt::Horizontal;
+    const qreal position = horizontal ? origin.x() : origin.y();
+    const qreal across = horizontal ? origin.y() : origin.x();
+    const int extent = horizontal ? image.width() : image.height();
+    const int acrossExtent = horizontal ? image.height() : image.width();
+    if (extent == 0 || !qIsFinite(radius) ||
+        !(radius > 0 && position >= -radius && position <= extent + radius
+          && across >= 0 && across < acrossExtent)) {
+        return std::nullopt;
+    }
+    // An active drag can go outside the pin. Start in the visible raster but
+    // still measure the snap distance from the pointer's actual position.
+    const int alongPixel = qFloor(qBound(0.0, position, qreal(extent - 1)));
+    const int acrossPixel = qFloor(across);
+    const QPoint pixel = horizontal ? QPoint(alongPixel, acrossPixel) : QPoint(acrossPixel, alongPixel);
+    // Keep enough lookahead to distinguish a soft ramp from a sharp edge.
+    const int searchExtent = static_cast<int>(std::min<qreal>(
+        extent, std::ceil(radius) + kMaxTransitionLength + 1));
+    const auto span = scanLine(image, pixel, orientation, searchExtent);
+    if (!span) {
+        return std::nullopt;
+    }
+
+    const qreal before = qAbs(position - span->first);
+    const qreal after = qAbs(span->last + 1 - position);
+    const bool canSnapBefore = span->firstIsEdge && before <= radius;
+    const bool canSnapAfter = span->lastIsEdge && after <= radius;
+    if (canSnapBefore && (!canSnapAfter || before < after)) {
+        return span->first;
+    }
+    if (canSnapAfter && (!canSnapBefore || after < before)) {
+        return span->last + 1;
+    }
+    return std::nullopt;
 }
 
 } // namespace MeasureEdgeScanner

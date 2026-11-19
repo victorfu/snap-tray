@@ -1748,6 +1748,11 @@ Velikost souboru: %3</translation>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>Chcete-li změřit obdélník, podržte %1 při zahájení tažení.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>Měřte najetím ukazatele. Hodnoty jsou odhady z obrázku.</translation>
