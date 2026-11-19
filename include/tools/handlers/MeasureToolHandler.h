@@ -22,8 +22,8 @@ class TestPinWindowMeasure;
  *
  * Manual: drag a line; Shift keeps it horizontal or vertical. Auto: hovering
  * also shows the horizontal and vertical spans the image edges give around
- * the pointer (MeasureEdgeScanner), marked as estimates. Dragging keeps working
- * as in manual mode, and nothing is shown for an axis without a found edge.
+ * the pointer. Dragging can snap line endpoints or (with Control) box sides
+ * to image edges. Measurements derived from those edges are marked as estimates.
  *
  * Pointer input arrives in host tool coordinates. setImageGeometry() maps
  * them to the image's own pixels so values do not change with the pin's zoom,
@@ -32,8 +32,8 @@ class TestPinWindowMeasure;
 class MeasureToolHandler : public IToolHandler {
 public:
     // Returns the image under the tool in its own pixels (Format_ARGB32 or
-    // Format_RGB32), the size given to setImageGeometry(). Called on hover;
-    // the host keeps it cached so moves never rebuild pixels.
+    // Format_RGB32), the size given to setImageGeometry(). The host keeps it
+    // cached for hover and drag sampling.
     using RasterProvider = std::function<std::shared_ptr<const QImage>()>;
 
     MeasureToolHandler() = default;
@@ -87,6 +87,8 @@ private:
     friend class TestPinWindowMeasure;
 
     QPointF constrainEndpoint(const QPointF& start, const QPointF& end, bool shiftHeld) const;
+    void updateDrag(const QPointF& imageEnd, bool shiftHeld);
+    QStringList measurementLabelLines(const QPointF& deltaPixels) const;
     // p1 and p2 are in image pixels.
     void drawMeasurementOverlay(QPainter& painter, const QPointF& p1, const QPointF& p2) const;
     void drawHoverOverlay(QPainter& painter) const;
@@ -112,8 +114,11 @@ private:
     // Endpoints are kept in image pixels: zooming the pin moves the line with
     // the image instead of changing what it measures.
     bool m_isDrawing = false;
+    QPointF m_rawStart;
     QPointF m_startPoint;
     QPointF m_endPoint;
+    bool m_isBox = false;
+    bool m_isEstimate = false;
 
     bool m_hasCompletedMeasurement = false;
     QPointF m_completedStart;

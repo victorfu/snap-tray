@@ -1674,6 +1674,11 @@ Kích thước tệp: %3</translation>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>Giữ %1 khi bắt đầu kéo để đo kích thước hình chữ nhật.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>Di chuột để đo. Giá trị là ước tính từ hình ảnh.</translation>

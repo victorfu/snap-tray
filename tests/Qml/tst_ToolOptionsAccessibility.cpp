@@ -569,6 +569,11 @@ void tst_ToolOptionsAccessibility::measureModeIsNamedAndExplainsAutoValues()
     QTRY_VERIFY(automatic->state().checked);
     QVERIFY(!manual->state().checked);
     QTRY_VERIFY(hint->isVisible());
+    const auto* hintAccessible = QAccessible::queryAccessibleInterface(hint);
+    QVERIFY(hintAccessible);
+    QVERIFY(!vm.measureBoxModifierText().isEmpty());
+    QCOMPARE(hintAccessible->text(QAccessible::Description),
+             QStringLiteral("Hold %1 when you start dragging to measure a box.").arg(vm.measureBoxModifierText()));
     QVERIFY(root->width() >= section->width());
 
     vm.showForTool(static_cast<int>(ToolId::Pencil));

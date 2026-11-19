@@ -50,6 +50,11 @@ struct Span {
 /// the image. Returns nothing for an empty or unsupported image.
 std::optional<Span> scan(const QImage& image, const QPoint& origin, Qt::Orientation orientation);
 
+/// Closest detected pixel boundary within @p radius of @p origin along the axis.
+/// Pixel boundaries are half-open (the right edge of pixel x is at x + 1).
+std::optional<int> nearbyEdge(const QImage& image, const QPointF& origin,
+                              Qt::Orientation orientation, qreal radius);
+
 /// Trimmed mean of the largest-channel difference between pixels next to each
 /// other along @p orientation around @p origin: 0 on flat UI, a few levels on
 /// noisy content.

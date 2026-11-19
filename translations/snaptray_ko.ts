@@ -1674,6 +1674,11 @@ File size: %3</source>
 <context>
     <name>MeasureSection</name>
     <message>
+        <location filename="../src/qml/toolbar/MeasureSection.qml" line="98" />
+        <source>Hold %1 when you start dragging to measure a box.</source>
+        <translation>%1 키를 누른 채 드래그를 시작하면 사각형의 크기를 측정할 수 있습니다.</translation>
+    </message>
+    <message>
         <location filename="../src/qml/toolbar/MeasureSection.qml" line="97" />
         <source>Hover to measure. Values are image estimates.</source>
         <translation>포인터를 올려 측정합니다. 값은 이미지 기반 추정치입니다.</translation>

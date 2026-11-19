@@ -52,6 +52,7 @@ class PinToolOptionsViewModel : public QObject
     // Measure section (#348): manual line or image-based auto spans.
     Q_PROPERTY(bool showMeasureSection READ showMeasureSection NOTIFY sectionVisibilityChanged)
     Q_PROPERTY(QVariantList measureModeOptions READ measureModeOptions CONSTANT)
+    Q_PROPERTY(QString measureBoxModifierText READ measureBoxModifierText CONSTANT)
     Q_PROPERTY(int measureMode READ measureMode NOTIFY measureModeChanged)
     Q_PROPERTY(bool measureAutoMode READ measureAutoMode NOTIFY measureModeChanged)
 
@@ -167,6 +168,7 @@ public:
     QVariantList measureModeOptions() const;
     int measureMode() const { return m_measureMode; }
     bool measureAutoMode() const { return m_measureMode == MeasureAuto; }
+    QString measureBoxModifierText() const;
     void setMeasureMode(int mode);
 
     // Crop draft state, pushed by the host that owns the crop tool.

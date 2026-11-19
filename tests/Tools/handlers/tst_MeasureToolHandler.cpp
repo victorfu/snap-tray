@@ -29,7 +29,15 @@ private slots:
     void autoHoverMeasuresTheElementInImagePixels();
     void autoHoverShowsNothingWithoutReliableEdges();
     void autoHoverReusesTheImageAndRescansOnlyOnNewPixels();
-    void autoDragStillMeasuresManuallyWithShiftAndEscape();
+    void autoDragKeepsShiftAndEscape();
+    void lineSnapsToACornerFromOutside();
+    void lineDoesNotCombineUnrelatedEdges();
+    void autoDragWithoutEdgesKeepsPointerPositions_data();
+    void autoDragWithoutEdgesKeepsPointerPositions();
+    void manualDragIgnoresImageEdgesAndBoxModifier();
+    void boxSnapsEachSideIndependently();
+    void boxSnapsToSmallElement_data();
+    void boxSnapsToSmallElement();
     void geometryChangeOrLeavingClearsTheHover();
     void hoverOverlayPaints();
     void fractionalPointerReachesEveryImagePixel();
@@ -298,7 +306,7 @@ void TestMeasureToolHandler::autoHoverReusesTheImageAndRescansOnlyOnNewPixels()
     QCOMPARE(host.raster.use_count(), 2);   // the host and the handler, no copies
 }
 
-void TestMeasureToolHandler::autoDragStillMeasuresManuallyWithShiftAndEscape()
+void TestMeasureToolHandler::autoDragKeepsShiftAndEscape()
 {
     MeasureToolHandler handler;
     Host host;
@@ -310,18 +318,21 @@ void TestMeasureToolHandler::autoDragStillMeasuresManuallyWithShiftAndEscape()
     QVERIFY(handler.hasHoverMeasurement());
 
     host.context.shiftPressed = true;
-    handler.onMousePress(&host.context, QPoint(10, 10));
+    handler.onMousePress(&host.context, QPoint(37, 40));
     QVERIFY(handler.isDrawing());
     QVERIFY(!handler.hasHoverMeasurement());
-    handler.onMouseMove(&host.context, QPoint(60, 20));
-    QCOMPARE(handler.m_endPoint, QPointF(60, 10));
+    handler.onMouseMove(&host.context, QPoint(123, 53));
+    QCOMPARE(handler.m_startPoint, QPointF(40, 40));
+    QCOMPARE(handler.m_endPoint, QPointF(120, 40));
     QVERIFY(handler.handleEscape(&host.context));   // cancels the drag
     QVERIFY(!handler.isDrawing());
 
-    handler.onMousePress(&host.context, QPoint(10, 10));
-    handler.onMouseRelease(&host.context, QPoint(60, 20));
+    handler.onMousePress(&host.context, QPoint(37, 40));
+    handler.onMouseRelease(&host.context, QPoint(123, 53));
     QVERIFY(handler.m_hasCompletedMeasurement);
-    QCOMPARE(handler.m_completedEnd, QPointF(60, 10));
+    QCOMPARE(handler.m_completedEnd, QPointF(120, 40));
+    QCOMPARE(handler.measurementLabelLines(handler.m_completedEnd - handler.m_completedStart),
+             QStringList{QStringLiteral("\u2248 dx: 80  dy: 0  d: 80.0 px")});
 
     // Hovering again shows spans next to the finished line.
     host.context.shiftPressed = false;
@@ -331,6 +342,183 @@ void TestMeasureToolHandler::autoDragStillMeasuresManuallyWithShiftAndEscape()
     QVERIFY(!handler.m_hasCompletedMeasurement);
     // Hover spans never swallow Escape: it goes on to the host.
     QVERIFY(!handler.handleEscape(&host.context));
+}
+
+void TestMeasureToolHandler::lineSnapsToACornerFromOutside()
+{
+    Host host;
+    host.raster = std::make_shared<const QImage>(elementImage());
+    MeasureToolHandler handler;
+    handler.setAutoMode(true);
+    handler.setImageGeometry(host.raster->size(), host.raster->size(), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    handler.onMousePressF(&host.context, QPointF(37, 17));
+    handler.onMouseReleaseF(&host.context, QPointF(123, 63));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(40, 20));
+    QCOMPARE(handler.m_completedEnd, QPointF(120, 60));
+}
+
+void TestMeasureToolHandler::lineDoesNotCombineUnrelatedEdges()
+{
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    {
+        QPainter painter(&image);
+        painter.fillRect(QRect(44, 49, 2, 6), Qt::black);
+        painter.fillRect(QRect(49, 44, 6, 2), Qt::black);
+    }
+    Host host;
+    host.raster = std::make_shared<const QImage>(image);
+    MeasureToolHandler handler;
+    handler.setAutoMode(true);
+    handler.setImageGeometry(image.size(), image.size(), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    handler.onMousePressF(&host.context, QPointF(10, 30));
+    handler.onMouseReleaseF(&host.context, QPointF(50.5, 50.5));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QVERIFY(handler.m_completedEnd == QPointF(46, 50.5)
+            || handler.m_completedEnd == QPointF(50.5, 46));
+}
+
+void TestMeasureToolHandler::autoDragWithoutEdgesKeepsPointerPositions_data()
+{
+    QTest::addColumn<bool>("gradient");
+    QTest::addColumn<bool>("box");
+    QTest::newRow("blank-line") << false << false;
+    QTest::newRow("blank-box") << false << true;
+    QTest::newRow("gradient-line") << true << false;
+    QTest::newRow("gradient-box") << true << true;
+}
+
+void TestMeasureToolHandler::autoDragWithoutEdgesKeepsPointerPositions()
+{
+    QFETCH(bool, gradient);
+    QFETCH(bool, box);
+    QImage image(64, 64, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    if (gradient) {
+        for (int y = 0; y < image.height(); ++y) {
+            for (int x = 0; x < image.width(); ++x) {
+                image.setPixel(x, y, qRgb(4 * x, 4 * x, 4 * x));
+            }
+        }
+    }
+    Host host;
+    host.raster = std::make_shared<const QImage>(image);
+    host.context.pressModifiers = box ? Qt::ControlModifier : Qt::NoModifier;
+    MeasureToolHandler handler;
+    handler.setImageGeometry(image.size(), image.size(), 1.0);
+    handler.setRasterProvider(host.provider());
+    handler.setAutoMode(true);
+
+    const QPointF start(4.25, 8.5);
+    const QPointF end(60.5, 52.75);
+    handler.onMousePressF(&host.context, start);
+    handler.onMouseReleaseF(&host.context, end);
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_isBox, box);
+    QCOMPARE(handler.m_completedStart, start);
+    QCOMPARE(handler.m_completedEnd, end);
+    QVERIFY(!handler.measurementLabelLines(end - start).first().startsWith(QChar(0x2248)));
+}
+
+void TestMeasureToolHandler::manualDragIgnoresImageEdgesAndBoxModifier()
+{
+    Host host;
+    host.raster = std::make_shared<const QImage>(elementImage());
+    host.context.pressModifiers = Qt::ControlModifier;
+    MeasureToolHandler handler;
+    handler.setImageGeometry(host.raster->size(), host.raster->size(), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    handler.onMousePress(&host.context, QPoint(37, 40));
+    handler.onMouseRelease(&host.context, QPoint(123, 45));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(37, 40));
+    QCOMPARE(handler.m_completedEnd, QPointF(123, 45));
+    QVERIFY(!handler.m_isBox);
+    QCOMPARE(host.rasterCalls, 0);
+}
+
+void TestMeasureToolHandler::boxSnapsEachSideIndependently()
+{
+    Host host;
+    host.raster = std::make_shared<const QImage>(elementImage());
+    host.context.pressModifiers = Qt::ControlModifier;
+    MeasureToolHandler handler;
+    handler.setImageGeometry(host.raster->size(), host.raster->size(), 2.0);
+    handler.setRasterProvider(host.provider());
+    handler.setAutoMode(true);
+
+    // Three sides are near edges; keep the right side where it was dragged.
+    handler.onMousePress(&host.context, QPoint(37, 17));
+    handler.onMouseMove(&host.context, QPoint(105, 63));
+    QCOMPARE(handler.m_startPoint, QPointF(40, 20));
+    QCOMPARE(handler.m_endPoint, QPointF(105, 60));
+    QVERIFY(handler.handleEscape(&host.context));
+    handler.onMouseRelease(&host.context, QPoint(105, 63));
+    QVERIFY(!handler.m_hasCompletedMeasurement);
+
+    handler.onMousePress(&host.context, QPoint(37, 17));
+    handler.onMouseRelease(&host.context, QPoint(105, 63));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.measurementLabelLines(handler.m_completedEnd - handler.m_completedStart),
+             (QStringList{QStringLiteral("\u2248 65 \u00d7 40 px"),
+                          QStringLiteral("\u2248 32.5 \u00d7 20 pt")}));
+
+    QImage overlay(host.raster->size(), QImage::Format_ARGB32);
+    overlay.fill(Qt::transparent);
+    {
+        QPainter painter(&overlay);
+        handler.drawPreview(painter);
+    }
+    QVERIFY(qAlpha(overlay.pixel(40, 40)) > 0);
+    QVERIFY(qAlpha(overlay.pixel(80, 20)) > 0);
+    QCOMPARE(qAlpha(overlay.pixel(80, 40)), 0);
+
+    // Both vertical sides find the same image edge. Keep the original width.
+    handler.onMousePress(&host.context, QPoint(37, 30));
+    handler.onMouseRelease(&host.context, QPoint(43, 50));
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(37, 30));
+    QCOMPARE(handler.m_completedEnd, QPointF(43, 50));
+    QVERIFY(!handler.m_isEstimate);
+}
+
+void TestMeasureToolHandler::boxSnapsToSmallElement_data()
+{
+    QTest::addColumn<QPointF>("start");
+    QTest::addColumn<QPointF>("end");
+    QTest::newRow("centered") << QPointF(35, 15) << QPointF(49, 29);
+    QTest::newRow("off-center") << QPointF(34.2, 14.2) << QPointF(44.4, 24.4);
+}
+
+void TestMeasureToolHandler::boxSnapsToSmallElement()
+{
+    QFETCH(QPointF, start);
+    QFETCH(QPointF, end);
+    QImage image(100, 100, QImage::Format_ARGB32);
+    image.fill(Qt::white);
+    {
+        QPainter painter(&image);
+        painter.fillRect(QRect(40, 20, 4, 4), Qt::black);
+    }
+    Host host;
+    host.raster = std::make_shared<const QImage>(image);
+    host.context.pressModifiers = Qt::ControlModifier;
+    MeasureToolHandler handler;
+    handler.setAutoMode(true);
+    handler.setImageGeometry(image.size(), image.size(), 1.0);
+    handler.setRasterProvider(host.provider());
+
+    handler.onMousePressF(&host.context, start);
+    handler.onMouseReleaseF(&host.context, end);
+    QVERIFY(handler.m_hasCompletedMeasurement);
+    QCOMPARE(handler.m_completedStart, QPointF(40, 20));
+    QCOMPARE(handler.m_completedEnd, QPointF(44, 24));
 }
 
 void TestMeasureToolHandler::geometryChangeOrLeavingClearsTheHover()

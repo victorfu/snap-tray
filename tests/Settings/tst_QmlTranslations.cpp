@@ -422,6 +422,7 @@ void tst_QmlTranslations::testCropDraftControlsTranslatedForAllLocales()
         {"PinToolOptionsViewModel", "Measure by dragging a line"},
         {"PinToolOptionsViewModel", "Estimate the spans around the pointer from the image"},
         {"MeasureSection", "Hover to measure. Values are image estimates."},
+        {"MeasureSection", "Hold %1 when you start dragging to measure a box."},
         {"PinWindow", "Unable to crop this selection"},
         {"PinWindow", "Pause Live Update to crop"},
     };

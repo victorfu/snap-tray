@@ -137,9 +137,11 @@ Applying is one undo step that restores the image, its size, the annotations and
 **Measure** on the annotation toolbar has two modes in the options strip:
 
 - **Manual** (the default): drag a line to see `dx`, `dy` and its length. Hold `Shift` to keep it horizontal or vertical; `Esc` cancels the drag or clears the line.
-- **Auto**: hover over the image to see the horizontal and vertical span around the pointer, for example the width and height of a button or the gap between two elements. Edges come from the pixels of the image under your annotations: slow gradients, soft shadows and noise are not taken as edges. A span needs a clear edge on both sides; one that would run to the border of the image, or an axis with no clear edge, shows nothing rather than a guess. Dragging still measures a line as in Manual mode. The mode you choose is remembered. During Live Update, pause it to measure by hovering.
+- **Auto**: hover over the image to see the horizontal and vertical span around the pointer, for example the width and height of a button or the gap between two elements. Edges come from the pixels of the image under your annotations. A hover span needs a clear edge on both sides. The mode you choose is remembered. Pause Live Update to use edge detection.
 
-Values are pixels of the image itself, not of the zoomed pin. Images from a high-DPI display also show logical units (`pt`), for example `80 px · 40 pt` at 2x. Auto values are marked with `≈`: they are estimates from the screenshot, not sizes from the app's layout or a design file.
+In Auto mode, drag a line to snap its endpoints to nearby edges. Hold `Ctrl` (`⌘` on macOS) when you start dragging to measure a box with independently snapping sides. Where no clear edge is nearby, the measurement uses your drag position. `Shift` constrains lines to one axis and `Esc` cancels or clears the measurement.
+
+Values use the underlying image's pixels at any zoom. Images from a high-DPI display also show logical units (`pt`), for example `80 px · 40 pt` at 2x. Hovered spans and measurements adjusted by snapping show `≈` to identify estimates from the screenshot.
 
 ### Remove the background (macOS)
 

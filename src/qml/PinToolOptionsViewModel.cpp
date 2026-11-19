@@ -14,6 +14,7 @@
 #include "settings/AnnotationSettingsManager.h"
 
 #include <QCoreApplication>
+#include <QKeySequence>
 #include <QLocale>
 
 #include <algorithm>
@@ -287,6 +288,11 @@ QVariantList PinToolOptionsViewModel::measureModeOptions() const
                     {"label", tr("Auto")},
                     {"name", tr("Estimate the spans around the pointer from the image")}},
     };
+}
+
+QString PinToolOptionsViewModel::measureBoxModifierText() const
+{
+    return QKeySequence(Qt::Key_Control).toString(QKeySequence::NativeText);
 }
 
 void PinToolOptionsViewModel::setMeasureMode(int mode)

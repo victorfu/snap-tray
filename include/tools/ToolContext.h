@@ -63,6 +63,7 @@ public:
 
     // Keyboard modifier state for constrained drawing
     bool shiftPressed = false;
+    Qt::KeyboardModifiers pressModifiers = Qt::NoModifier;
 
     // Text tool shared dependencies
     InlineTextEditor* inlineTextEditor = nullptr;

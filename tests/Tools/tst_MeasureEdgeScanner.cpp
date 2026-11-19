@@ -27,6 +27,9 @@ private slots:
     void noisyBackground();
     void hairline();
     void blankImageIsNotReliable();
+    void nearbyEdgesUsePixelBoundaries();
+    void nearbyEdgeRejectsEasedGradient_data();
+    void nearbyEdgeRejectsEasedGradient();
     void transparentStripIsAnEdge();
     void originOutsideIsClampedAndOtherFormatsRefused();
     void largeImageHoverIsFast();
@@ -224,6 +227,50 @@ void TestMeasureEdgeScanner::blankImageIsNotReliable()
     verifySpan(vertical, 0, 79, false, false);
     QVERIFY(!horizontal.isReliable());
     QVERIFY(!vertical.isReliable());
+}
+
+void TestMeasureEdgeScanner::nearbyEdgesUsePixelBoundaries()
+{
+    QImage image = filled(100, 80, Qt::white);
+    fillRect(image, QRect(40, 20, 10, 40), Qt::black);
+    const auto edgeAt = [&](qreal x, qreal radius) {
+        return MeasureEdgeScanner::nearbyEdge(image, QPointF(x, 40), Qt::Horizontal, radius);
+    };
+
+    QCOMPARE(edgeAt(38.5, 2), std::optional<int>(40));
+    QCOMPARE(edgeAt(41.5, 2), std::optional<int>(40));
+    QCOMPARE(edgeAt(49.5, 1), std::optional<int>(50));
+    QCOMPARE(edgeAt(50.5, 1), std::optional<int>(50));
+    QVERIFY(!edgeAt(38.5, 1));
+    QVERIFY(!edgeAt(45, 6));  // Equally close to both edges.
+    QVERIFY(!edgeAt(0.5, 2)); // The image border supplies no edge.
+    fillRect(image, QRect(2, 0, 8, image.height()), Qt::black);
+    QCOMPARE(edgeAt(-1, 3), std::optional<int>(2));
+    QVERIFY(!edgeAt(-1, 2));
+}
+
+void TestMeasureEdgeScanner::nearbyEdgeRejectsEasedGradient_data()
+{
+    QTest::addColumn<int>("firstColumn");
+    QTest::addColumn<QList<int>>("levels");
+    QTest::addColumn<qreal>("startX");
+    QTest::newRow("ease-in") << 10 << QList<int>{0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 5, 6, 8, 10, 13, 16}
+                             << qreal(20);
+    QTest::newRow("ease-in-out") << 7 << QList<int>{1, 2, 5, 8, 9, 10} << qreal(4.1);
+    QTest::newRow("starts-within-ramp") << 5 << QList<int>{0, 0, 0, 1, 1, 3, 5, 7, 11} << qreal(12.1);
+}
+
+void TestMeasureEdgeScanner::nearbyEdgeRejectsEasedGradient()
+{
+    QFETCH(int, firstColumn);
+    QFETCH(QList<int>, levels);
+    QFETCH(qreal, startX);
+    QImage image = filled(36, 40, Qt::black);
+    for (int x = firstColumn; x < image.width(); ++x) {
+        const int i = qMin(x - firstColumn, static_cast<int>(levels.size()) - 1);
+        fillRect(image, QRect(x, 0, 1, image.height()), gray(levels.at(i)));
+    }
+    QVERIFY(!MeasureEdgeScanner::nearbyEdge(image, QPointF(startX, 20.5), Qt::Horizontal, 6));
 }
 
 // A cut-out insert leaves transparent pixels: alpha alone makes an edge.

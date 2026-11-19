@@ -5137,7 +5137,7 @@ bool PinWindow::isMeasureHoverActive() const
         return false;
     }
     // Every live frame is a new image: rescanning it per move would copy the
-    // whole frame each time. Manual measuring still works; pause to hover.
+    // whole frame each time. Manual measuring still works.
     if (m_isLiveMode && !m_livePaused) {
         return false;
     }
@@ -5160,7 +5160,7 @@ void PinWindow::setMeasureAutoMode(bool enabled)
 
 std::shared_ptr<const QImage> PinWindow::measureRaster() const
 {
-    if (m_originalPixmap.isNull()) {
+    if ((m_isLiveMode && !m_livePaused) || m_originalPixmap.isNull()) {
         return nullptr;
     }
     const QRect rect = measureSourcePixelRect();

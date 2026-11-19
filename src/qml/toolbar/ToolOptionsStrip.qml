@@ -334,6 +334,8 @@ Item {
             visible: root.hasViewModel && root.viewModel.showMeasureSection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
+            onTooltipRequested: (name, text) => root.controlTooltipRequested(name, text)
+            onTooltipDismissed: name => root.controlTooltipDismissed(name)
         }
 
         // Drawing order of the selected annotation (#268).
