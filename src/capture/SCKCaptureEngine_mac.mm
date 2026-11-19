@@ -1,4 +1,5 @@
 #include "capture/SCKCaptureEngine.h"
+#include "capture/CaptureDisplayResolver.h"
 #include "capture/FrameRateUpdateState.h"
 
 #import <Foundation/Foundation.h>
@@ -7,6 +8,7 @@
 #import <CoreMedia/CoreMedia.h>
 #import <CoreVideo/CoreVideo.h>
 
+#include <QCoreApplication>
 #include <QScreen>
 #include <QGuiApplication>
 #include <QDebug>
@@ -46,6 +48,24 @@ static void releasePixelBuffer(void *info)
     CFRelease(imageBuffer);
 }
 #endif
+
+static QString displayResolutionError(SnapTray::CaptureDisplayResolution resolution)
+{
+    switch (resolution) {
+    case SnapTray::CaptureDisplayResolution::IdentityUnknown:
+        return QCoreApplication::translate("SCKCaptureEngine",
+            "Could not identify the selected screen. Please choose the screen again.");
+    case SnapTray::CaptureDisplayResolution::NotShareable:
+        return QCoreApplication::translate("SCKCaptureEngine",
+            "The selected screen is no longer available for capture. Please choose the screen again.");
+    case SnapTray::CaptureDisplayResolution::GeometryChanged:
+        return QCoreApplication::translate("SCKCaptureEngine",
+            "The selected screen was moved or resized. Please choose the screen again.");
+    case SnapTray::CaptureDisplayResolution::Resolved:
+        break;
+    }
+    return {};
+}
 
 struct SCKFrameRateLifetime
 {
@@ -527,75 +547,37 @@ bool SCKCaptureEngine::start()
         qDebug() << "SCKCaptureEngine::start() - Number of windows:" << content.windows.count;
 
         @try {
-            // Find the display matching our target screen
-            CGDirectDisplayID targetDisplayID = 0;
+            // Capture only the display chosen on the GUI thread. If it cannot be
+            // confirmed, fail visibly instead of recording another screen.
+            const quint32 requestedDisplayId = d->screenInfo.nativeDisplayId;
+            qDebug() << "SCKCaptureEngine::start() - Requested display ID:" << requestedDisplayId
+                     << "name:" << d->screenInfo.name << "geometry:" << d->screenInfo.geometry;
 
-            qDebug() << "SCKCaptureEngine::start() - Finding target display...";
-            qDebug() << "SCKCaptureEngine::start() - Target screen name:" << d->screenInfo.name;
-            qDebug() << "SCKCaptureEngine::start() - Target screen geometry:" << d->screenInfo.geometry;
-
-            // Match display by geometry position instead of name (more reliable)
-            // NSScreen.localizedName uses localized strings which may not match QScreen::name()
-            const QRect targetGeom = d->screenInfo.geometry;
-            qDebug() << "SCKCaptureEngine::start() - Matching by geometry:" << targetGeom;
-
-            // Get all active displays and match by position
-            uint32_t displayCount = 0;
-            CGDirectDisplayID displays[16];
-            CGGetActiveDisplayList(16, displays, &displayCount);
-
-            qDebug() << "SCKCaptureEngine::start() - Active displays:" << displayCount;
-
-            for (uint32_t i = 0; i < displayCount; i++) {
-                CGRect displayBounds = CGDisplayBounds(displays[i]);
-                qDebug() << "SCKCaptureEngine::start() - Display" << i << "ID:" << displays[i]
-                         << "bounds: x=" << displayBounds.origin.x
-                         << "y=" << displayBounds.origin.y
-                         << "w=" << displayBounds.size.width
-                         << "h=" << displayBounds.size.height;
-
-                // CGDisplayBounds returns logical coordinates, same as QScreen::geometry()
-                if (static_cast<int>(displayBounds.origin.x) == targetGeom.x() &&
-                    static_cast<int>(displayBounds.origin.y) == targetGeom.y() &&
-                    static_cast<int>(displayBounds.size.width) == targetGeom.width() &&
-                    static_cast<int>(displayBounds.size.height) == targetGeom.height()) {
-                    targetDisplayID = displays[i];
-                    qDebug() << "SCKCaptureEngine::start() - Matched display by geometry, ID:" << targetDisplayID;
-                    break;
-                }
-            }
-
-            if (targetDisplayID == 0) {
-                qWarning() << "SCKCaptureEngine: Could not match screen by geometry, using main display";
-                targetDisplayID = CGMainDisplayID();
-                qDebug() << "SCKCaptureEngine::start() - Using main display ID:" << targetDisplayID;
-                // Emit warning to user about fallback
-                emit warning(tr("Could not match the selected screen. Recording from main display instead."));
-            }
-
-            // Find SCDisplay matching the target
-            qDebug() << "SCKCaptureEngine::start() - Searching for SCDisplay with ID:" << targetDisplayID;
+            QList<SnapTray::CaptureDisplayCandidate> shareableDisplays;
             for (SCDisplay *display in content.displays) {
-                qDebug() << "SCKCaptureEngine::start() - SCDisplay ID:" << display.displayID
-                         << "width:" << display.width << "height:" << display.height;
-                if (display.displayID == targetDisplayID) {
-                    d->targetDisplay = display;
-                    qDebug() << "SCKCaptureEngine::start() - Found matching SCDisplay";
-                    break;
-                }
+                shareableDisplays.append(
+                    {display.displayID, SnapTray::captureDisplayBounds(display.displayID)});
             }
 
-            if (!d->targetDisplay && content.displays.count > 0) {
-                d->targetDisplay = content.displays.firstObject;
-                qDebug() << "SCKCaptureEngine::start() - Using first available display as fallback";
-            }
-
-            if (!d->targetDisplay) {
-                qWarning() << "SCKCaptureEngine: No display found";
-                emit error("No display found for capture");
+            const SnapTray::CaptureDisplayResolution resolution = SnapTray::resolveCaptureDisplay(
+                requestedDisplayId, d->screenInfo.geometry, shareableDisplays);
+            if (resolution != SnapTray::CaptureDisplayResolution::Resolved) {
+                const QString message = displayResolutionError(resolution);
+                qWarning() << "SCKCaptureEngine: Selected display" << requestedDisplayId
+                           << "cannot be captured:" << message;
+                emit error(message);
                 d->cleanup();
                 return false;
             }
+
+            for (SCDisplay *display in content.displays) {
+                if (display.displayID == requestedDisplayId) {
+                    d->targetDisplay = display;
+                    break;
+                }
+            }
+            qDebug() << "SCKCaptureEngine::start() - Capturing display ID:"
+                     << d->targetDisplay.displayID;
 
             qDebug() << "SCKCaptureEngine::start() - Creating content filter...";
 

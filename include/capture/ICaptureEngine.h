@@ -30,6 +30,9 @@ struct CaptureScreenInfo
     // mixed-DPI logical screen origin/size heuristically.
     QRect physicalGeometry;
     qreal devicePixelRatio = 1.0;
+    // macOS CGDirectDisplayID resolved on the GUI thread when the screen was
+    // chosen. 0 means the selected screen has no confirmed native display.
+    quint32 nativeDisplayId = 0;
 
     bool isValid() const
     {
@@ -103,6 +106,14 @@ public:
      * @return true if started successfully
      */
     virtual bool start() = 0;
+
+    /**
+     * @brief start(), also returning the first error() it emitted.
+     *
+     * Initialization can run before any receiver is connected, so callers
+     * use this to carry the engine's own reason into their result.
+     */
+    bool startCollectingError(QString *errorMessage);
 
     /**
      * @brief Stop the capture engine and release resources

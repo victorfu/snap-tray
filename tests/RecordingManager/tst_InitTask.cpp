@@ -65,6 +65,7 @@ private slots:
     void testNormalizedRegionFrameSizeAlignment();
     void testScreenMetadataSnapshot();
     void testSckInitializationUsesScreenSnapshot();
+    void testCaptureStartErrorReachesResult();
 
     // Cancellation tests
     void testCancelBeforeRun();
@@ -263,6 +264,36 @@ void TestRecordingInitTask::testSckInitializationUsesScreenSnapshot()
     QVERIFY(content.contains("CaptureScreenInfo screenInfo"));
     QVERIFY(!content.contains("QScreen *targetScreen"));
     QVERIFY(!content.contains("d->targetScreen"));
+}
+
+void TestRecordingInitTask::testCaptureStartErrorReachesResult()
+{
+    // The engine reports why it refused the source while the worker is still
+    // initializing, before RecordingManager connects to its signals.
+    class Capture : public ICaptureEngine {
+    public:
+        bool setRegion(const QRect&, QScreen*) override { return true; }
+        bool setRegion(const QRect&, const CaptureScreenInfo&) override { return true; }
+        bool start() override
+        {
+            emit error(QStringLiteral("The selected screen is no longer available"));
+            return false;
+        }
+        void stop() override {}
+        bool isRunning() const override { return false; }
+        QImage captureFrame() override { return {}; }
+        QString engineName() const override { return "test capture"; }
+    };
+    auto config = createTestConfig();
+    config.preferGraphicsCapture = false;
+    RecordingInitTask task(config);
+    task.m_createFallbackCapture = []() -> ICaptureEngine* { return new Capture; };
+
+    QVERIFY(!task.initializeCaptureEngine());
+    QVERIFY(!task.result().captureEngineStarted);
+    QCOMPARE(task.result().error, QStringLiteral("The selected screen is no longer available"));
+    task.result().cleanup();
+    QVERIFY(!task.result().captureEngine);
 }
 
 // ============================================================================

@@ -1884,6 +1884,14 @@ target_link_libraries(RecordingManager_InitTask PRIVATE snaptray_ui snaptray_pla
 add_test(NAME RecordingManager_InitTask COMMAND RecordingManager_InitTask)
 set_tests_properties(RecordingManager_InitTask PROPERTIES TIMEOUT 60 LABELS "integration")
 
+add_executable(RecordingManager_CaptureDisplayResolver RecordingManager/tst_CaptureDisplayResolver.cpp)
+target_compile_definitions(RecordingManager_CaptureDisplayResolver PRIVATE
+    CAPTURE_SOURCE_ROOT="${CMAKE_SOURCE_DIR}/src/capture"
+)
+target_link_libraries(RecordingManager_CaptureDisplayResolver PRIVATE snaptray_platform Qt6::Test)
+add_test(NAME RecordingManager_CaptureDisplayResolver COMMAND RecordingManager_CaptureDisplayResolver)
+set_tests_properties(RecordingManager_CaptureDisplayResolver PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(RecordingManager_RegionSizing RecordingManager/tst_RegionSizing.cpp)
 target_link_libraries(RecordingManager_RegionSizing PRIVATE snaptray_ui snaptray_platform Qt6::Test)
 add_test(NAME RecordingManager_RegionSizing COMMAND RecordingManager_RegionSizing)

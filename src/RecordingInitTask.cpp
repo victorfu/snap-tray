@@ -184,8 +184,10 @@ bool RecordingInitTask::configureAndStartCaptureEngine()
     m_result.captureEngine->setNativeFrameOutput(m_config.gpuEncoding && m_config.outputFormat == EncoderFactory::Format::MP4);
 #endif
     qDebug() << "RecordingInitTask: Starting capture engine...";
-    if (!m_result.captureEngine->start()) {
-        m_result.error = "Failed to start capture engine";
+    QString startError;
+    if (!m_result.captureEngine->startCollectingError(&startError)) {
+        m_result.error = startError.isEmpty()
+            ? QStringLiteral("Failed to start capture engine") : startError;
         return false;
     }
     m_result.captureEngineStarted = true;
