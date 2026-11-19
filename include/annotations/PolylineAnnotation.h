@@ -38,6 +38,8 @@ public:
             + static_cast<std::size_t>(m_points.capacity()) * sizeof(QPoint);
     }
     bool containsPoint(const QPoint& point) const;
+    // True when the painted line touches rect (a marquee, #370).
+    bool intersects(const QRect& rect) const;
 
     // Point management
     void addPoint(const QPoint& point);

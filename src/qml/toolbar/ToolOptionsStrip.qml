@@ -331,7 +331,9 @@ Item {
         // Drawing order of the selected annotation (#268).
         ArrangeSection {
             objectName: "toolOptionsArrangeSection"
+            // Drawing order moves one annotation; a group has none (#370).
             visible: root.hasViewModel && root.viewModel.editingSelection
+                     && !root.viewModel.multiSelection
             viewModel: root.viewModel
             anchors.verticalCenter: parent.verticalCenter
         }

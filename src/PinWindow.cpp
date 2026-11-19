@@ -7,6 +7,7 @@
 #include "ui/DesignSystem.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationZOrderCommands.h"
 #include "annotations/AnnotationStyle.h"
@@ -721,7 +722,10 @@ void PinWindow::setPinWindowManager(PinWindowManager* manager)
 
 void PinWindow::setZoomLevel(qreal zoom)
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     // Annotation geometry uses the zoom that was active when layout mode
     // began. Without a general annotation scale transform, changing zoom in
     // the middle of the session would reinterpret every item at a new scale.
@@ -810,7 +814,10 @@ void PinWindow::adjustOpacityByStep(int direction)
 
 void PinWindow::rotateRight()
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -822,7 +829,10 @@ void PinWindow::rotateRight()
 
 void PinWindow::rotateLeft()
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -834,7 +844,10 @@ void PinWindow::rotateLeft()
 
 void PinWindow::flipHorizontal()
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -846,7 +859,10 @@ void PinWindow::flipHorizontal()
 
 void PinWindow::flipVertical()
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     if (isRegionLayoutMode()) {
         return;
     }
@@ -897,11 +913,19 @@ bool PinWindow::hasActiveAnnotationInteraction() const
 
     return textInteraction || shapeInteraction ||
            m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
-           m_isArrowDragging || m_isPolylineDragging;
+           m_isArrowDragging || m_isPolylineDragging ||
+           (m_multiSelection && m_multiSelection->isActive());
 }
 
 bool PinWindow::cancelAnnotationGesture()
 {
+    if (m_multiSelection && m_multiSelection->cancel()) {
+        m_consumeNextToolRelease = true;
+        CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+        updateUndoRedoState();
+        update();
+        return true;
+    }
     bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
     // Pin drives its own text and shape editors, not only through the
     // ToolManager context (review #237-1).
@@ -2090,7 +2114,7 @@ QString PinWindow::backgroundRemovalBlocker() const
     if (m_originalPixmap.isNull() || isRegionLayoutMode()
         || (m_toolManager && m_toolManager->isDrawing())
         || (m_annotationLayer
-            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive()))) {
+            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isAnyGestureActive()))) {
         return tr("The background cannot be removed right now");
     }
     return QString();
@@ -2906,6 +2930,9 @@ void PinWindow::paintEvent(QPaintEvent* event)
             TransformationGizmo::draw(painter, polylineItem);
         }
 
+        // Outlines of a multi-object selection (#370).
+        if (m_multiSelection) m_multiSelection->draw(painter);
+
         painter.restore();
     }
 
@@ -3234,6 +3261,23 @@ void PinWindow::mousePressEvent(QMouseEvent* event)
             return;
         }
 
+        // Shift+click and group drags of several annotations (#370). The pin
+        // has no marquee: an empty-space drag moves the window or draws.
+        // An open polyline takes its next point, Shift-constrained or not.
+        if (m_annotationMode && m_multiSelection && !isImageEditToolActive()
+            && m_currentToolId != ToolId::Eraser
+            && !(m_toolManager && m_toolManager->isDrawing())
+            && m_multiSelection->handlePress(mapToOriginalCoords(event->pos()), event->modifiers(), false)) {
+            if (m_multiSelection->isActive()) {
+                CursorManager::instance().setInputStateForWidget(this, InputState::Moving);
+            }
+            // A Shift+click only changes the selection: its release must not
+            // place an emoji or step badge.
+            m_consumeNextToolRelease = true;
+            update();
+            return;
+        }
+
         // The crop draft owns every press: its handles and body must not be
         // taken by an annotation lying under them (#358).
         if (isImageEditToolActive()) {
@@ -3411,6 +3455,11 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
 
+    if (m_multiSelection && m_multiSelection->handleMove(mapToOriginalCoords(event->pos()))) {
+        update();
+        return;
+    }
+
     // Handle confirm mode text dragging
     if (m_textEditor && m_textEditor->isConfirmMode() && m_textEditor->isDragging()) {
         m_textEditor->handleMouseMove(event->pos());
@@ -3549,6 +3598,13 @@ void PinWindow::mouseReleaseEvent(QMouseEvent* event)
                 m_regionLayoutManager->finishResize();
             }
             keepRegionLayoutControlsOnScreen();
+            return;
+        }
+
+        if (m_multiSelection && m_multiSelection->handleRelease(mapToOriginalCoords(event->pos()))) {
+            CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+            updateUndoRedoState();
+            update();
             return;
         }
 
@@ -3875,6 +3931,22 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // Multi-object selection keys (#370): Esc, Select All, Delete, and arrow
+    // nudges of a group. Arrows follow the screen through rotation and flips.
+    // Esc is handled in order below, after an open polyline and a running
+    // background removal.
+    if (m_annotationMode && m_multiSelection && !isImageEditToolActive()
+        && event->key() != Qt::Key_Escape
+        && m_multiSelection->handleKey(event, [this](const QPoint& step) {
+               return buildOrientationLinearTransform(m_rotationAngle, m_flipHorizontal, m_flipVertical)
+                   .inverted().map(QPointF(step));
+           })) {
+        updateUndoRedoState();
+        update();
+        event->accept();
+        return;
+    }
+
     // Spacebar toggles toolbar
     if (event->key() == Qt::Key_Space) {
         toggleToolbar();
@@ -3898,6 +3970,13 @@ void PinWindow::keyPressEvent(QKeyEvent* event)
 
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
+            event->accept();
+            return;
+        }
+
+        // Then Esc ends a group selection (#370), before it hides the toolbar.
+        if (m_annotationMode && m_multiSelection && m_multiSelection->handleKey(event)) {
+            update();
             event->accept();
             return;
         }
@@ -4247,6 +4326,7 @@ void PinWindow::initializeAnnotationComponents()
 {
     // Initialize annotation layer
     m_annotationLayer = new AnnotationLayer(this);
+    m_multiSelection = std::make_unique<AnnotationSelectionController>(m_annotationLayer);
     // Layout can be applied before the annotation toolbar is ever opened.
     // Bind those image-only undo entries to the newly created empty layer.
     for (auto* stack : {&m_cropUndoStack, &m_cropRedoStack}) {
@@ -4277,8 +4357,8 @@ void PinWindow::initializeAnnotationComponents()
             // Undo/Redo turn off while a drag is in progress and back on at
             // its end (#237). Only on that change: refreshing on every edit
             // would prune crop history in the middle of a crop.
-            if (m_annotationLayer->isGestureActive() != m_undoStateShowsGesture) {
-                m_undoStateShowsGesture = m_annotationLayer->isGestureActive();
+            if (m_annotationLayer->isAnyGestureActive() != m_undoStateShowsGesture) {
+                m_undoStateShowsGesture = m_annotationLayer->isAnyGestureActive();
                 updateUndoRedoState();
             }
             update();
@@ -4694,6 +4774,9 @@ void PinWindow::exitAnnotationMode(bool clearActiveTool)
     }
 
     m_annotationMode = false;
+    // A group selection belongs to the annotation tools (#370).
+    if (m_multiSelection) m_multiSelection->cancel();
+    if (m_annotationLayer && m_annotationLayer->isMultiSelection()) m_annotationLayer->clearSelection();
     // Space, the toolbar's close button or Done leave the tools without
     // switching to another one (that case reaches the handler's onDeactivate
     // by itself): an unapplied crop selection does not wait for a later return.
@@ -4899,7 +4982,7 @@ void PinWindow::handleToolbarUndo()
 {
     // Not during a drag either: canUndo() is false then, which would let a
     // crop undo jump past the gesture (#237).
-    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isAnyGestureActive())) {
         return;
     }
 
@@ -4932,7 +5015,7 @@ void PinWindow::handleToolbarUndo()
 
 void PinWindow::handleToolbarRedo()
 {
-    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive())) {
+    if (m_annotationLayer && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isAnyGestureActive())) {
         return;
     }
 
@@ -5078,7 +5161,7 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     // its items; the image must not change without them.
     if (isRegionLayoutMode()
         || (m_annotationLayer
-            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive()))) {
+            && (m_annotationLayer->isHistoryLocked() || m_annotationLayer->isAnyGestureActive()))) {
         m_toast->showToast(SnapTray::QmlToast::Level::Error, tr("This strip cannot be applied"));
         return false;
     }
@@ -5086,7 +5169,10 @@ bool PinWindow::applyStrip(const ImageStrip::Request& request)
     if (!ensureAutoBlurReadyForExport()) {
         return false;
     }
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
 
     const QSize gridSize = cropSourcePixelSize();
     const QSize toolImageSize = cropToolImageSize();
@@ -5373,7 +5459,10 @@ bool PinWindow::arrowKeySourceStep(const QKeyEvent* event, QPoint* sourceStep) c
 
 void PinWindow::applyCrop(const QRect& cropRect)
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
     if (cropRect.isEmpty()) return;
 
     // Crop tool coordinates follow the same space used by annotation tools.
@@ -5548,7 +5637,10 @@ QSize PinWindow::cropSourcePixelSize() const
 
 bool PinWindow::applyCropSourcePixels(const QRect& sourcePixelRect)
 {
-    if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+    // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
 
     const QSize gridSize = cropSourcePixelSize();
     const QSize toolImageSize = cropToolImageSize();
@@ -5847,7 +5939,7 @@ void PinWindow::updateUndoRedoState()
 
     if (m_toolbar && m_annotationLayer) {
         // A drag in progress blocks history too (#237); crop undo included.
-        const bool historyLocked = m_annotationLayer->isHistoryLocked() || m_annotationLayer->isGestureActive();
+        const bool historyLocked = m_annotationLayer->isHistoryLocked() || m_annotationLayer->isAnyGestureActive();
         const bool canUndo = !historyLocked &&
             (m_annotationLayer->canUndo() || canUndoCrop());
         const bool canRedo = !historyLocked &&
@@ -7783,7 +7875,10 @@ void PinWindow::exitRegionLayoutMode(bool apply)
         }
 
         invalidateAutoBlurRequest();
-        if (m_annotationLayer && m_annotationLayer->snapController().active()) cancelAnnotationGesture();
+        // A rotate, flip, zoom or crop changes the mapping a drag's start point used.
+    if (m_annotationLayer && (m_annotationLayer->snapController().active()
+                              || (m_multiSelection && m_multiSelection->isActive())))
+        cancelAnnotationGesture();
         CropUndoEntry entry;
         entry.isLayout = true;
         entry.pixmap = m_originalPixmap;

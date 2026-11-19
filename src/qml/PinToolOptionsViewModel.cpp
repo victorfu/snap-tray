@@ -14,7 +14,9 @@
 #include "settings/AnnotationSettingsManager.h"
 
 #include <QCoreApplication>
+#include <QLocale>
 
+#include <algorithm>
 #include <iterator>
 
 namespace {
@@ -728,10 +730,7 @@ void PinToolOptionsViewModel::handleEmojiPickerRequested()
 // ── Selected-object styling (#224) ──
 
 namespace {
-struct SelectionSections {
-    bool color, width, text, arrowStyle, lineStyle, shape;
-};
-// Indexed by StyleTargetKind.
+using SelectionSections = PinToolOptionsViewModel::SelectionSections;
 constexpr SelectionSections kSelectionSections[] = {
     {false, false, false, false, false, false},  // None
     {true, false, true, false, false, false},    // Text
@@ -746,6 +745,14 @@ QString PinToolOptionsViewModel::targetLabel() const
     if (m_showCrop) return tr("Crop");
     if (m_showCutOut) return tr("Cut Out");
     if (!m_editingSelection) return tr("New object");
+    if (m_multiTargetCount > 0) {
+        if (m_mixedProperties.isEmpty()) return tr("Selected objects: %1").arg(m_multiTargetCount);
+        // Settings whose values differ are named here; the controls show the
+        // first selected annotation's value (#370).
+        return tr("Selected objects: %1 · Mixed: %2")
+            .arg(m_multiTargetCount)
+            .arg(QLocale().createSeparatedList(m_mixedProperties));
+    }
     QString name;
     switch (m_targetKind) {
     case StyleTargetKind::Text: name = tr("Text"); break;
@@ -765,6 +772,58 @@ void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& valu
         clearSelectionTarget();
         return;
     }
+    const bool wasMulti = m_multiTargetCount > 0;
+    m_multiTargetCount = 0;
+    m_mixedProperties.clear();
+    const SelectionSections& sec = kSelectionSections[static_cast<int>(values.kind)];
+    showSelectionValues(values, sec, wasMulti);
+}
+
+void PinToolOptionsViewModel::showForMultiSelection(
+    const std::vector<AnnotationStyleValues>& targets, int selectedCount)
+{
+    if (targets.empty() || selectedCount < 2) {
+        clearSelectionTarget();
+        return;
+    }
+    SelectionSections sections{true, true, true, true, true, true};
+    bool sameKind = true;
+    for (const auto& target : targets) {
+        const SelectionSections& own = kSelectionSections[static_cast<int>(target.kind)];
+        sections.color = sections.color && own.color;
+        sections.width = sections.width && own.width;
+        sections.text = sections.text && own.text;
+        sections.arrowStyle = sections.arrowStyle && own.arrowStyle;
+        sections.lineStyle = sections.lineStyle && own.lineStyle;
+        sections.shape = sections.shape && own.shape;
+        sameKind = sameKind && target.kind == targets.front().kind;
+    }
+    // A property is mixed when the shown section's targets disagree on it.
+    const AnnotationStyleValues& first = targets.front();
+    auto differs = [&targets](auto value) {
+        return std::any_of(targets.cbegin(), targets.cend(),
+            [&](const AnnotationStyleValues& t) { return value(t) != value(targets.front()); });
+    };
+    QStringList mixed;
+    if (sections.color && differs([](const auto& t) { return t.color.rgba(); })) mixed << tr("Color");
+    if (sections.width && differs([](const auto& t) { return t.width; })) mixed << tr("Width");
+    if (sections.arrowStyle && differs([](const auto& t) { return t.arrowStyle; })) mixed << tr("Line ends");
+    if (sections.lineStyle && differs([](const auto& t) { return t.lineStyle; })) mixed << tr("Line style");
+    if (sections.shape && differs([](const auto& t) { return t.filled; })) mixed << tr("Fill");
+    if (sections.text && differs([](const auto& t) { return t.font; })) mixed << tr("Font");
+
+    const bool changed = m_multiTargetCount != selectedCount || m_mixedProperties != mixed;
+    m_multiTargetCount = selectedCount;
+    m_mixedProperties = mixed;
+    AnnotationStyleValues shown = first;
+    if (!sameKind) shown.kind = StyleTargetKind::None;   // no kind-specific options
+    showSelectionValues(shown, sections, changed);
+}
+
+void PinToolOptionsViewModel::showSelectionValues(const AnnotationStyleValues& values,
+                                                  const SelectionSections& sections,
+                                                  bool targetChangedAnyway)
+{
     if (!m_editingSelection) {
         m_savedDefaults = {m_currentColor, m_currentWidth, m_bold, m_italic, m_underline,
                            m_fontSize, m_fontFamily, m_arrowStyle, m_lineStyle, m_shapeType,
@@ -773,8 +832,8 @@ void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& valu
                             m_showLineStyle, m_showShape, m_showSize, m_showAutoBlur},
                            m_activeToolId};
     }
-    const bool changed = !m_editingSelection || m_targetKind != values.kind
-        || m_targetShapeType != values.shapeType;
+    const bool changed = targetChangedAnyway || !m_editingSelection
+        || m_targetKind != values.kind || m_targetShapeType != values.shapeType;
     const bool enteringSelection = !m_editingSelection;
     m_editingSelection = true;
     if (enteringSelection) emit activeToolChanged();   // mosaicActive changed
@@ -788,7 +847,7 @@ void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& valu
     setShapeType(values.shapeType);
     setShapeFillMode(values.filled ? static_cast<int>(ShapeFillMode::Filled)
                                    : static_cast<int>(ShapeFillMode::Outline));
-    if (values.kind == StyleTargetKind::Text) {
+    if (sections.text) {
         setFontFamily(values.font.family());
         if (values.font.pointSize() > 0) setFontSize(values.font.pointSize());
         setBold(values.font.bold());
@@ -796,9 +855,8 @@ void PinToolOptionsViewModel::showForSelection(const AnnotationStyleValues& valu
         setUnderline(values.font.underline());
     }
     setShowingEmojiPicker(false);
-    const SelectionSections& sec = kSelectionSections[static_cast<int>(values.kind)];
-    applySectionVisibility(sec.color, sec.width, sec.text, sec.arrowStyle, sec.lineStyle,
-                           sec.shape, false, false);
+    applySectionVisibility(sections.color, sections.width, sections.text, sections.arrowStyle,
+                           sections.lineStyle, sections.shape, false, false);
     if (changed) emit targetChanged();
 }
 
@@ -807,6 +865,8 @@ void PinToolOptionsViewModel::clearSelectionTarget()
     if (!m_editingSelection) return;
     m_editingSelection = false;
     m_targetKind = StyleTargetKind::None;
+    m_multiTargetCount = 0;
+    m_mixedProperties.clear();
     emit activeToolChanged();   // mosaicActive changed
     const SavedDefaults& d = m_savedDefaults;
     setCurrentColor(d.color);

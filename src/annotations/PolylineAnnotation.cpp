@@ -168,6 +168,11 @@ bool PolylineAnnotation::containsPoint(const QPoint& pos) const
     return geometry().containsPoint(pos, m_width);
 }
 
+bool PolylineAnnotation::intersects(const QRect& rect) const
+{
+    return geometry().intersects(QRectF(rect), m_width);
+}
+
 void PolylineAnnotation::moveBy(const QPoint& delta)
 {
     for (QPoint& point : m_points) {

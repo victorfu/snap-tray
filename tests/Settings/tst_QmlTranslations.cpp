@@ -357,6 +357,15 @@ void tst_QmlTranslations::testStyleStripNamesTranslatedForAllLocales()
         {"AnnotationStyleLabels", "Both Ends Outline"},
         {"AnnotationStyleLabels", "Dashed"},
         {"PinWindow", "Pinned image"},
+        // #370: a multi-object selection in the strip.
+        {"PinToolOptionsViewModel", "Selected objects: %1"},
+        {"PinToolOptionsViewModel", "Selected objects: %1 · Mixed: %2"},
+        // "Color" is left out: it is the same word in Spanish.
+        {"PinToolOptionsViewModel", "Width"},
+        {"PinToolOptionsViewModel", "Line ends"},
+        {"PinToolOptionsViewModel", "Line style"},
+        {"PinToolOptionsViewModel", "Fill"},
+        {"PinToolOptionsViewModel", "Font"},
     };
 
     const QDir translationsDir(QString::fromUtf8(SNAPTRAY_TEST_TRANSLATION_DIR));

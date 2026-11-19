@@ -2176,6 +2176,38 @@ Dydis: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Norėdami iškirpti juostą, atkurkite 100 % mastelį</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Pasirinkti objektai: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Pasirinkti objektai: %1 · Mišrios reikšmės: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Spalva</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Plotis</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Linijos galai</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Linijos stilius</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Užpildas</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Šriftas</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

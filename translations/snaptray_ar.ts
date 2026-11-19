@@ -2179,6 +2179,38 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>أعد التكبير إلى 100% لقص شريط</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>العناصر المحددة: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>العناصر المحددة: %1 · قيم مختلطة: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>اللون</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>العرض</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>أطراف الخط</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>نمط الخط</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>التعبئة</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>الخط</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

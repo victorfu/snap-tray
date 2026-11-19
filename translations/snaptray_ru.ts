@@ -2176,6 +2176,38 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Сбросьте масштаб до 100 %, чтобы вырезать полосу</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Выбрано объектов: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Выбрано объектов: %1 · Различаются: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Цвет</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Толщина</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Концы линии</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Стиль линии</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Заливка</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Шрифт</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

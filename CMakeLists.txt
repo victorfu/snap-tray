@@ -888,6 +888,8 @@ add_library(snaptray_ui STATIC
     # Annotation UI
     src/AnnotationLayer.cpp
     src/annotation/ArrowBindings.cpp
+    src/annotation/AnnotationMultiSelection.cpp
+    src/annotation/AnnotationSelectionController.cpp
     src/InlineTextEditor.cpp
     src/TransformationGizmo.cpp
     src/annotation/AnnotationContext.cpp

@@ -2176,6 +2176,38 @@ Velikost: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Pro vyříznutí pruhu obnovte přiblížení na 100 %</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Vybrané objekty: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Vybrané objekty: %1 · Smíšené: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Barva</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Šířka</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Konce čáry</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Styl čáry</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Výplň</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Písmo</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

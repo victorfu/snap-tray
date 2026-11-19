@@ -2175,6 +2175,38 @@ Dimensione: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Reimposta lo zoom al 100% per ritagliare una striscia</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Oggetti selezionati: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Oggetti selezionati: %1 · Misti: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Colore</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Spessore</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Estremità della linea</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Stile linea</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Riempimento</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Carattere</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

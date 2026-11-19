@@ -1,5 +1,7 @@
 #include "annotations/ShapeAnnotation.h"
 #include <QPainter>
+#include <QPainterPath>
+#include <QPainterPathStroker>
 #include <QtMath>
 #include <cmath>
 
@@ -113,6 +115,22 @@ bool ShapeAnnotation::containsPoint(const QPoint &point) const
     const QPointF centered = QPointF(point) - c;
     const QPointF transformedPoint = c + inverse.map(centered);
     return containsTransformedPoint(transformedPoint);
+}
+
+bool ShapeAnnotation::intersects(const QRect &rect) const
+{
+    QPainterPath outline;
+    if (m_type == ShapeType::Rectangle) outline.addRect(normalizedRect());
+    else outline.addEllipse(normalizedRect());
+    // The pen in local space, so it scales with the shape as in draw().
+    QPainterPathStroker stroker;
+    stroker.setWidth(m_width);
+    QPainterPath area = stroker.createStroke(outline);
+    if (m_filled) area = area.united(outline);
+    const QPointF c = center();
+    const QTransform paint = QTransform::fromTranslate(-c.x(), -c.y()) * localLinearTransform()
+        * QTransform::fromTranslate(c.x(), c.y());
+    return paint.map(area).intersects(QRectF(rect));
 }
 
 void ShapeAnnotation::draw(QPainter &painter) const

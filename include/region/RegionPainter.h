@@ -16,6 +16,7 @@ class QPainter;
 class QWidget;
 class SelectionStateManager;
 class AnnotationLayer;
+class AnnotationSelectionController;
 class ToolManager;
 class TextBoxAnnotation;
 class EmojiStickerAnnotation;
@@ -43,6 +44,7 @@ public:
     // Dependency injection
     void setSelectionManager(SelectionStateManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
+    void setMultiSelectionController(AnnotationSelectionController* controller) { m_multiSelection = controller; }
     void setToolManager(ToolManager* manager);
     void setParentWidget(QWidget* widget);
     void setMultiRegionManager(MultiRegionManager* manager);
@@ -116,6 +118,7 @@ private:
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
+    AnnotationSelectionController* m_multiSelection = nullptr;
     ToolManager* m_toolManager = nullptr;
     QWidget* m_parentWidget = nullptr;
     MultiRegionManager* m_multiRegionManager = nullptr;

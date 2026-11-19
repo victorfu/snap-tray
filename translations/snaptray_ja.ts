@@ -2174,6 +2174,38 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>帯を切り取るには、ズームを 100% に戻してください</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>選択中のオブジェクト：%1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>選択中のオブジェクト：%1 · 混在：%2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>色</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>太さ</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>線の端</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>線のスタイル</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>塗りつぶし</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>フォント</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

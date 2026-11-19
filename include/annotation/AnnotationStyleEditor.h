@@ -38,7 +38,7 @@ public:
     void setInlineEditingPredicate(std::function<bool()> isInlineEditing);
     // Re-evaluates the target from the layer's selection.
     void refreshTarget();
-    bool hasTarget() const { return m_targetId != 0; }
+    bool hasTarget() const { return m_targetId != 0 || m_multiTarget; }
 
     // Screen reader announcements of drawing-order moves go to this object;
     // by default the parent. Hosts whose parent is not a widget set it.
@@ -63,6 +63,9 @@ private:
     AnnotationLayer* m_layer;
     PinToolOptionsViewModel* m_viewModel;
     AnnotationLayer::AnnotationId m_targetId = 0;
+    // Several selected annotations are the target (#370); edits apply to all.
+    bool m_multiTarget = false;
+    bool showMultiTarget();
     QTimer m_idle;
     std::function<bool()> m_isInlineEditing;
     std::function<QObject*()> m_announcementTarget;

@@ -1,4 +1,5 @@
 #include "region/RegionPainter.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "annotation/AnnotationRenderHelper.h"
 #include "region/CapturePerfRecorder.h"
 #include "region/SelectionDimensionLabel.h"
@@ -695,6 +696,8 @@ void RegionPainter::drawAnnotations(QPainter& painter)
         m_annotationLayer->draw(painter);
     }
     if (m_annotationLayer) m_annotationLayer->snapController().draw(painter);
+    // Group outlines and the marquee (#370); never part of an export.
+    if (m_multiSelection) m_multiSelection->draw(painter);
 }
 
 void RegionPainter::drawCurrentAnnotation(QPainter& painter)

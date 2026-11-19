@@ -2176,6 +2176,38 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Вратите зум на 100% да бисте исекли траку</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Изабрани објекти: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Изабрани објекти: %1 · Мешовито: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Боја</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Дебљина</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Крајеви линије</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Стил линије</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Испуна</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Фонт</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

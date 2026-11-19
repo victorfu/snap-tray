@@ -2174,6 +2174,38 @@ Size: %2</source>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>请将缩放重设为 100% 后再剪接条带</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>已选择的对象：%1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>已选择的对象：%1 · 混合：%2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>粗细</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>线条端点</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>线条样式</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>填充</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>字体</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

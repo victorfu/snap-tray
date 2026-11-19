@@ -2175,6 +2175,38 @@ Grootte: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Zet de zoom terug op 100% om een strook uit te knippen</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Geselecteerde objecten: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Geselecteerde objecten: %1 · Gemengd: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Kleur</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Breedte</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Lijnuiteinden</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Lijnstijl</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Opvulling</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Lettertype</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

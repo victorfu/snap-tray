@@ -2174,6 +2174,38 @@ Kích thước: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Đặt lại thu phóng về 100% để cắt một dải</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Đối tượng đã chọn: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Đối tượng đã chọn: %1 · Hỗn hợp: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Màu</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Độ dày</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Đầu đường</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Kiểu đường</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Tô màu</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Phông chữ</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

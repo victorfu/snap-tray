@@ -1713,6 +1713,16 @@ target_link_libraries(Annotations_ArrowBindings PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Annotations_ArrowBindings COMMAND Annotations_ArrowBindings)
 set_tests_properties(Annotations_ArrowBindings PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Annotations_AnnotationMultiSelection Annotations/tst_AnnotationMultiSelection.cpp)
+target_link_libraries(Annotations_AnnotationMultiSelection PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationMultiSelection COMMAND Annotations_AnnotationMultiSelection)
+set_tests_properties(Annotations_AnnotationMultiSelection PROPERTIES TIMEOUT 60 LABELS "unit")
+
+add_executable(Annotations_AnnotationSelectionController Annotations/tst_AnnotationSelectionController.cpp)
+target_link_libraries(Annotations_AnnotationSelectionController PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
+add_test(NAME Annotations_AnnotationSelectionController COMMAND Annotations_AnnotationSelectionController)
+set_tests_properties(Annotations_AnnotationSelectionController PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Annotations_AnnotationLayer Annotations/tst_AnnotationLayer.cpp)
 target_link_libraries(Annotations_AnnotationLayer PRIVATE snaptray_ui Qt6::Widgets Qt6::Test)
 add_test(NAME Annotations_AnnotationLayer COMMAND Annotations_AnnotationLayer)

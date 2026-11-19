@@ -2175,6 +2175,38 @@ Storlek: %2</translation>
         <source>Reset zoom to 100% to cut out a strip</source>
         <translation>Återställ zoomen till 100 % för att klippa ut en remsa</translation>
     </message>
+    <message>
+        <source>Selected objects: %1</source>
+        <translation>Markerade objekt: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Markerade objekt: %1 · Blandat: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Färg</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Bredd</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Linjeändar</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Linjestil</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Fyllning</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Teckensnitt</translation>
+    </message>
 </context>
 <context>
     <name>PinValuePanel</name>

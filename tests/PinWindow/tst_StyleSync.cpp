@@ -19,6 +19,7 @@
 
 #include "PinWindow.h"
 #include "annotations/ArrowAnnotation.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "region/TextAnnotationEditor.h"
 #include "InlineTextEditor.h"
@@ -196,6 +197,7 @@ private slots:
     void annotationSnapRelease_data();
     void annotationSnapRelease();
     void emojiMoveIsUndoable();
+    void multiSelectionGroupEditsAreSingleSteps();
     void escapeMidDragRestores();
     void toolbarUndoDisabledWhileDragging();
     void textDragEscapeRestores();
@@ -1936,6 +1938,86 @@ void TestPinWindowStyleSync::emojiMoveIsUndoable()
     window->handleToolbarUndo();
     QCOMPARE(window->m_annotationLayer->itemCount(), size_t(1));
     QCOMPARE(emoji()->position(), QPoint(100, 80));
+}
+
+// #370: Shift+click builds a group on a rotated pin; dragging, nudging and
+// deleting it are each one undo step, and Esc clears it without closing.
+void TestPinWindowStyleSync::multiSelectionGroupEditsAreSingleSteps()
+{
+    auto window = arrowPin(createTestPixmap(240, 160));
+    window->rotateRight();
+    auto* layer = window->m_annotationLayer;
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(80, 20, 30, 30), ShapeType::Rectangle, Qt::red, 3, true));
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(160, 20, 30, 30), ShapeType::Rectangle, Qt::blue, 3, true));
+    // Kept clear of the floating toolbar along the pin's top edge.
+    auto rectAt = [layer](int i) { return static_cast<ShapeAnnotation*>(layer->itemAt(i))->rectF(); };
+    const auto view = [&](QPoint original) { return window->mapFromOriginalCoords(original); };
+    auto send = [&window](QEvent::Type type, QPoint pos, Qt::KeyboardModifiers modifiers) {
+        const Qt::MouseButtons held = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton;
+        QMouseEvent event(type, QPointF(pos), QPointF(window->mapToGlobal(pos)),
+                          type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton, held, modifiers);
+        if (type == QEvent::MouseButtonPress) window->mousePressEvent(&event);
+        else if (type == QEvent::MouseMove) window->mouseMoveEvent(&event);
+        else window->mouseReleaseEvent(&event);
+    };
+    for (QPoint center : {QPoint(95, 35), QPoint(175, 35)}) {
+        send(QEvent::MouseButtonPress, view(center), Qt::ShiftModifier);
+        send(QEvent::MouseButtonRelease, view(center), Qt::ShiftModifier);
+    }
+    QCOMPARE(layer->selectionCount(), 2);
+    QCOMPARE(layer->itemCount(), size_t(2));   // the Arrow tool drew nothing
+
+    const auto history = layer->historyCommandCount();
+    const QPoint from = view(QPoint(95, 35));
+    const QPoint to = from + QPoint(12, 7);
+    send(QEvent::MouseButtonPress, from, Qt::NoModifier);
+    send(QEvent::MouseMove, from + QPoint(4, 2), Qt::NoModifier);
+    send(QEvent::MouseMove, to, Qt::NoModifier);
+    send(QEvent::MouseButtonRelease, to, Qt::NoModifier);
+    const QPointF moved = window->mapToOriginalCoords(QPointF(to)) - window->mapToOriginalCoords(QPointF(from));
+    QCOMPARE(rectAt(0), QRectF(80, 20, 30, 30).translated(moved.toPoint()));
+    QCOMPARE(rectAt(1), QRectF(160, 20, 30, 30).translated(moved.toPoint()));
+    QCOMPARE(layer->historyCommandCount(), history + 1);
+    window->handleToolbarUndo();
+    QCOMPARE(rectAt(0), QRectF(80, 20, 30, 30));
+    QCOMPARE(rectAt(1), QRectF(160, 20, 30, 30));
+
+    // Right on screen, through the rotation.
+    QTest::keyClick(window.get(), Qt::Key_Right);
+    const QPointF step = window->mapToOriginalCoords(QPointF(1, 0)) - window->mapToOriginalCoords(QPointF(0, 0));
+    QCOMPARE(rectAt(0), QRectF(80, 20, 30, 30).translated(step.toPoint()));
+    QVERIFY(!step.toPoint().isNull());
+
+    QTest::keyClick(window.get(), Qt::Key_Delete);
+    QCOMPARE(layer->itemCount(), size_t(0));
+    window->handleToolbarUndo();
+    QCOMPARE(layer->itemCount(), size_t(2));
+
+    QTest::keyClick(window.get(), Qt::Key_A, Qt::ControlModifier);
+    QCOMPARE(layer->selectionCount(), 2);
+    QTest::keyClick(window.get(), Qt::Key_Escape);
+    QCOMPARE(layer->selectionCount(), 0);
+    QVERIFY(window->m_annotationMode);   // Esc ended the group, not the tools
+
+    // A rotation in the middle of a group drag puts the group back.
+    QTest::keyClick(window.get(), Qt::Key_A, Qt::ControlModifier);
+    const QRectF beforeDrag = rectAt(0);
+    const QPoint grab = view(QPoint(95, 35));
+    send(QEvent::MouseButtonPress, grab, Qt::NoModifier);
+    send(QEvent::MouseMove, grab + QPoint(10, 10), Qt::NoModifier);
+    QVERIFY(rectAt(0) != beforeDrag);
+    window->rotateRight();
+    QCOMPARE(rectAt(0), beforeDrag);
+    QVERIFY(!window->m_multiSelection->isActive());
+    QVERIFY(layer->canUndo());
+
+    // With the Emoji tool, Shift+click only selects: its release places nothing.
+    window->handleToolbarToolSelected(static_cast<int>(ToolId::EmojiSticker));
+    const QPoint second = view(QPoint(175, 35));
+    send(QEvent::MouseButtonPress, second, Qt::ShiftModifier);
+    send(QEvent::MouseButtonRelease, second, Qt::ShiftModifier);
+    QCOMPARE(layer->selectionCount(), 1);
+    QCOMPARE(layer->itemCount(), size_t(2));
 }
 
 void TestPinWindowStyleSync::escapeMidDragRestores()
