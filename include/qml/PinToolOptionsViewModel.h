@@ -5,6 +5,8 @@
 #include <QColor>
 #include <QSize>
 #include <QVariantList>
+#include <QStringList>
+#include <vector>
 #include "tools/ToolId.h"
 
 /**
@@ -118,6 +120,8 @@ class PinToolOptionsViewModel : public QObject
     Q_PROPERTY(QString targetLabel READ targetLabel NOTIFY targetChanged)
     Q_PROPERTY(bool editingSelection READ editingSelection NOTIFY targetChanged)
     Q_PROPERTY(bool shapeTypeEditable READ shapeTypeEditable NOTIFY targetChanged)
+    // Several annotations are targeted at once (#370).
+    Q_PROPERTY(bool multiSelection READ multiSelection NOTIFY targetChanged)
     // Drawing order of the selected annotation (#268).
     Q_PROPERTY(QVariantList zOrderOptions READ zOrderOptions CONSTANT)
     Q_PROPERTY(bool canRaiseSelection READ canRaiseSelection NOTIFY zOrderAvailabilityChanged)
@@ -266,6 +270,18 @@ public:
     // targeted, strip edits emit selectionStyleEdited instead of the default
     // signals, and the tool defaults are kept aside untouched.
     void showForSelection(const AnnotationStyleValues& values);
+    // Targets several annotations at once (#370). `targets` holds the style of
+    // each stylable one; only sections every one of them has are shown, with
+    // the first one's values, and properties whose values differ are named as
+    // mixed in the target label. `selectedCount` counts every selected
+    // annotation, stylable or not.
+    void showForMultiSelection(const std::vector<AnnotationStyleValues>& targets, int selectedCount);
+    // Strip sections a selected annotation kind offers.
+    struct SelectionSections {
+        bool color, width, text, arrowStyle, lineStyle, shape;
+    };
+    bool multiSelection() const { return m_multiTargetCount > 0; }
+    QStringList mixedProperties() const { return m_mixedProperties; }
     // Returns to the tool defaults captured when targeting began.
     void clearSelectionTarget();
     // For host-side dropdown/dialog results: emits selectionStyleEdited and
@@ -438,6 +454,10 @@ private:
     bool m_canLowerSelection = false;
     StyleTargetKind m_targetKind = StyleTargetKind::None;
     int m_targetShapeType = 0;
+    int m_multiTargetCount = 0;
+    QStringList m_mixedProperties;
+    void showSelectionValues(const AnnotationStyleValues& values, const SelectionSections& sections,
+                             bool targetChangedAnyway);
     SavedDefaults m_savedDefaults;
 
     // Color

@@ -2184,6 +2184,38 @@ Taille : %2</translation>
         <translation>Rétablissez le zoom à 100 % pour découper une bande</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>Objets sélectionnés : %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Objets sélectionnés : %1 · Mixte : %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Couleur</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Épaisseur</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Extrémités</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Style de trait</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Remplissage</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Police</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>Manuel</translation>

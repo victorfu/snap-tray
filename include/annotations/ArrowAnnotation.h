@@ -76,6 +76,8 @@ public:
      * @return true if the point is within hit tolerance of the curve
      */
     bool containsPoint(const QPoint &pos) const;
+    // True when the painted arrow touches rect (a marquee, #370).
+    bool intersects(const QRect &rect) const;
 
     /**
      * @brief Check if the curve is actually curved (control point is off the straight line).

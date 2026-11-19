@@ -18,6 +18,7 @@
 class QMouseEvent;
 class QWidget;
 class AnnotationLayer;
+class AnnotationSelectionController;
 class ToolManager;
 class InlineTextEditor;
 class TextAnnotationEditor;
@@ -51,6 +52,8 @@ public:
     // Dependency injection
     void setSelectionManager(SelectionStateManager* manager);
     void setAnnotationLayer(AnnotationLayer* layer);
+    // Multi-object selection input (#370); owned by the host.
+    void setMultiSelectionController(AnnotationSelectionController* controller) { m_multiSelection = controller; }
     void setToolManager(ToolManager* manager);
     void setTextEditor(InlineTextEditor* editor);
     void setTextAnnotationEditor(TextAnnotationEditor* editor);
@@ -168,6 +171,7 @@ private:
     // Dependencies (non-owning pointers)
     SelectionStateManager* m_selectionManager = nullptr;
     AnnotationLayer* m_annotationLayer = nullptr;
+    AnnotationSelectionController* m_multiSelection = nullptr;
     ToolManager* m_toolManager = nullptr;
     InlineTextEditor* m_textEditor = nullptr;
     TextAnnotationEditor* m_textAnnotationEditor = nullptr;

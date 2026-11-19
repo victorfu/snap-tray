@@ -66,6 +66,7 @@ class ToolbarTooltipController;
 class PinToolbarViewModel;
 class PinToolOptionsViewModel;
 class AnnotationStyleEditor;
+class AnnotationSelectionController;
 class ColorPickOverlay;
 struct ColorPickSource;
 class AnnotationLayer;
@@ -685,6 +686,7 @@ private:
     bool m_toolbarVisible = false;
     bool m_annotationMode = false;
     AnnotationStyleEditor* m_styleEditor = nullptr;   // Qt parent owns lifetime
+    std::unique_ptr<AnnotationSelectionController> m_multiSelection;   // #370
     struct CropUndoEntry {
         QPixmap pixmap;
         QSize contentLogicalSize;

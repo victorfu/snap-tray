@@ -1,6 +1,7 @@
 #include "annotations/LineAnnotationGeometry.h"
 
 #include <QPainterPathStroker>
+#include <algorithm>
 #include <QtMath>
 #include <array>
 
@@ -110,6 +111,15 @@ QRect LineAnnotationGeometry::boundingRect(int width) const
     return bounds.isEmpty() ? QRect()
         : bounds.adjusted(-kAntialiasMargin, -kAntialiasMargin,
                           kAntialiasMargin, kAntialiasMargin).toAlignedRect();
+}
+
+bool LineAnnotationGeometry::intersects(const QRectF& rect, int width) const
+{
+    if (stroke(shaft, width, capStyle).intersects(rect)) return true;
+    return std::any_of(heads.cbegin(), heads.cend(), [&](const Head& head) {
+        return (head.filled && head.path.intersects(rect))
+            || stroke(head.path, width, Qt::RoundCap).intersects(rect);
+    });
 }
 
 bool LineAnnotationGeometry::containsPoint(const QPoint& point, int width) const

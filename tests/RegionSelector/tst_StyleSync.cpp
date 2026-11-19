@@ -28,6 +28,7 @@
 #include "platform/QtQuickBackendPolicy.h"
 #include "settings/AnnotationSettingsManager.h"
 #include "annotation/ColorPickOverlay.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "settings/RegionCaptureSettingsManager.h"
 #include "settings/Settings.h"
 #include "region/RegionInputHandler.h"
@@ -131,6 +132,9 @@ private slots:
     void colorPickSamplesFrozenScreenshot();
     void pickedColorEditsSelectionUndoably();
     void arrowEndpointDragIsUndoable();
+    void multiSelectionGroupEditsAreSingleSteps();
+    void groupDragOwnsArrowKeys();
+    void selectAllDuringSingleDragPreservesMoveUndo();
     void polylineVertexDragIsUndoable();
     void emojiMoveIsUndoable();
     void shapeMoveIsUndoable();
@@ -588,6 +592,147 @@ void TestRegionSelectorStyleSync::arrowEndpointDragIsUndoable()
     QCOMPARE(item()->controlPoint(), QPointF(105, 40));
     emit selector.m_toolbarHandler->redoRequested();
     QCOMPARE(item()->end(), QPoint(170, 90));
+}
+
+// #370: Shift+drag marquee, Shift+click, a group drag, arrow nudges, Delete
+// and Esc on several annotations, each a single undo step.
+void TestRegionSelectorStyleSync::multiSelectionGroupEditsAreSingleSteps()
+{
+    RegionSelector selector;
+    prepareSelectionTool(selector);
+    auto* layer = selector.m_annotationLayer;
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(60, 60, 30, 30), ShapeType::Rectangle, Qt::red, 3, true));
+    layer->addItem(std::make_unique<ShapeAnnotation>(QRect(120, 60, 30, 30), ShapeType::Rectangle, Qt::blue, 3, true));
+    layer->addItem(std::make_unique<ArrowAnnotation>(QPoint(60, 140), QPoint(150, 140), Qt::red, 4));
+    auto rectAt = [layer](int i) { return static_cast<ShapeAnnotation*>(layer->itemAt(i))->rectF(); };
+    auto send = [&selector](QEvent::Type type, QPoint pos, Qt::KeyboardModifiers modifiers) {
+        const Qt::MouseButtons held = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton;
+        QMouseEvent event(type, QPointF(pos), QPointF(selector.mapToGlobal(pos)),
+                          type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton, held, modifiers);
+        if (type == QEvent::MouseButtonPress) selector.mousePressEvent(&event);
+        else if (type == QEvent::MouseMove) selector.mouseMoveEvent(&event);
+        else selector.mouseReleaseEvent(&event);
+    };
+    auto key = [&selector](int code, Qt::KeyboardModifiers modifiers = Qt::NoModifier) {
+        QKeyEvent event(QEvent::KeyPress, code, modifiers);
+        selector.keyPressEvent(&event);
+    };
+
+    // Marquee over both shapes, inside the capture area.
+    // Started clear of every annotation's hit margin and the area's handles.
+    send(QEvent::MouseButtonPress, QPoint(170, 112), Qt::ShiftModifier);
+    send(QEvent::MouseMove, QPoint(55, 55), Qt::ShiftModifier);
+    send(QEvent::MouseButtonRelease, QPoint(55, 55), Qt::ShiftModifier);
+    QCOMPARE(layer->selectionCount(), 2);
+    QCOMPARE(selector.m_selectionManager->selectionRect(), kSelectionRect);   // not moved
+
+    const auto history = layer->historyCommandCount();
+    send(QEvent::MouseButtonPress, QPoint(75, 75), Qt::NoModifier);
+    send(QEvent::MouseMove, QPoint(80, 78), Qt::NoModifier);
+    send(QEvent::MouseMove, QPoint(85, 80), Qt::NoModifier);
+    send(QEvent::MouseButtonRelease, QPoint(85, 80), Qt::NoModifier);
+    QCOMPARE(rectAt(0), QRectF(70, 65, 30, 30));
+    QCOMPARE(rectAt(1), QRectF(130, 65, 30, 30));
+    QCOMPARE(layer->historyCommandCount(), history + 1);
+    QCOMPARE(selector.m_selectionManager->selectionRect(), kSelectionRect);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(rectAt(0), QRectF(60, 60, 30, 30));
+    QCOMPARE(rectAt(1), QRectF(120, 60, 30, 30));
+    QCOMPARE(layer->selectionCount(), 2);
+
+    // Arrows nudge the group, not the capture area.
+    key(Qt::Key_Left);
+    QCOMPARE(rectAt(0), QRectF(59, 60, 30, 30));
+    QCOMPARE(selector.m_selectionManager->selectionRect(), kSelectionRect);
+
+    // Shift+click adds the arrow; Delete removes all three in one step.
+    send(QEvent::MouseButtonPress, QPoint(100, 140), Qt::ShiftModifier);
+    send(QEvent::MouseButtonRelease, QPoint(100, 140), Qt::ShiftModifier);
+    QCOMPARE(layer->selectionCount(), 3);
+    key(Qt::Key_Delete);
+    QCOMPARE(layer->itemCount(), size_t(0));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(layer->itemCount(), size_t(3));
+
+    // Select All, then Esc clears the group without leaving the capture.
+    QSignalSpy cancelled(&selector, &RegionSelector::selectionCancelled);
+    key(Qt::Key_A, Qt::ControlModifier);
+    QCOMPARE(layer->selectionCount(), 3);
+    key(Qt::Key_Escape);
+    QCOMPARE(layer->selectionCount(), 0);
+    QCOMPARE(cancelled.count(), 0);
+
+    // An open polyline takes a Shift+click on an annotation as its next point.
+    selector.m_inputState.currentTool = ToolId::Polyline;
+    selector.m_toolManager->setCurrentTool(ToolId::Polyline);
+    send(QEvent::MouseButtonPress, QPoint(170, 112), Qt::NoModifier);
+    send(QEvent::MouseButtonRelease, QPoint(170, 112), Qt::NoModifier);
+    QVERIFY(selector.m_toolManager->isDrawing());
+    layer->setSelectedIndex(1);
+    send(QEvent::MouseButtonPress, QPoint(75, 75), Qt::ShiftModifier);
+    send(QEvent::MouseButtonRelease, QPoint(75, 75), Qt::ShiftModifier);
+    QVERIFY(!layer->isMultiSelection());   // no toggle into a group
+}
+
+void TestRegionSelectorStyleSync::groupDragOwnsArrowKeys()
+{
+    RegionSelector selector;
+    prepareSelectionTool(selector);
+    auto* layer = selector.m_annotationLayer;
+    for (const int x : {60, 120}) {
+        layer->addItem(std::make_unique<ShapeAnnotation>(
+            QRect(x, 60, 30, 30), ShapeType::Rectangle, Qt::red, 3, true));
+    }
+    layer->selectAll();
+    const auto history = layer->historyCommandCount();
+    const auto groupBounds = layer->selectionBoundingRect();
+    mouse(selector, QEvent::MouseButtonPress, QPoint(75, 75));
+    QTest::keyClick(&selector, Qt::Key_Right);
+    QTest::keyClick(&selector, Qt::Key_Right, Qt::ShiftModifier);
+    QCOMPARE(selector.m_selectionManager->selectionRect(), kSelectionRect);
+    QCOMPARE(layer->selectionBoundingRect(), groupBounds);
+
+    const QPoint delta(10, 5);
+    mouse(selector, QEvent::MouseMove, QPoint(75, 75) + delta);
+    QTest::keyClick(&selector, Qt::Key_Right);
+    QTest::keyClick(&selector, Qt::Key_Right, Qt::ShiftModifier);
+    QCOMPARE(layer->selectionBoundingRect(), groupBounds.translated(delta));
+    QTest::keyClick(&selector, Qt::Key_Escape);
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(75, 75) + delta);
+    QCOMPARE(selector.m_selectionManager->selectionRect(), kSelectionRect);
+    QCOMPARE(layer->selectionBoundingRect(), groupBounds);
+    QCOMPARE(layer->historyCommandCount(), history);
+}
+
+void TestRegionSelectorStyleSync::selectAllDuringSingleDragPreservesMoveUndo()
+{
+    RegionSelector selector;
+    prepareSelectionTool(selector);
+    auto* layer = selector.m_annotationLayer;
+    for (const int x : {60, 140}) {
+        layer->addItem(std::make_unique<ShapeAnnotation>(
+            QRect(x, 60, 40, 40), ShapeType::Rectangle, Qt::red, 3, true));
+    }
+    layer->setSelectedIndex(0);
+    auto firstRect = [layer] { return static_cast<ShapeAnnotation*>(layer->itemAt(0))->rectF(); };
+    const auto original = firstRect();
+    mouse(selector, QEvent::MouseButtonPress, QPoint(80, 80));
+    mouse(selector, QEvent::MouseMove, QPoint(90, 85));
+    const auto dragged = firstRect();
+    QVERIFY(dragged != original);
+    QVERIFY(layer->isGestureActive());
+
+    QTest::keyClick(&selector, Qt::Key_A, Qt::ControlModifier);
+    QCOMPARE(layer->selectionCount(), 2);
+    QTest::keyClick(&selector, Qt::Key_Delete);
+    mouse(selector, QEvent::MouseButtonRelease, QPoint(90, 85));
+    QCOMPARE(layer->itemCount(), size_t(0));
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(layer->itemCount(), size_t(2));
+    QCOMPARE(firstRect(), dragged);
+    emit selector.m_toolbarHandler->undoRequested();
+    QCOMPARE(layer->itemCount(), size_t(2));
+    QCOMPARE(firstRect(), original);
 }
 
 void TestRegionSelectorStyleSync::polylineVertexDragIsUndoable()

@@ -8,6 +8,7 @@
 #include "annotations/AnnotationLayer.h"
 #include "annotations/ArrowAnnotation.h"
 #include "annotations/EmojiStickerAnnotation.h"
+#include "annotations/ShapeAnnotation.h"
 #include "annotations/TextBoxAnnotation.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "tools/ToolId.h"
@@ -27,6 +28,11 @@ private slots:
     void zOrderShortcutsMapToMoves();
     void zOrderKeyNeedsSelection();
     void zOrderKeyMovesNonStylableSelection();
+    void multiSelectionShowsCommonSectionsAndMixedValues();
+    void multiSelectionEditIsOneCoalescedStep();
+    void multiSelectionOfOnlyEmojiHasNoTarget();
+    void groupShrunkToOneEditsAsSingleTarget();
+    void zOrderKeyIsConsumedForGroup();
 };
 
 namespace {
@@ -241,6 +247,111 @@ void tst_AnnotationStyleEditor::zOrderKeyMovesNonStylableSelection()
     QKeyEvent forward(QEvent::KeyPress, Qt::Key_BracketRight, Qt::ControlModifier);
     QVERIFY(editor.handleZOrderKey(&forward));
     QCOMPARE(layer.idAt(1), emojiId);
+}
+
+// #370: several selected annotations are styled together.
+void tst_AnnotationStyleEditor::multiSelectionShowsCommonSectionsAndMixedValues()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(redArrow(0, 3));
+    layer.addItem(std::make_unique<ShapeAnnotation>(QRect(0, 40, 30, 30), ShapeType::Rectangle, Qt::blue, 3));
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(80, 80), QStringLiteral("x")));
+    layer.selectAll();
+    QVERIFY(editor.hasTarget());
+    QVERIFY(vm.editingSelection());
+    QVERIFY(vm.multiSelection());
+    // Arrow and shape share colour and width only.
+    QVERIFY(vm.showColorSection());
+    QVERIFY(vm.showWidthSection());
+    QVERIFY(!vm.showArrowStyleSection());
+    QVERIFY(!vm.showShapeSection());
+    QVERIFY(!vm.showTextSection());
+    QCOMPARE(vm.mixedProperties(), QStringList{QStringLiteral("Color")});
+    QVERIFY(vm.targetLabel().contains(QStringLiteral("3")));
+    QVERIFY(vm.targetLabel().contains(QStringLiteral("Mixed")));
+
+    // Two arrows: their own sections come back.
+    layer.addItem(redArrow(100, 5));
+    layer.setSelectedIds({layer.idAt(0), layer.idAt(3)});
+    QVERIFY(vm.showArrowStyleSection());
+    QCOMPARE(vm.mixedProperties(), QStringList{QStringLiteral("Width")});
+
+    layer.clearSelection();
+    QVERIFY(!editor.hasTarget());
+    QVERIFY(!vm.multiSelection());
+}
+
+void tst_AnnotationStyleEditor::multiSelectionEditIsOneCoalescedStep()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    QSignalSpy applied(&editor, &AnnotationStyleEditor::styleApplied);
+    layer.addItem(redArrow(0, 3));
+    layer.addItem(redArrow(40, 4));
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(80, 80), QStringLiteral("x")));
+    layer.selectAll();
+    const auto history = layer.historyCommandCount();
+    vm.handleWidthChanged(6);
+    vm.handleWidthChanged(8);
+    QCOMPARE(arrowAt(layer, 0)->width(), 8);
+    QCOMPARE(arrowAt(layer, 1)->width(), 8);
+    QCOMPARE(applied.count(), 2);
+    QCOMPARE(layer.historyCommandCount(), history + 1);
+    QVERIFY(vm.mixedProperties().isEmpty());
+    layer.undo();
+    QCOMPARE(arrowAt(layer, 0)->width(), 3);
+    QCOMPARE(arrowAt(layer, 1)->width(), 4);
+    QVERIFY(layer.isMultiSelection());
+    QCOMPARE(vm.mixedProperties(), QStringList{QStringLiteral("Width")});
+}
+
+void tst_AnnotationStyleEditor::multiSelectionOfOnlyEmojiHasNoTarget()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(0, 0), QStringLiteral("x")));
+    layer.addItem(std::make_unique<EmojiStickerAnnotation>(QPoint(80, 80), QStringLiteral("y")));
+    layer.selectAll();
+    QVERIFY(layer.isMultiSelection());
+    QVERIFY(!editor.hasTarget());
+    QVERIFY(!vm.editingSelection());
+}
+
+void tst_AnnotationStyleEditor::groupShrunkToOneEditsAsSingleTarget()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(redArrow(0, 3));
+    layer.addItem(redArrow(40, 3));
+    layer.selectAll();
+    layer.toggleSelected(layer.idAt(1));
+    QVERIFY(!vm.multiSelection());
+    QCOMPARE(vm.targetLabel(), QStringLiteral("Selected: Arrow"));
+    const auto history = layer.historyCommandCount();
+    vm.handleWidthChanged(5);
+    vm.handleWidthChanged(6);
+    vm.handleWidthChanged(7);
+    QCOMPARE(layer.historyCommandCount(), history + 1);   // one coalesced step
+    QCOMPARE(arrowAt(layer, 1)->width(), 3);
+}
+
+void tst_AnnotationStyleEditor::zOrderKeyIsConsumedForGroup()
+{
+    AnnotationLayer layer;
+    PinToolOptionsViewModel vm;
+    AnnotationStyleEditor editor(&layer, &vm);
+    layer.addItem(redArrow(0));
+    layer.addItem(redArrow(0));
+    const auto first = layer.idAt(0);
+    layer.selectAll();
+    QKeyEvent key(QEvent::KeyPress, Qt::Key_BracketRight, Qt::ControlModifier);
+    QVERIFY(editor.handleZOrderKey(&key));   // never reaches Reset Opacity
+    QCOMPARE(layer.idAt(0), first);          // and moves nothing
 }
 
 QTEST_MAIN(tst_AnnotationStyleEditor)

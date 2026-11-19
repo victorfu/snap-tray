@@ -2183,6 +2183,38 @@ Size: %2</source>
         <translation>請將縮放重設為 100% 後再剪接條帶</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>已選取的物件：%1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>已選取的物件：%1 · 混合：%2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>顏色</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>粗幼</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>線條端點</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>線條樣式</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>填充</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>字型</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>手動</translation>

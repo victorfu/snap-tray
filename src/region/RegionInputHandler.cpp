@@ -1,6 +1,7 @@
 #include "settings/AnnotationSettingsManager.h"
 #include <QGuiApplication>
 #include "region/RegionInputHandler.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "region/SelectionStateManager.h"
 #include "region/SelectionResizeHelper.h"
 #include "region/TextAnnotationEditor.h"
@@ -63,7 +64,8 @@ RegionInputHandler::RegionInputHandler(QObject* parent)
 bool RegionInputHandler::isManipulatingAnnotation() const
 {
     return m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating ||
-           m_isArrowDragging || m_isPolylineDragging;
+           m_isArrowDragging || m_isPolylineDragging ||
+           (m_multiSelection && m_multiSelection->isActive());
 }
 
 void RegionInputHandler::setSelectionManager(SelectionStateManager* manager)
@@ -236,6 +238,22 @@ void RegionInputHandler::handleMousePress(QMouseEvent* event)
                 return;
             }
 
+            // Shift+click, a group drag, and (Selection tool, inside the
+            // capture area, off its handles) a Shift+drag marquee (#370).
+            // An open polyline takes its next point, Shift-constrained or not.
+            if (m_multiSelection && !state().multiRegionMode
+                && !(m_toolManager && m_toolManager->isDrawing())) {
+                const bool marqueeAllowed = state().currentTool == ToolId::Selection
+                    && m_selectionManager->selectionRect().contains(event->pos())
+                    && m_selectionManager->hitTestHandle(event->pos())
+                        == SelectionStateManager::ResizeHandle::None;
+                if (m_multiSelection->handlePress(event->pos(), event->modifiers(), marqueeAllowed)) {
+                    if (m_parentWidget) m_parentWidget->setFocus();
+                    emit updateRequested();
+                    return;
+                }
+            }
+
             // Finalize polyline when clicking on UI elements
             auto finalizePolylineForUiClick = [&](const QPoint& pos) {
                 if (state().currentTool == ToolId::Arrow && m_toolManager->isDrawing()) {
@@ -372,6 +390,12 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
+    if (m_multiSelection && m_multiSelection->handleMove(effectivePos, event->buttons())) {
+        if (!m_multiSelection->isActive()) syncHoverCursorAt(effectivePos);
+        emit updateRequested();
+        return;
+    }
+
     if (m_toolManager &&
         m_toolManager->handleTextInteractionMove(effectivePos, event->modifiers())) {
         return;
@@ -435,6 +459,12 @@ void RegionInputHandler::handleMouseRelease(QMouseEvent* event, ReleaseTarget ta
     m_lastToolEventPos = event->position();
 
     if (event->button() == Qt::LeftButton) {
+        if (m_multiSelection && m_multiSelection->handleRelease(event->pos())) {
+            syncHoverCursorAt(event->pos());
+            emit updateRequested();
+            return;
+        }
+
         // Handle text editor drag release
         if (handleTextEditorRelease(event->pos())) {
             return;
@@ -774,6 +804,10 @@ void RegionInputHandler::handleNewSelectionPress(const QPoint& pos)
 
 bool RegionInputHandler::cancelAnnotationManipulation()
 {
+    if (m_multiSelection && m_multiSelection->cancel()) {
+        emit updateRequested();
+        return true;
+    }
     bool cancelled = m_toolManager && m_toolManager->cancelAnnotationInteraction();
     if (m_isEmojiDragging || m_isEmojiScaling || m_isEmojiRotating
         || m_isArrowDragging || m_isPolylineDragging) {

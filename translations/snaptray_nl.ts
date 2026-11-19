@@ -2184,6 +2184,38 @@ Grootte: %2</translation>
         <translation>Zet de zoom terug op 100% om een strook uit te knippen</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>Geselecteerde objecten: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Geselecteerde objecten: %1 · Gemengd: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Kleur</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Breedte</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Lijnuiteinden</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Lijnstijl</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Opvulling</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Lettertype</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>Handmatig</translation>

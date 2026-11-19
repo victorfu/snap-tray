@@ -2184,6 +2184,38 @@ Size: %2</source>
         <translation>Επαναφέρετε το ζουμ στο 100% για να αποκόψετε μια λωρίδα</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>Επιλεγμένα αντικείμενα: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Επιλεγμένα αντικείμενα: %1 · Μικτά: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Χρώμα</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Πάχος</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Άκρα γραμμής</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Στυλ γραμμής</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Γέμισμα</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Γραμματοσειρά</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>Χειροκίνητα</translation>

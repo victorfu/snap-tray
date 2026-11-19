@@ -48,6 +48,8 @@ While you annotate (Region Capture, a pin, or Screen Canvas), these shortcuts ch
 | Bring to Front | `⌥⌘]` | `Ctrl+Shift+]` |
 | Send to Back | `⌥⌘[` | `Ctrl+Shift+[` |
 
+In Region Capture and a pin, selecting several annotations uses `Shift`-click, `Ctrl/Cmd + A`, the arrow keys, `Delete`, and `Esc` (not Screen Canvas). See [Annotation Tools](/docs/annotation-tools/#selecting-several-annotations).
+
 On a pin, `Ctrl/Cmd + ]` resets opacity when no annotation is selected. See [Annotation Tools](/docs/annotation-tools/#putting-one-annotation-above-another).
 
 ## Hotkey categories

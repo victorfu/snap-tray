@@ -25,4 +25,6 @@ struct LineAnnotationGeometry
     void draw(QPainter& painter, const QColor& color, int width, LineStyle style) const;
     QRect boundingRect(int width) const;
     bool containsPoint(const QPoint& point, int width) const;
+    // True when the painted line or a head touches rect (a marquee, #370).
+    bool intersects(const QRectF& rect, int width) const;
 };

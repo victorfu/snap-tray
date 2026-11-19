@@ -1,6 +1,7 @@
 #include "RegionSelector.h"
 #include "annotation/AnnotationContext.h"
 #include "annotation/AnnotationStyleEditor.h"
+#include "annotation/AnnotationSelectionController.h"
 #include "annotation/ColorPickOverlay.h"
 #include "annotations/AnnotationStyle.h"
 #include "history/AnnotationSerializer.h"
@@ -842,6 +843,8 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_painter = new RegionPainter(this);
     m_painter->setSelectionManager(m_selectionManager);
     m_painter->setAnnotationLayer(m_annotationLayer);
+    m_multiSelection = std::make_unique<AnnotationSelectionController>(m_annotationLayer);
+    m_painter->setMultiSelectionController(m_multiSelection.get());
     m_painter->setToolManager(m_toolManager);
     m_painter->setMultiRegionManager(m_multiRegionManager);
     m_painter->setParentWidget(this);
@@ -918,6 +921,7 @@ RegionSelector::RegionSelector(QWidget* parent)
     m_inputHandler = new RegionInputHandler(this);
     m_inputHandler->setSelectionManager(m_selectionManager);
     m_inputHandler->setAnnotationLayer(m_annotationLayer);
+    m_inputHandler->setMultiSelectionController(m_multiSelection.get());
     m_inputHandler->setToolManager(m_toolManager);
     m_inputHandler->setTextEditor(m_textEditor);
     m_inputHandler->setTextAnnotationEditor(m_textAnnotationEditor);
@@ -3930,7 +3934,9 @@ QRect RegionSelector::selectedAnnotationInteractionVisualRect() const
 {
     return snaptray::tools::selectedAnnotationRepaintRect(
         m_annotationLayer,
-        kAnnotationInteractionVisualMargin).united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds().united(m_annotationLayer->bindingHintBounds()).united(m_annotationLayer->bindingDirtyBounds()) : QRect());
+        kAnnotationInteractionVisualMargin)
+        .united(m_multiSelection ? m_multiSelection->visualRect() : QRect())   // #370
+        .united(m_annotationLayer ? m_annotationLayer->snapController().guideBounds().united(m_annotationLayer->bindingHintBounds()).united(m_annotationLayer->bindingDirtyBounds()) : QRect());
 }
 
 bool RegionSelector::requestLocalizedAnnotationInteractionUpdate()
@@ -4222,6 +4228,8 @@ void RegionSelector::setMultiRegionMode(bool enabled)
     if (m_inputState.multiRegionMode == enabled) {
         return;
     }
+    // A marquee or group drag does not carry over into multi-region capture.
+    if (m_multiSelection) m_multiSelection->cancel();
 
     cancelMultiRegionReplace(false);
     m_inputState.multiRegionMode = enabled;
@@ -4712,6 +4720,17 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
         return;
     }
 
+    // Multi-object selection keys (#370): Esc, Select All, Delete, and arrow
+    // nudges of a group, ahead of the capture-area shortcuts they share.
+    // Esc comes later, after drags and an open polyline.
+    if (!m_inputState.multiRegionMode && m_selectionManager->isComplete() && m_multiSelection
+        && event->key() != Qt::Key_Escape
+        && m_multiSelection->handleKey(event)) {
+        requestCaptureSceneUpdate();
+        event->accept();
+        return;
+    }
+
     if (event->key() == Qt::Key_Escape) {
         if (hasBlockingTransientUiOpen()) {
             event->ignore();
@@ -4732,6 +4751,13 @@ void RegionSelector::keyPressEvent(QKeyEvent* event)
 
         // Try to handle escape in tool first (e.g. finish polyline)
         if (m_toolManager && m_toolManager->handleEscape()) {
+            event->accept();
+            return;
+        }
+
+        // Then Esc ends a group selection (#370) instead of leaving capture.
+        if (!m_inputState.multiRegionMode && m_multiSelection && m_multiSelection->handleKey(event)) {
+            requestCaptureSceneUpdate();
             event->accept();
             return;
         }

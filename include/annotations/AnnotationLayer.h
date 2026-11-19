@@ -202,6 +202,58 @@ public:
     AnnotationId gestureId() const { return m_gestureId; }
     bool removeSelectedItem();
 
+    // Multi-object selection (#370). A selection holds either one annotation
+    // (selectedId()/selectedIndex(), driving the single-object editors) or two
+    // or more, held as a set of stable ids. While several are selected,
+    // selectedIndex() is -1 so no single-object editor or gizmo engages, and
+    // the group operations below apply to all of them in one history step.
+    // Only visible annotations with editable geometry are selectable.
+    static bool isSelectable(const AnnotationItem& item);
+    // Ids of every selected annotation still in the scene, in drawing order.
+    std::vector<AnnotationId> selectedIds() const;
+    int selectionCount() const { return static_cast<int>(selectedIds().size()); }
+    bool isMultiSelection() const { return selectionCount() > 1; }
+    bool isSelected(AnnotationId id) const;
+    // Replaces the selection. Unknown or unselectable ids are dropped; one id
+    // left makes it an ordinary single selection.
+    void setSelectedIds(const std::vector<AnnotationId>& ids);
+    // Adds the id to the selection, or removes it when already selected.
+    void toggleSelected(AnnotationId id);
+    void selectAll();
+    // Topmost selectable annotation at pos, or -1.
+    int hitTestSelectable(const QPoint& pos) const;
+    // Selectable annotations whose bounds intersect rect, in drawing order.
+    std::vector<AnnotationId> selectableIdsIntersecting(const QRect& rect) const;
+    // Bounds of every selected annotation together; empty with no selection.
+    QRect selectionBoundingRect() const;
+
+    // A group gesture drags every selected annotation (#370). Positions are
+    // recomputed from the snapshots taken at begin plus the total offset, so
+    // no per-frame rounding accumulates. Commit records one Modify command for
+    // the annotations that moved (none: no command, redo history kept);
+    // cancel restores them all. Undo/redo are refused while it is active.
+    bool beginGroupGesture();
+    bool updateGroupGesture(const QPointF& totalOffset);
+    bool commitGroupGesture();
+    void cancelGroupGesture();
+    bool isGroupGestureActive() const { return !m_groupSnapshots.empty(); }
+    // A single-object or a group gesture: history must not move under either.
+    bool isAnyGestureActive() const { return isGestureActive() || isGroupGestureActive(); }
+    // Moves every selected annotation by delta as one Modify command.
+    // Repeated calls with the same non-empty coalesceKey and selection extend
+    // that command (keyboard nudges) until another history operation or
+    // endModifyCoalescing().
+    bool translateSelectedItems(const QPointF& delta, const QString& coalesceKey);
+    // Applies mutate to each selected annotation as one Modify (style)
+    // command. Every target is checked before any is changed; mutate returns
+    // false for an annotation it leaves unchanged (unsupported property or
+    // same value), and only changed annotations are recorded. Coalesces like
+    // modifyItem() for the same key and selection.
+    bool modifySelectedItems(const QString& coalesceKey,
+                             const std::function<bool(AnnotationItem&)>& mutate);
+    // Removes every selected annotation (one or more) as one Remove command.
+    bool removeSelectedItems();
+
     bool hasArrowDependents(const AnnotationItem* item) const {
         return item && m_bindingDependents.contains(item->persistentId());
     }
@@ -329,6 +381,22 @@ private:
     QString m_openModifyKey;
     AnnotationId m_gestureId = 0;
     std::unique_ptr<AnnotationItem> m_gestureSnapshot;
+    // Two or more selected ids (#370); empty for a single or no selection.
+    std::vector<AnnotationId> m_multiSelection;
+    std::vector<AnnotationId> m_openModifyGroup;
+    struct GroupSnapshot {
+        AnnotationId id = 0;
+        std::unique_ptr<AnnotationItem> item;
+    };
+    std::vector<GroupSnapshot> m_groupSnapshots;
+    void dropGroupGesture();
+    bool extendsOpenGroupModify(const std::vector<AnnotationId>& ids, const QString& key) const;
+    // Records befores (states of changed annotations before the edit) as one
+    // Modify command, or merges them into the open coalesced one.
+    void recordGroupModify(std::vector<RemovedItem> befores, unsigned parts,
+                           const std::vector<AnnotationId>& ids, const QString& coalesceKey);
+    bool keepsSelectionAcross(const HistoryCommand& command) const;
+    void applyGroupOffset(const std::vector<GroupSnapshot>& from, const QPointF& offset);
 
     struct CacheKey {
         int physicalWidth = 0;

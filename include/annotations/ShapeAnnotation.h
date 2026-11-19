@@ -60,6 +60,9 @@ public:
     QPointF center() const;
     void moveBy(const QPointF& delta);
     bool containsPoint(const QPoint &point) const;
+    // True when the painted shape (its outline, or its area when filled,
+    // rotated and scaled) touches rect (a marquee, #370).
+    bool intersects(const QRect &rect) const;
     QPolygonF transformedBoundingPolygon() const;
 
 private:

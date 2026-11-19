@@ -2183,6 +2183,38 @@ Size: %2</source>
         <translation>띠를 잘라내려면 확대/축소를 100%로 되돌리세요</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>선택한 개체: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>선택한 개체: %1 · 혼합: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>색상</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>두께</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>선 끝</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>선 스타일</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>채우기</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>글꼴</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>수동</translation>

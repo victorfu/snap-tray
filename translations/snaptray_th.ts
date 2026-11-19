@@ -2034,6 +2034,38 @@ English is always included and cannot be removed.</source>
         <translation>รีเซ็ตการซูมเป็น 100% เพื่อตัดแถบออก</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>วัตถุที่เลือก: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>วัตถุที่เลือก: %1 · ค่าผสม: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>สี</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>ความหนา</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>ปลายเส้น</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>รูปแบบเส้น</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>การเติมสี</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>แบบอักษร</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>ด้วยตนเอง</translation>

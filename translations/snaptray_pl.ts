@@ -2185,6 +2185,38 @@ Rozmiar: %2</translation>
         <translation>Przywróć powiększenie 100%, aby wyciąć pasek</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>Zaznaczone obiekty: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Zaznaczone obiekty: %1 · Mieszane: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Kolor</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Grubość</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Zakończenia linii</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Styl linii</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Wypełnienie</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Czcionka</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>Ręcznie</translation>

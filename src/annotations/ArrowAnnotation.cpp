@@ -120,6 +120,11 @@ bool ArrowAnnotation::containsPoint(const QPoint &pos) const
     return geometry().containsPoint(pos, m_width);
 }
 
+bool ArrowAnnotation::intersects(const QRect &rect) const
+{
+    return geometry().intersects(QRectF(rect), m_width);
+}
+
 bool ArrowAnnotation::isCurved() const
 {
     // Check if control point deviates from the line segment between start and end

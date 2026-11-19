@@ -23,6 +23,7 @@
 #include <cmath>
 #include <iterator>
 #include <limits>
+#include <typeinfo>
 
 namespace {
 
@@ -75,6 +76,7 @@ void AnnotationLayer::addItem(std::unique_ptr<AnnotationItem> item)
 {
     // Drawing something new ends a gesture whose release never came (#237).
     if (isGestureActive() && !gestureIsReEdit()) commitGesture(ModifyStyle | ModifyGeometry);
+    if (isGroupGestureActive()) commitGroupGesture();
     if (!item) {
         return;
     }
@@ -125,6 +127,7 @@ void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> 
     m_snapController.invalidate();
     endModifyCoalescing();
     dropGesture();
+    dropGroupGesture();
     m_eraseTransactionActive = false;
     m_deferredItems.clear();
     clearSelection();
@@ -189,11 +192,8 @@ void AnnotationLayer::replaceItems(std::vector<std::unique_ptr<AnnotationItem>> 
 void AnnotationLayer::undo()
 {
     endModifyCoalescing();
-    if (m_eraseTransactionActive || isGestureActive() || m_undoStack.empty()) return;
-    const bool keepSelection = (m_undoStack.back().kind == HistoryCommandKind::Modify
-                                || m_undoStack.back().kind == HistoryCommandKind::Reorder)
-        && !m_undoStack.back().items.empty()
-        && selectedId() == m_undoStack.back().items.front().id;
+    if (m_eraseTransactionActive || isAnyGestureActive() || m_undoStack.empty()) return;
+    const bool keepSelection = keepsSelectionAcross(m_undoStack.back());
 
     const std::size_t beforeBytes = m_undoStack.back().retainedBytes;
     if (!undoCommand(m_undoStack.back())) {
@@ -212,19 +212,31 @@ void AnnotationLayer::undo()
     renumberStepBadges();
     rebuildBindingIndex();
     invalidateCache();
-    // A Modify or Reorder keeps the selected annotation; keep it selected.
+    // A Modify or Reorder keeps the selected annotations; keep them selected.
     if (!keepSelection) clearSelection();
     emit changed();
+}
+
+bool AnnotationLayer::keepsSelectionAcross(const HistoryCommand& command) const
+{
+    if (command.kind != HistoryCommandKind::Modify
+        && command.kind != HistoryCommandKind::Reorder) return false;
+    // Kept when everything the command changed is selected. A group style
+    // edit skips selected annotations without style (emoji), so the command
+    // may cover only part of the selection.
+    const auto selected = selectedIds();
+    if (selected.empty() || command.items.empty()) return false;
+    return std::all_of(command.items.cbegin(), command.items.cend(),
+        [&selected](const RemovedItem& record) {
+            return std::find(selected.cbegin(), selected.cend(), record.id) != selected.cend();
+        });
 }
 
 void AnnotationLayer::redo()
 {
     endModifyCoalescing();
-    if (m_eraseTransactionActive || isGestureActive() || m_redoStack.empty()) return;
-    const bool keepSelection = (m_redoStack.back().kind == HistoryCommandKind::Modify
-                                || m_redoStack.back().kind == HistoryCommandKind::Reorder)
-        && !m_redoStack.back().items.empty()
-        && selectedId() == m_redoStack.back().items.front().id;
+    if (m_eraseTransactionActive || isAnyGestureActive() || m_redoStack.empty()) return;
+    const bool keepSelection = keepsSelectionAcross(m_redoStack.back());
 
     const std::size_t beforeBytes = m_redoStack.back().retainedBytes;
     if (!redoCommand(m_redoStack.back())) {
@@ -243,7 +255,7 @@ void AnnotationLayer::redo()
     renumberStepBadges();
     rebuildBindingIndex();
     invalidateCache();
-    // A Modify or Reorder keeps the selected annotation; keep it selected.
+    // A Modify or Reorder keeps the selected annotations; keep them selected.
     if (!keepSelection) clearSelection();
     emit changed();
 }
@@ -253,6 +265,7 @@ void AnnotationLayer::clear()
     m_snapController.invalidate();
     endModifyCoalescing();
     dropGesture();
+    dropGroupGesture();
     // A clear is authoritative. Any items temporarily owned by an active
     // eraser stroke must not be restored into the newly cleared layer.
     m_eraseTransactionActive = false;
@@ -340,7 +353,7 @@ void AnnotationLayer::translateLayoutOwnedItems(
     HistoryStateToken ceiling,
     const std::function<QPointF(LayoutItemKey, const AnnotationItem&)>& deltaForItem)
 {
-    if (!deltaForItem || isHistoryLocked() || isGestureActive()) return;
+    if (!deltaForItem || isHistoryLocked() || isAnyGestureActive()) return;
     const auto translate = [&deltaForItem](LayoutItemKey key, AnnotationItem* item) {
         if (item) item->translate(deltaForItem(key, *item));
     };
@@ -412,6 +425,7 @@ void AnnotationLayer::forEachOwnedItem(
     }
     // An active gesture's snapshot moves with canvas-wide translations too.
     if (m_gestureSnapshot) visitor(m_gestureSnapshot.get());
+    for (auto& snapshot : m_groupSnapshots) visitor(snapshot.item.get());
 }
 
 void AnnotationLayer::forEachOwnedItem(
@@ -425,6 +439,7 @@ void AnnotationLayer::forEachOwnedItem(
         visitor(item.get());
     }
     if (m_gestureSnapshot) visitor(m_gestureSnapshot.get());
+    for (const auto& snapshot : m_groupSnapshots) visitor(snapshot.item.get());
 }
 
 AnnotationLayer::AnnotationId AnnotationLayer::allocateAnnotationId()
@@ -667,18 +682,33 @@ void AnnotationLayer::removeCommandItems(HistoryCommand& command)
 
 bool AnnotationLayer::swapModifiedParts(HistoryCommand& command)
 {
-    // Exchanges only the recorded parts between the scene item and the stored
-    // state. The scene object, its id and its visibility stay: changes outside
-    // these parts must survive (#224 review).
-    if (command.items.size() != 1 || !command.items.front().item) return false;
-    auto sceneIt = findSceneItem(command.items.front().id);
-    if (sceneIt == m_items.end() || !sceneIt->item) return false;
-    std::unique_ptr<AnnotationItem> current = sceneIt->item->clone();
-    const AnnotationItem& stored = *command.items.front().item;
-    // Style first: a text's font sets its box, which geometry then restores.
-    if ((command.parts & ModifyStyle) && !AnnotationStyle::copyStyle(stored, *sceneIt->item)) return false;
-    if ((command.parts & ModifyGeometry) && !AnnotationGeometry::copy(stored, *sceneIt->item)) return false;
-    command.items.front().item = std::move(current);
+    // Exchanges only the recorded parts between the scene items and the stored
+    // states. The scene objects, their ids and visibility stay: changes outside
+    // these parts must survive (#224 review). A group command (#370) checks
+    // every target first, so it is applied to all of them or to none.
+    if (command.items.empty()) return false;
+    std::vector<AnnotationItem*> targets;
+    targets.reserve(command.items.size());
+    for (const RemovedItem& record : command.items) {
+        auto sceneIt = findSceneItem(record.id);
+        if (!record.item || sceneIt == m_items.end() || !sceneIt->item) return false;
+        AnnotationItem& scene = *sceneIt->item;
+        // The stored state is a clone of this annotation, so the same type.
+        if (typeid(scene) != typeid(*record.item)) return false;
+        if ((command.parts & ModifyStyle)
+            && AnnotationStyle::kindOf(scene) == StyleTargetKind::None) return false;
+        if ((command.parts & ModifyGeometry) && !AnnotationGeometry::supports(scene)) return false;
+        targets.push_back(&scene);
+    }
+    for (std::size_t i = 0; i < command.items.size(); ++i) {
+        AnnotationItem& scene = *targets[i];
+        std::unique_ptr<AnnotationItem> current = scene.clone();
+        const AnnotationItem& stored = *command.items[i].item;
+        // Style first: a text's font sets its box, which geometry then restores.
+        if (command.parts & ModifyStyle) AnnotationStyle::copyStyle(stored, scene);
+        if (command.parts & ModifyGeometry) AnnotationGeometry::copy(stored, scene);
+        command.items[i].item = std::move(current);
+    }
     return true;
 }
 
@@ -809,12 +839,12 @@ void AnnotationLayer::draw(QPainter &painter) const
 
 bool AnnotationLayer::canUndo() const
 {
-    return !m_eraseTransactionActive && !isGestureActive() && !m_undoStack.empty();
+    return !m_eraseTransactionActive && !isAnyGestureActive() && !m_undoStack.empty();
 }
 
 bool AnnotationLayer::canRedo() const
 {
-    return !m_eraseTransactionActive && !isGestureActive() && !m_redoStack.empty();
+    return !m_eraseTransactionActive && !isAnyGestureActive() && !m_redoStack.empty();
 }
 
 bool AnnotationLayer::isEmpty() const
@@ -868,7 +898,7 @@ void AnnotationLayer::renumberStepBadges()
 
 int AnnotationLayer::zOrderTargetIndex(ZOrderMove move) const
 {
-    if (m_eraseTransactionActive || isGestureActive()) return -1;
+    if (m_eraseTransactionActive || isAnyGestureActive()) return -1;
     const int from = selectedIndex();
     if (from < 0) return -1;
     const int last = static_cast<int>(m_items.size()) - 1;
@@ -1019,6 +1049,8 @@ void AnnotationLayer::beginEraseTransaction()
 {
     endModifyCoalescing();
     dropGesture();
+    // Erasing removes items a group drag holds; its moves so far stay.
+    if (isGroupGestureActive()) commitGroupGesture();
     m_eraseTransactionActive = true;
 }
 
@@ -1195,15 +1227,17 @@ void AnnotationLayer::setSelectedIndex(int index)
         AnnotationItem* candidate = m_items[index].get();
         next = (candidate && candidate->isVisible()) ? m_items[index].id : 0;
     }
-    if (next == m_selectedId) return;
+    if (next == m_selectedId && m_multiSelection.empty()) return;
     m_selectedId = next;
+    m_multiSelection.clear();
     emit selectionChanged();
 }
 
 void AnnotationLayer::clearSelection()
 {
-    if (m_selectedId == 0) return;
+    if (m_selectedId == 0 && m_multiSelection.empty()) return;
     m_selectedId = 0;
+    m_multiSelection.clear();
     emit selectionChanged();
 }
 
@@ -1232,12 +1266,13 @@ void AnnotationLayer::endModifyCoalescing()
 {
     m_openModifyId = 0;
     m_openModifyKey.clear();
+    m_openModifyGroup.clear();
 }
 
 bool AnnotationLayer::modifyItem(AnnotationId id, const QString& coalesceKey,
                                  const std::function<bool(AnnotationItem&)>& mutate)
 {
-    if (m_eraseTransactionActive || !mutate || id == 0) return false;
+    if (m_eraseTransactionActive || isGroupGestureActive() || !mutate || id == 0) return false;
     auto sceneIt = findSceneItem(id);
     if (sceneIt == m_items.end() || !sceneIt->item) return false;
 
@@ -1285,6 +1320,7 @@ bool AnnotationLayer::beginGesture(AnnotationId id)
         if (gestureIsReEdit()) return false;   // the inline editor owns it
         commitGesture(ModifyStyle | ModifyGeometry);   // a release that never came
     }
+    if (isGroupGestureActive()) commitGroupGesture();   // likewise
     auto sceneIt = findSceneItem(id);
     if (sceneIt == m_items.end() || !sceneIt->item) return false;
     endModifyCoalescing();

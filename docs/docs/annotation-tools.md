@@ -53,6 +53,25 @@ With nothing selected, the style bar says **New object** and changes apply to th
 
 Moving, rotating, or resizing an annotation, dragging an arrow's ends or curve, dragging a line's points, and editing a text again are each one undo step. Press `Esc` during a drag to put the annotation back where it was.
 
+## Selecting several annotations
+
+Move, restyle, or delete a group of annotations, such as an arrow with its label and box, without breaking their layout. Text, shapes, arrows, lines, and emoji can be selected together.
+
+| Action | How |
+|---|---|
+| Add or remove one annotation | `Shift`-click it |
+| Select everything inside an area | In Region Capture with no drawing tool picked, `Shift`-drag from an empty spot inside the capture area (not from its edges or corners). Everything the box touches is added. |
+| Select all annotations | `Ctrl/Cmd + A` |
+| Move the group | Drag any selected annotation, or press the arrow keys (`Shift` + arrow moves 10 px) |
+| Delete the group | `Delete` or `Backspace` |
+| End the selection | `Esc`, or click outside the group |
+
+A drag, a run of arrow-key presses, a deletion, and a style change are each one undo step for the whole group. Press `Esc` during a drag to put every annotation back. A group drag does not snap to other annotations.
+
+The style bar says **Selected objects: 3** and shows only the settings every selected text, arrow, line, or shape has, for example color and width for arrows with shapes. Changing one applies it to all of them; emoji are left as they are. Settings that differ between the selected annotations are listed after **Mixed**, for example **Mixed: Color**; the swatches and slider then show the first selected annotation's value. Drawing order changes one annotation at a time, so Arrange is hidden for a group.
+
+Step badges, pencil and marker strokes, and mosaic areas cannot be selected. A pin always has a drawing tool picked while you annotate, so a drag on an empty spot draws and there is no selection box; use `Shift`-click or `Ctrl/Cmd + A`.
+
 ## Picking a color from the screen
 
 Click the eyedropper at the end of the color swatches, or press `I`, to take a color from the image you are annotating, for example to match a brand color or a button. A magnifier shows the pixels under the pointer and the color code.

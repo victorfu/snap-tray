@@ -2183,6 +2183,38 @@ Boyut: %2</translation>
         <translation>Bir şerit kesmek için yakınlaştırmayı %100&apos;e sıfırlayın</translation>
     </message>
     <message>
+        <source>Selected objects: %1</source>
+        <translation>Seçili nesneler: %1</translation>
+    </message>
+    <message>
+        <source>Selected objects: %1 · Mixed: %2</source>
+        <translation>Seçili nesneler: %1 · Karışık: %2</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Renk</translation>
+    </message>
+    <message>
+        <source>Width</source>
+        <translation>Kalınlık</translation>
+    </message>
+    <message>
+        <source>Line ends</source>
+        <translation>Çizgi uçları</translation>
+    </message>
+    <message>
+        <source>Line style</source>
+        <translation>Çizgi stili</translation>
+    </message>
+    <message>
+        <source>Fill</source>
+        <translation>Dolgu</translation>
+    </message>
+    <message>
+        <source>Font</source>
+        <translation>Yazı tipi</translation>
+    </message>
+    <message>
         <location filename="../src/qml/PinToolOptionsViewModel.cpp" line="282" />
         <source>Manual</source>
         <translation>Elle</translation>
