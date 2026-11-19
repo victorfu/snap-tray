@@ -390,7 +390,8 @@ void RegionInputHandler::handleMouseMove(QMouseEvent* event)
         return;
     }
 
-    if (m_multiSelection && m_multiSelection->handleMove(effectivePos)) {
+    if (m_multiSelection && m_multiSelection->handleMove(effectivePos, event->buttons())) {
+        if (!m_multiSelection->isActive()) syncHoverCursorAt(effectivePos);
         emit updateRequested();
         return;
     }

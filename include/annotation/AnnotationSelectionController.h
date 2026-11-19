@@ -43,7 +43,7 @@ public:
     explicit AnnotationSelectionController(AnnotationLayer* layer);
 
     bool handlePress(const QPoint& pos, Qt::KeyboardModifiers modifiers, bool marqueeAllowed);
-    bool handleMove(const QPoint& pos);
+    bool handleMove(const QPoint& pos, Qt::MouseButtons buttons);
     bool handleRelease(const QPoint& pos);
     // Cancels a group drag or marquee in progress. True if there was one.
     bool cancel();
@@ -64,6 +64,8 @@ public:
 
 private:
     enum class Mode { Idle, Pending, Dragging, Marquee };
+
+    void updatePointerPosition(const QPoint& pos);
 
     AnnotationLayer* m_layer;
     Mode m_mode = Mode::Idle;

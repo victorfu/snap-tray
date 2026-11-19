@@ -74,26 +74,32 @@ bool AnnotationSelectionController::handlePress(const QPoint& pos,
     return false;
 }
 
-bool AnnotationSelectionController::handleMove(const QPoint& pos)
+bool AnnotationSelectionController::handleMove(const QPoint& pos, Qt::MouseButtons buttons)
 {
     if (!m_layer || !isActive()) return false;
+    if (!buttons.testFlag(Qt::LeftButton)) return handleRelease(m_currentPos);
+    updatePointerPosition(pos);
+    return true;
+}
+
+void AnnotationSelectionController::updatePointerPosition(const QPoint& pos)
+{
     m_currentPos = pos;
     if (m_mode == Mode::Pending) {
-        if (pos == m_pressPos) return true;
+        if (pos == m_pressPos) return;
         if (!m_layer->beginGroupGesture()) {
             m_mode = Mode::Idle;
-            return true;
+            return;
         }
         m_mode = Mode::Dragging;
     }
     if (m_mode == Mode::Dragging) m_layer->updateGroupGesture(pos - m_pressPos);
-    return true;
 }
 
 bool AnnotationSelectionController::handleRelease(const QPoint& pos)
 {
     if (!m_layer || !isActive()) return false;
-    handleMove(pos);
+    updatePointerPosition(pos);
     const Mode mode = m_mode;
     const QRect area = marqueeRect();
     m_mode = Mode::Idle;
@@ -132,7 +138,10 @@ bool AnnotationSelectionController::handleKey(
         m_layer->clearSelection();
         return true;
     }
-    if (isActive()) return false;
+    if (isActive()) {
+        return (m_mode == Mode::Pending || m_mode == Mode::Dragging)
+            && arrowSteps().contains(event->key());
+    }
 
     if (event->matches(QKeySequence::SelectAll)) {
         // With nothing selectable the key is left to the host.

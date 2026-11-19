@@ -3461,7 +3461,12 @@ void PinWindow::mouseMoveEvent(QMouseEvent* event)
 
     CursorAuthority::instance().clearWidgetRequest(this, QStringLiteral("pin.layout"));
 
-    if (m_multiSelection && m_multiSelection->handleMove(mapToOriginalCoords(event->pos()))) {
+    if (m_multiSelection && m_multiSelection->handleMove(mapToOriginalCoords(event->pos()), event->buttons())) {
+        if (!m_multiSelection->isActive()) {
+            CursorManager::instance().setInputStateForWidget(this, InputState::Idle);
+            updateAnnotationCursor(event->pos());
+            updateUndoRedoState();
+        }
         update();
         return;
     }

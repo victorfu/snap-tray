@@ -90,6 +90,10 @@ void AnnotationLayer::setSelectedIds(const std::vector<AnnotationId>& ids)
         return;
     }
     if (m_selectedId == 0 && next == m_multiSelection) return;
+    // Switching to a group ends the single-object drag at its current position.
+    if (isGestureActive() && !gestureIsReEdit()) {
+        commitGesture(ModifyStyle | ModifyGeometry);
+    }
     m_selectedId = 0;
     m_multiSelection = std::move(next);
     emit selectionChanged();

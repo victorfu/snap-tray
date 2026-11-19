@@ -45,6 +45,7 @@ private slots:
     void selectAllDeleteAndNudge();
     void nudgeFollowsHostMapping();
     void drawsOutlinesOnlyForGroups();
+    void missedReleaseKeepsTheDrag_data();
     void missedReleaseKeepsTheDrag();
 };
 
@@ -71,9 +72,9 @@ void tst_AnnotationSelectionController::plainPressOnGroupMemberDragsGroupAsOneSt
     layer.setSelectedIds({layer.idAt(0), layer.idAt(1)});
     const auto history = layer.historyCommandCount();
     QVERIFY(controller.handlePress(QPoint(25, 25), Qt::NoModifier, true));
-    QVERIFY(controller.handleMove(QPoint(30, 30)));
+    QVERIFY(controller.handleMove(QPoint(30, 30), Qt::LeftButton));
     QVERIFY(controller.isDragging());
-    QVERIFY(controller.handleMove(QPoint(45, 35)));
+    QVERIFY(controller.handleMove(QPoint(45, 35), Qt::LeftButton));
     QVERIFY(controller.handleRelease(QPoint(45, 35)));
     QCOMPARE(layer.historyCommandCount(), history + 1);
     QCOMPARE(rectOf(layer, 0), QRectF(20, 10, 50, 50));
@@ -124,7 +125,7 @@ void tst_AnnotationSelectionController::marqueeOnlyWhereAllowed()
 
     QVERIFY(controller.handlePress(QPoint(-20, -20), Qt::ShiftModifier, true));
     QVERIFY(controller.isMarqueeActive());
-    controller.handleMove(QPoint(120, 60));
+    controller.handleMove(QPoint(120, 60), Qt::LeftButton);
     QCOMPARE(controller.marqueeRect(), QRect(QPoint(-20, -20), QPoint(120, 60)));
     QVERIFY(controller.handleRelease(QPoint(120, 60)));
     QCOMPARE(layer.selectedIds(),
@@ -158,7 +159,7 @@ void tst_AnnotationSelectionController::escapeCancelsDragThenClearsGroup()
     layer.setSelectedIds({layer.idAt(0), layer.idAt(1)});
     const auto history = layer.historyCommandCount();
     controller.handlePress(QPoint(25, 25), Qt::NoModifier, true);
-    controller.handleMove(QPoint(60, 60));
+    controller.handleMove(QPoint(60, 60), Qt::LeftButton);
     QVERIFY(key(controller, Qt::Key_Escape));
     QVERIFY(!controller.isActive());
     QCOMPARE(rectOf(layer, 0), QRectF(0, 0, 50, 50));
@@ -246,19 +247,30 @@ void tst_AnnotationSelectionController::drawsOutlinesOnlyForGroups()
     QCOMPARE(paintedPixels(), 0);
 }
 
+void tst_AnnotationSelectionController::missedReleaseKeepsTheDrag_data()
+{
+    QTest::addColumn<bool>("hoverBeforePress");
+    QTest::newRow("next press") << false;
+    QTest::newRow("button-up hover before next press") << true;
+}
+
 void tst_AnnotationSelectionController::missedReleaseKeepsTheDrag()
 {
+    QFETCH(bool, hoverBeforePress);
     AnnotationLayer layer;
     addScene(layer);
     AnnotationSelectionController controller(&layer);
     layer.setSelectedIds({layer.idAt(0), layer.idAt(1)});
     const auto history = layer.historyCommandCount();
     controller.handlePress(QPoint(25, 25), Qt::NoModifier, true);
-    controller.handleMove(QPoint(35, 25));
-    // The release was lost; the next press records the drag, as a single
-    // object's gesture would.
+    controller.handleMove(QPoint(35, 25), Qt::LeftButton);
+    if (hoverBeforePress) {
+        QVERIFY(controller.handleMove(QPoint(200, 100), Qt::NoButton));
+        QVERIFY(!controller.isActive());
+    }
     controller.handlePress(QPoint(500, 500), Qt::NoModifier, true);
     QCOMPARE(rectOf(layer, 0), QRectF(10, 0, 50, 50));
+    QCOMPARE(rectOf(layer, 1), QRectF(110, 0, 50, 50));
     QCOMPARE(layer.historyCommandCount(), history + 1);
 }
 
