@@ -6,37 +6,29 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.73] - 2026-11-21
+
 ### Added
 
-- Export a smaller copy of a still image from a pin, Beautify or the Library: keep the size, scale by percent or limit the long edge, choose PNG or JPEG with an adjustable quality, and see the real size of the file before saving. The original image and its edits stay at full resolution.
-- Remove Background for pinned images on macOS: keeps the subjects and makes the rest transparent with on-device segmentation, on the full canvas so nothing moves, as one undoable step. It runs in the background and can be cancelled with Esc; annotations stay editable and a mosaic over the removed background has no original pixels left to sample. Saving a transparent image as JPEG now fills it with white instead of black, as Export As already did.
-- Auto mode for the pin Measure tool: hover to see the width, height or spacing around the pointer, found from the image's edges. Gradients, soft shadows and noise are not taken as edges, and nothing is shown unless clear edges are found on both sides. Values are marked as estimates; manual line measuring stays the default.
-- In the pin Measure tool's Auto mode, dragged line endpoints snap to nearby image edges. Ctrl-drag (Command-drag on macOS) measures a box with independently snapping sides.
-- Cut Out tool for pinned images: remove a band across the image and join the rest, or insert a transparent band, horizontally or vertically, as one undoable step. Redactions keep covering the same pixels; an annotation crossing the band blocks the operation instead of being distorted.
-- Recording shapes and numbered steps, with editable timing, fades, and a choice of following the content or staying fixed on screen.
-- Imported music and narration clips with volume, looping, source offsets and fades, preserved in editable projects and recovery.
-- Crisp enlarged pointers, steady pointer shapes, path straightening, animated loop returns and camera motion blur.
-
-- Recordings on Windows now keep the pointer's real shape and mouse clicks for editing, so Auto Zoom, click highlights and the recorded pointer shape work there as they do on Linux.
-- macOS recordings now keep the real pointer shape and mouse clicks, so Auto Zoom and click highlights work on macOS without any extra permission.
-- Beautified screenshots copied or saved from a pin are now kept in the Library together with the exact Beautify settings used. Editing such an item and pinning it again opens Beautify with those settings, even after the defaults or saved styles have changed.
+- Choose a follow-up action after capture. Copy screenshots as both pixels and a PNG file, or paste local image files from the clipboard to pin them on the current display.
+- Adjust a crop before applying it, remove a strip from a pinned image or insert transparent space. On macOS, remove a pin's background with an undoable, on-device operation.
+- Use the Measure tool to estimate spacing on hover, snap line endpoints to image edges or measure a box. Arrange multiple pins at their native resolution.
+- Select and edit several annotations in one undo step, optionally keep arrows attached to their targets, and review sensitive regions before applying Auto Blur.
+- Add an image background to a Beautify layout, adjust transparency and alignment, and reopen the same settings from the Library. Export a resized PNG or JPEG copy with a file-size preview.
+- Add timed shapes, numbered steps, music and narration to recordings. Use a private teleprompter while recording and review edits in a filmstrip that respects redactions.
 
 ### Improved
 
-- Measure values in a pin are in the image's own pixels whatever the zoom, with logical units (`pt`) added for images from high-DPI displays.
-- Cropping a pinned image now leaves an adjustable selection first: move it, resize it by its handles, pick an aspect ratio (Free, Original, 1:1, 16:9, 9:16, 4:3, 3:2), nudge it one image pixel at a time with the arrow keys, then press Enter to apply or Esc to cancel. Sizes are shown in real image pixels.
-- Clip speed changes can keep sound at its original pitch; audio preview and export share the same processor.
-- GIF and WebP have independent size, frame-rate, quality and looping options and actual file-size reporting. GIF always coalesces repeated frames; WebP offers optional extra compression.
-- Windows recording defaults to WGC, preserves precise frame times and avoids repeatedly encoding still desktops. DXGI can recover from temporary capture loss; WASAPI starts asynchronously and reports audio gaps and timestamp repairs.
-
-- Auto Zoom respects cuts and playback speed, holds text-field and typing interactions longer, and can run once when a new recording opens (off by default).
-- Editable recording projects keep one previous manifest and remain visible in the Library when their metadata is damaged.
-
-- Screenshot history items are now written as a whole or not at all, so a full disk or an interrupted save can no longer leave a half-written item.
+- Windows and macOS recordings retain pointer shapes and mouse clicks for Auto Zoom and click highlights. Auto Zoom follows cuts and speed changes, and clip speed adjustments can preserve audio pitch.
+- GIF and WebP exports have independent size, frame-rate, quality and looping controls. Unsaved recording edits can be recovered, and project thumbnails reflect saved edits.
+- Saving and beautifying pins keeps the interface responsive. Closing a pin with unsaved edits now prompts for a decision.
+- OCR preserves CJK spacing and offers an optional retry for a single column of vertical text.
 
 ### Fixed
 
-- Editing a screenshot from the Library or stepping through history with `,` and `.` no longer opens an item whose saved annotations are missing or damaged as if it had none, which could show what a mosaic or blur was hiding. Such an item is now refused with a message, and the capture you were editing stays exactly as it was.
+- The Library detects missing or damaged annotations before reopening a screenshot, so a damaged entry cannot expose pixels hidden by a mosaic or blur.
+- Scrolling captures handle sticky sidebars and changing overlaps more accurately and report rejected exports.
+- Capture stops if the selected display disappears, and recording and Live Pin show localized display-selection errors.
 
 ## [1.0.72] - 2026-11-09
 
