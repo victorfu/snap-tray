@@ -161,3 +161,33 @@ void RegionCaptureSettingsManager::setLastCaptureRegion(const QRect& globalRect,
                           .arg(globalRect.height()));
     settings.setValue(kSettingsKeyLastCaptureScreen, screenName);
 }
+
+bool RegionCaptureSettingsManager::postCaptureCard() const
+{
+    return SnapTray::getSettings().value("regionCapture/postCaptureCard", false).toBool();
+}
+
+void RegionCaptureSettingsManager::setPostCaptureCard(bool enabled)
+{
+    SnapTray::getSettings().setValue("regionCapture/postCaptureCard", enabled);
+}
+
+bool RegionCaptureSettingsManager::postCaptureCopy() const
+{
+    return SnapTray::getSettings().value("regionCapture/postCaptureCopy", false).toBool();
+}
+
+void RegionCaptureSettingsManager::setPostCaptureCopy(bool enabled)
+{
+    SnapTray::getSettings().setValue("regionCapture/postCaptureCopy", enabled);
+}
+
+bool RegionCaptureSettingsManager::postCaptureSave() const
+{
+    return SnapTray::getSettings().value("regionCapture/postCaptureSave", false).toBool();
+}
+
+void RegionCaptureSettingsManager::setPostCaptureSave(bool enabled)
+{
+    SnapTray::getSettings().setValue("regionCapture/postCaptureSave", enabled);
+}

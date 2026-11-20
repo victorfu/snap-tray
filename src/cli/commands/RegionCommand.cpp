@@ -101,7 +101,7 @@ CLIResult RegionCommand::execute(const QCommandLineParser& parser)
     QScreen* screen = screens.at(screenNum);
 
     // Capture full screen then crop
-    QPixmap fullScreenshot = screen->grabWindow(0);
+    QPixmap fullScreenshot = grabDesktopForCommand(screen);
     if (fullScreenshot.isNull()) {
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to capture screen");
     }

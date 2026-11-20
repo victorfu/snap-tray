@@ -94,7 +94,8 @@ public:
      * @param parentWidget Widget to use as dialog parent (nullptr for no parent)
      * @return Save target metadata for async save execution
      */
-    SaveRequest createSaveRequest(const QRect &selectionRect, QWidget *parentWidget = nullptr) const;
+    SaveRequest createSaveRequest(const QRect &selectionRect, QWidget *parentWidget = nullptr,
+                                  bool forceAutoSave = false) const;
 
     /**
      * @brief Save a prepared export asynchronously

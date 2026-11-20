@@ -131,6 +131,9 @@ struct ResettableSetting {
 const ResettableSetting kResettableSettings[] = {
     // Capture
     {"clipboardImageMode", [] { return QVariant(int(FileSettingsManager::ClipboardImageMode::ImageOnly)); }},
+    {"postCaptureCard", [] { return QVariant(false); }},
+    {"postCaptureCopy", [] { return QVariant(false); }},
+    {"postCaptureSave", [] { return QVariant(false); }},
     {"fullScreenCaptureAction", [] { return QVariant(int(RegionCaptureSettingsManager::kDefaultFullScreenCaptureAction)); }},
     {"cursorCompanionStyle", [] { return QVariant(cursorCompanionStyleToUiValue(RegionCaptureSettingsManager::kDefaultCursorCompanionStyle)); }},
     {"shortcutHintsEnabled", [] { return QVariant(RegionCaptureSettingsManager::kDefaultShortcutHintsEnabled); }},
@@ -704,6 +707,45 @@ void SettingsBackend::setClipboardImageMode(int value)
         return;
     FileSettingsManager::instance().setClipboardImageMode(static_cast<Mode>(value));
     emit clipboardImageModeChanged();
+}
+
+bool SettingsBackend::postCaptureCard() const
+{
+    return RegionCaptureSettingsManager::instance().postCaptureCard();
+}
+
+void SettingsBackend::setPostCaptureCard(bool enabled)
+{
+    if (enabled == postCaptureCard())
+        return;
+    RegionCaptureSettingsManager::instance().setPostCaptureCard(enabled);
+    emit postCaptureCardChanged();
+}
+
+bool SettingsBackend::postCaptureCopy() const
+{
+    return RegionCaptureSettingsManager::instance().postCaptureCopy();
+}
+
+void SettingsBackend::setPostCaptureCopy(bool enabled)
+{
+    if (enabled == postCaptureCopy())
+        return;
+    RegionCaptureSettingsManager::instance().setPostCaptureCopy(enabled);
+    emit postCaptureCopyChanged();
+}
+
+bool SettingsBackend::postCaptureSave() const
+{
+    return RegionCaptureSettingsManager::instance().postCaptureSave();
+}
+
+void SettingsBackend::setPostCaptureSave(bool enabled)
+{
+    if (enabled == postCaptureSave())
+        return;
+    RegionCaptureSettingsManager::instance().setPostCaptureSave(enabled);
+    emit postCaptureSaveChanged();
 }
 
 int SettingsBackend::fullScreenCaptureAction() const { return m_fullScreenCaptureAction; }

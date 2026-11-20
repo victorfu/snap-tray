@@ -502,6 +502,18 @@
         <source>PNG file</source>
         <translation>ไฟล์ PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>แสดงการ์ดการทำงานสำหรับภาพหน้าจอ</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>คัดลอกภาพหน้าจอแต่ละภาพโดยอัตโนมัติ</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>บันทึกภาพหน้าจอแต่ละภาพโดยอัตโนมัติ</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -1917,6 +1929,14 @@ English is always included and cannot be removed.</source>
     <message>
         <source>Delete</source>
         <translation>ลบ</translation>
+    </message>
+    <message>
+        <source>Pin Failed</source>
+        <translation>ปักหมุดไม่สำเร็จ</translation>
+    </message>
+    <message>
+        <source>Failed to load cached screenshot.</source>
+        <translation>โหลดภาพหน้าจอที่เก็บไว้ในแคชไม่สำเร็จ</translation>
     </message>
 </context>
 <context>

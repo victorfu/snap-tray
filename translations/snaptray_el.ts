@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>Αρχείο PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Εμφάνιση κάρτας ενεργειών στιγμιότυπου</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Αυτόματη αντιγραφή κάθε στιγμιότυπου</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Αυτόματη αποθήκευση κάθε στιγμιότυπου</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG failas</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Rodyti ekrano kopijos veiksmų kortelę</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Automatiškai kopijuoti kiekvieną ekrano kopiją</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Automatiškai įrašyti kiekvieną ekrano kopiją</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

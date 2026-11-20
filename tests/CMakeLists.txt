@@ -779,6 +779,14 @@ target_link_libraries(App_FullScreenCapture PRIVATE
     Qt6::Test
 )
 add_test(NAME App_FullScreenCapture COMMAND App_FullScreenCapture)
+if(UNIX AND NOT APPLE)
+    find_program(XVFB_RUN xvfb-run)
+    if(XVFB_RUN)
+        add_test(NAME App_PostCaptureCardX11 COMMAND "${XVFB_RUN}" -a
+            $<TARGET_FILE:App_FullScreenCapture> -platform xcb nativeCardFocusEscapeAndCaptureExclusion)
+        set_tests_properties(App_PostCaptureCardX11 PROPERTIES LABELS "unit" TIMEOUT 30)
+    endif()
+endif()
 set_tests_properties(App_FullScreenCapture PROPERTIES TIMEOUT 60 LABELS "unit")
 if(TARGET Qt6::QOffscreenIntegrationPlugin)
     set_property(TEST App_FullScreenCapture APPEND PROPERTY ENVIRONMENT

@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>Soubor PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Zobrazit kartu akcí snímku obrazovky</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Automaticky kopírovat každý snímek obrazovky</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Automaticky uložit každý snímek obrazovky</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>Tệp PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Hiện thẻ thao tác cho ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Tự động sao chép từng ảnh chụp màn hình</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Tự động lưu từng ảnh chụp màn hình</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

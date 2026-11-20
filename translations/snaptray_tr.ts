@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG dosyası</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Ekran görüntüsü işlem kartını göster</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Her ekran görüntüsünü otomatik olarak kopyala</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Her ekran görüntüsünü otomatik olarak kaydet</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

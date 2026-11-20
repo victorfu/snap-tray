@@ -24,10 +24,12 @@ HistoryRecorder::~HistoryRecorder()
 
 void HistoryRecorder::submitCaptureSession(CaptureSessionWriteRequest request)
 {
-    m_pool.start([request = std::move(request)]() mutable {
-        if (!HistoryStore::writeCaptureSession(request).has_value()) {
+    m_pool.start([this, request = std::move(request)] {
+        const auto entry = HistoryStore::writeCaptureSession(request);
+        if (!entry) {
             qWarning() << "HistoryRecorder: Failed to persist capture session";
         }
+        emit captureSessionWritten(entry ? entry->id : request.id, entry.has_value());
     });
 }
 

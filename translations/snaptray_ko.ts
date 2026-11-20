@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG 파일</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>스크린샷 작업 카드 표시</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>스크린샷을 찍을 때마다 자동 복사</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>스크린샷을 찍을 때마다 자동 저장</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

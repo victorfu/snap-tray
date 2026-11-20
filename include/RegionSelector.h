@@ -29,6 +29,7 @@
 #include "TextFormattingState.h"
 #include "annotation/AnnotationHostAdapter.h"
 #include "history/HistoryStore.h"
+#include "capture/ScreenshotOrigin.h"
 #include "tools/ToolId.h"
 #include "tools/ToolManager.h"
 #include "region/SelectionStateManager.h"
@@ -111,6 +112,8 @@ public:
 
     // 設置 Quick Pin 模式 (選擇區域後直接 pin，不顯示 toolbar)
     void setQuickPinMode(bool enabled);
+    void setPostCaptureActionsEnabled(bool enabled) { m_postCaptureActionsEnabled = enabled; }
+    bool postCaptureActionsEnabled() const { return m_postCaptureActionsEnabled; }
 
     // Control whether capture shortcut hints are shown on entry.
     void setShowShortcutHintsOnEntry(bool enabled);
@@ -121,7 +124,8 @@ public:
     // For the pin made from this selection (#344): the history entry holding
     // its document, and the Beautify settings of the replayed entry it
     // continues from. Empty when the pinned picture is not this selection.
-    QString lastRecordedHistoryEntryId() const { return m_lastRecordedHistoryEntryId; }
+    QString lastRecordedHistoryEntryId() const { return m_lastScreenshotOrigin.id; }
+    const ScreenshotOrigin& lastScreenshotOrigin() const { return m_lastScreenshotOrigin; }
     std::optional<BeautifySettings> historyReplayBeautify() const { return m_historyReplayBeautify; }
 
     // Check if selection is complete (for external queries)
@@ -377,6 +381,7 @@ private:
     QPixmap m_backgroundPixmap;
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
 
+    bool m_postCaptureActionsEnabled = true;
     RegionInputState m_inputState;
     QPointer<QScreen> m_currentScreen;
 
@@ -571,7 +576,7 @@ private:
     };
 
     struct HistoryCaptureSnapshot {
-        QString entryId;
+        ScreenshotOrigin origin;
         QPixmap backgroundPixmap;
         QRect selectionRect;
         QVector<MultiRegionManager::Region> captureRegions;
@@ -581,8 +586,6 @@ private:
         int cornerRadius = 0;
         int maxEntries = 20;
         QDateTime createdAt;
-        QString windowTitle;
-        QString ownerApp;
     };
 
     struct PendingHistorySubmission {
@@ -609,7 +612,7 @@ private:
     int m_historyReplayIndex = -1;  // -1 = current live slot
     bool m_historyReplayActive = false;
     std::optional<BeautifySettings> m_historyReplayBeautify;
-    QString m_lastRecordedHistoryEntryId;
+    ScreenshotOrigin m_lastScreenshotOrigin;
 
     // Preserve completed selection when cursor switches to another screen.
     bool m_hasPreservedSelection = false;

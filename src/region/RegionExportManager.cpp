@@ -182,7 +182,7 @@ QPixmap RegionExportManager::applyRoundedCorners(const QPixmap &source, int radi
 
 RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     const QRect& selectionRect,
-    QWidget* parentWidget) const
+    QWidget* parentWidget, bool forceAutoSave) const
 {
     SaveRequest request;
 
@@ -204,7 +204,7 @@ RegionExportManager::SaveRequest RegionExportManager::createSaveRequest(
     const QString templateValue = fileSettings.loadFilenameTemplate();
 
     // Check auto-save setting
-    if (fileSettings.loadAutoSaveScreenshots()) {
+    if (forceAutoSave || fileSettings.loadAutoSaveScreenshots()) {
         request.uniqueSave = ImageSaveUtils::UniqueSaveSpec{screenshotPath, templateValue, context};
         request.filePath = FilenameTemplateEngine::buildUniqueFilePath(
             screenshotPath, templateValue, context, 100, &request.renderWarning);

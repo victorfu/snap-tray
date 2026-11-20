@@ -2,6 +2,8 @@
 
 #include "ImageColorSpaceHelper.h"
 #include "PlatformFeatures.h"
+#include "cli/IPCProtocol.h"
+#include "settings/RegionCaptureSettingsManager.h"
 #include "settings/FileSettingsManager.h"
 #include "utils/CoordinateHelper.h"
 #include "utils/FilenameTemplateEngine.h"
@@ -100,6 +102,21 @@ QString resolveOutputFilePath(
 }
 
 } // namespace
+
+QPixmap grabDesktopForCommand(QScreen* screen)
+{
+    // These commands grab in a separate process. X11 has no per-window
+    // capture exclusion, so wait for the tray to unmap its card first.
+    if (RegionCaptureSettingsManager::instance().postCaptureCard()) {
+        IPCProtocol ipc;
+        if (ipc.isMainInstanceRunning()) {
+            const IPCMessage dismiss{IPCProtocol::kDismissCaptureCard, {}};
+            if (!ipc.sendCommand(dismiss, true, IPCProtocol::kConnectionTimeout).success)
+                return {};
+        }
+    }
+    return screen->grabWindow(0);
+}
 
 void applyOptionalDelay(int delayMs)
 {

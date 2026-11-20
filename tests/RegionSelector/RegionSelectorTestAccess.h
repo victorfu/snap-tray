@@ -465,6 +465,11 @@ public:
         return selector.m_isClosing;
     }
 
+    static void saveToFile(RegionSelector& selector)
+    {
+        selector.saveToFile();
+    }
+
     static void finishSelection(RegionSelector& selector)
     {
         selector.finishSelection();

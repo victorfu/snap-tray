@@ -12,7 +12,10 @@
 #include <memory>
 
 #include "settings/RegionCaptureSettingsManager.h"
+#include "PlatformFeatures.h"
+#include "capture/ScreenshotOrigin.h"
 
+class PostCaptureCard;
 class RegionSelector;
 class RegionExportManager;
 namespace snaptray::capture {
@@ -41,6 +44,7 @@ public:
     bool hasCompleteSelection() const;
     void triggerFinishSelection();
     void cancelCapture();
+    void dismissPostCaptureCard();
     void cycleOrSwitchCaptureScreenByCursor();
     bool startHistoryReplay(const QString& entryId);
     bool isFullScreenCaptureInProgress() const;
@@ -122,6 +126,14 @@ private:
     void exportFullScreenCapture(QScreen *screen,
                                  const QPixmap &snapshot,
                                  RegionCaptureSettingsManager::FullScreenCaptureAction action);
+    enum class PrimaryAction { Pin, Copy, Save };
+    void afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin origin, QScreen* screen,
+                         PrimaryAction primary, quint64 generation, const QString& error = {});
+    void copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done);
+    QPointer<PostCaptureCard> m_postCaptureCard;
+    // Dismissing the card also invalidates presentation by outstanding exports.
+    quint64 m_postCaptureGeneration = 0;
+    quint64 m_activeCaptureGeneration = 0;
     void finishFullScreenExport();
     QPixmap captureSnapshot(QScreen *screen) const;
     void tickDelayedCapture();
@@ -143,7 +155,7 @@ private:
     int m_delayedCaptureTickIntervalMs = 1000;
     // Test hooks: replace the platform screen grab and clipboard write.
     std::function<QPixmap(QScreen*)> m_snapshotOverride;
-    std::function<void(const QImage&, std::function<void(bool)>)> m_clipboardWriterOverride;
+    std::function<void(const QImage&, PlatformFeatures::ClipboardCopyCompletion)> m_clipboardWriterOverride;
     ScriptedCaptureOptions m_scriptedCapture;
     bool m_scriptedCapturePending = false;
     PinWindowManager *m_pinManager;

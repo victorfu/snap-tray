@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>ملف PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>إظهار بطاقة إجراءات لقطة الشاشة</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>نسخ كل لقطة شاشة تلقائيًا</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>حفظ كل لقطة شاشة تلقائيًا</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

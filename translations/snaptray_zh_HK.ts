@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG 檔案</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>顯示螢幕截圖操作卡片</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>自動複製每張螢幕截圖</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>自動儲存每張螢幕截圖</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

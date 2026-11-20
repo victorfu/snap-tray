@@ -5,8 +5,12 @@
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QFileDialog>
 #include <QImage>
 #include <QMenu>
+#include <QLabel>
+#include <utility>
+#include "capture/PostCaptureCard.h"
 #include <QPainter>
 #include <QPixmap>
 #include <QPointer>
@@ -21,6 +25,8 @@
 
 #include "CaptureManager.h"
 #include "RegionSelector.h"
+#include "PinWindowManager.h"
+#include "PinWindow.h"
 #include "../RegionSelector/RegionSelectorTestAccess.h"
 #include "capture/OwnWindowCaptureHider.h"
 #include "annotations/AnnotationLayer.h"
@@ -138,6 +144,15 @@ private slots:
     void cleanup();
     void cleanupTestCase();
 
+    void regionCardReopensItsCapture();
+    void cardActionsUseOriginalRegionMetadata();
+    void cardRetainsImageAndRetiresCallbacks();
+    void automaticSaveWithoutCardKeepsOriginalPixels_data();
+    void automaticSaveWithoutCardKeepsOriginalPixels();
+    void cardPausesAndRetriesFailedSave();
+    void lateExportAfterDismissalKeepsCardHidden_data();
+    void lateExportAfterDismissalKeepsCardHidden();
+    void nativeCardFocusEscapeAndCaptureExclusion();
     void offscreenScreensMatchConfiguration();
     void copy_outputsNativePixelsPerScreen_data();
     void copy_outputsNativePixelsPerScreen();
@@ -182,6 +197,10 @@ void tst_FullScreenCapture::init()
 
 void tst_FullScreenCapture::cleanup()
 {
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureSave(false);
+    prefs.setPostCaptureCard(false);
+    prefs.setPostCaptureCopy(false);
     QCoreApplication::sendPostedEvents(qApp, QEvent::MetaCall);
     QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
@@ -200,11 +219,11 @@ void tst_FullScreenCapture::configure(CaptureManager& manager, std::optional<QIm
 {
     manager.m_snapshotOverride = nativeSnapshot;
     manager.m_clipboardWriterOverride =
-        [copiedImage](const QImage& image, std::function<void(bool)> done) {
+        [copiedImage](const QImage& image, PlatformFeatures::ClipboardCopyCompletion done) {
             if (copiedImage) {
                 *copiedImage = image;
             }
-            done(true);
+            done(PlatformFeatures::ClipboardCopyResult::Success);
         };
 }
 
@@ -509,9 +528,9 @@ void tst_FullScreenCapture::otherCaptureEntryPoints_rejectedDuringExport()
 
     CaptureManager manager(nullptr);
     configure(manager, nullptr);
-    std::function<void(bool)> finishClipboardWrite;
+    PlatformFeatures::ClipboardCopyCompletion finishClipboardWrite;
     manager.m_clipboardWriterOverride =
-        [&finishClipboardWrite](const QImage&, std::function<void(bool)> done) {
+        [&finishClipboardWrite](const QImage&, PlatformFeatures::ClipboardCopyCompletion done) {
             finishClipboardWrite = std::move(done);
         };
     QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
@@ -526,7 +545,7 @@ void tst_FullScreenCapture::otherCaptureEntryPoints_rejectedDuringExport()
     manager.startFullScreenCaptureOnScreen(screen);
     QCOMPARE(copied.count(), 0);
 
-    finishClipboardWrite(true);
+    finishClipboardWrite(PlatformFeatures::ClipboardCopyResult::Success);
     QCOMPARE(copied.count(), 1);
     QVERIFY(!manager.isActive());
 }
@@ -785,6 +804,360 @@ void tst_FullScreenCapture::libraryReopen_refusesDamagedEntryAndOpensIntactOne()
 
     selector->close();
     QTRY_VERIFY(!selector);
+}
+
+void tst_FullScreenCapture::regionCardReopensItsCapture()
+{
+#ifdef Q_OS_MACOS
+    QSKIP("RegionSelector requires the native Cocoa platform.");
+#endif
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    prefs.setPostCaptureCopy(true);
+    CaptureManager manager(nullptr);
+    std::optional<QImage> copiedImage;
+    configure(manager, &copiedImage);
+    auto* screen = screenNamed("Primary100");
+    const QRect selection(36, 48, 120, 75);
+    manager.startPresetRegionCapture(screen, selection, nativeSnapshot(screen));
+    QPointer<RegionSelector> original = manager.m_regionSelector;
+    QVERIFY(original);
+    RegionSelectorTestAccess::finishSelection(*original);
+    QTRY_VERIFY(!original);
+    QVERIFY(copiedImage && copiedImage->size() == selection.size());
+    QPointer<PostCaptureCard> card = manager.m_postCaptureCard;
+    QVERIFY(card && card->isVisible());
+    QTRY_VERIFY(card->m_edit->isEnabled());
+    card->m_edit->trigger();
+    QPointer<RegionSelector> reopened = manager.m_regionSelector;
+    QVERIFY(reopened && reopened->isVisible());
+    QCOMPARE(RegionSelectorTestAccess::selectionRect(*reopened), selection);
+    QVERIFY(!card || !card->isVisible());
+    manager.cancelCapture();
+    QTRY_VERIFY(!reopened);
+}
+
+void tst_FullScreenCapture::cardActionsUseOriginalRegionMetadata()
+{
+#ifdef Q_OS_MACOS
+    QSKIP("PinWindow requires the native Cocoa platform.");
+#endif
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    auto& files = FileSettingsManager::instance();
+    const QString previousTemplate = files.loadFilenameTemplate();
+    auto restoreTemplate = qScopeGuard([&] { files.saveFilenameTemplate(previousTemplate); });
+    files.saveFilenameTemplate(QStringLiteral("{windowTitle}_{appName}_{regionIndex}.{ext}"));
+    PinWindowManager pins;
+    CaptureManager manager(&pins);
+    auto* screen = screenNamed("Primary100");
+    QPixmap picture(160, 80);
+    picture.fill(Qt::red);
+    ScreenshotOrigin origin;
+    origin.windowTitle = QStringLiteral("OriginalTitle");
+    origin.ownerApp = QStringLiteral("OriginalApp");
+    origin.regionIndex = 2;
+    origin.globalRect = QRect(QPoint(12, 32), picture.size());
+    LayoutRegion left;
+    left.rect = QRect(0, 0, 80, 80);
+    left.originalRect = left.rect;
+    left.image = picture.copy(left.rect).toImage();
+    LayoutRegion right = left;
+    right.rect.translate(80, 0);
+    right.originalRect = right.rect;
+    origin.layout = {left, right};
+    manager.afterScreenshot(picture, origin, screen, CaptureManager::PrimaryAction::Pin, manager.m_postCaptureGeneration);
+    origin = {};
+    QPointer<PostCaptureCard> card = manager.m_postCaptureCard;
+    QVERIFY(card);
+    QSignalSpy saved(&manager, &CaptureManager::saveCompleted);
+    emit card->actionRequested(PostCaptureCard::Action::Save);
+    QTRY_COMPARE(saved.size(), 1);
+    const QString name = QFileInfo(saved.front().at(1).toString()).fileName();
+    QVERIFY2(name.startsWith(QStringLiteral("OriginalTitle_OriginalApp_2")), qPrintable(name));
+    emit card->actionRequested(PostCaptureCard::Action::Pin);
+    QCOMPARE(pins.windowCount(), 1);
+    QVERIFY(pins.windows().first()->hasMultiRegionData());
+    pins.closeAllWindows();
+}
+
+void tst_FullScreenCapture::cardRetainsImageAndRetiresCallbacks()
+{
+    using Action = PostCaptureCard::Action;
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    prefs.setFullScreenCaptureAction(FullScreenCaptureAction::CopyToClipboard);
+    CaptureManager manager(nullptr);
+    auto* screen = screenNamed("Right150");
+    QVERIFY(screen);
+    QColor color = Qt::red;
+    manager.m_snapshotOverride = [&color](QScreen* source) {
+        QPixmap result(source->size() * source->devicePixelRatio());
+        result.setDevicePixelRatio(source->devicePixelRatio());
+        result.fill(color);
+        return result;
+    };
+    QImage copied;
+    PlatformFeatures::ClipboardCopyCompletion done;
+    manager.m_clipboardWriterOverride = [&](const QImage& image, auto callback) {
+        copied = image;
+        done = std::move(callback);
+    };
+    manager.startFullScreenCaptureOnScreen(screen);
+    QTRY_VERIFY(done);
+    // Even the first copy can fail. The card must still offer the same image.
+    std::exchange(done, {})(PlatformFeatures::ClipboardCopyResult::Failed);
+    QPointer<PostCaptureCard> first = manager.m_postCaptureCard;
+    QVERIFY(first && first->isVisible());
+    QVERIFY2(screen->availableGeometry().contains(first->geometry()),
+             qPrintable(QDebug::toString(std::pair(screen->availableGeometry(), first->geometry()))));
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+    const auto entries = SnapTray::HistoryStore::loadEntries();
+    QVERIFY(!entries.isEmpty());
+    QVERIFY(SnapTray::HistoryStore::deleteEntry(entries.first()));
+    emit first->actionRequested(Action::Copy);
+    QCOMPARE(copied.pixelColor(0, 0), QColor(Qt::red));
+    QCOMPARE(copied.devicePixelRatio(), 1.0);
+    auto lateResult = std::exchange(done, {});
+
+    color = Qt::blue;
+    manager.startFullScreenCaptureOnScreen(screen);
+    QVERIFY(!first || !first->isVisible());
+    QTRY_VERIFY(done);
+    std::exchange(done, {})(PlatformFeatures::ClipboardCopyResult::Success);
+    QPointer<PostCaptureCard> second = manager.m_postCaptureCard;
+    QVERIFY(second && second->isVisible());
+    lateResult(PlatformFeatures::ClipboardCopyResult::Failed);
+    for (auto* status : second->findChildren<QLabel*>())
+        QVERIFY(status->text().isEmpty());
+    emit second->actionRequested(Action::Copy);
+    QCOMPARE(copied.pixelColor(0, 0), QColor(Qt::blue));
+    second->close();
+    std::exchange(done, {})(PlatformFeatures::ClipboardCopyResult::Failed);
+    QTRY_VERIFY(second.isNull());
+}
+
+void tst_FullScreenCapture::automaticSaveWithoutCardKeepsOriginalPixels_data()
+{
+    QTest::addColumn<bool>("primarySave");
+    QTest::addColumn<bool>("superseded");
+    QTest::newRow("primary-copy") << false << false;
+    QTest::newRow("primary-save") << true << false;
+    QTest::newRow("superseded-copy") << false << true;
+}
+
+void tst_FullScreenCapture::automaticSaveWithoutCardKeepsOriginalPixels()
+{
+    QFETCH(bool, primarySave);
+    QFETCH(bool, superseded);
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureSave(true);
+    prefs.setPostCaptureCopy(true);
+    prefs.setFullScreenCaptureAction(primarySave ? FullScreenCaptureAction::Save : FullScreenCaptureAction::CopyToClipboard);
+    FileSettingsManager::instance().saveAutoSaveScreenshots(false);
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    if (superseded) {
+        manager.m_clipboardWriterOverride = [](const QImage&, PlatformFeatures::ClipboardCopyCompletion done) {
+            done(PlatformFeatures::ClipboardCopyResult::Superseded);
+        };
+    }
+    QSignalSpy saved(&manager, &CaptureManager::saveCompleted);
+    QSignalSpy copied(&manager, &CaptureManager::copyCompleted);
+    auto* screen = screenNamed("Left200");
+    manager.startFullScreenCaptureOnScreen(screen);
+    QTRY_COMPARE(saved.size(), 1);
+    QCOMPARE(copied.size(), superseded ? 0 : 1);
+    QVERIFY(!manager.m_postCaptureCard);
+    verifyNativeImage(QImage(saved.first().at(1).toString()), *testScreenFor(screen));
+}
+
+void tst_FullScreenCapture::lateExportAfterDismissalKeepsCardHidden_data()
+{
+    QTest::addColumn<bool>("region");
+    QTest::newRow("pending-full-screen-copy") << false;
+    QTest::newRow("pending-region-save") << true;
+}
+
+void tst_FullScreenCapture::lateExportAfterDismissalKeepsCardHidden()
+{
+    QFETCH(bool, region);
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    auto* screen = screenNamed("Primary100");
+    CaptureManager manager(nullptr);
+    std::optional<QImage> copied;
+    configure(manager, &copied);
+    if (region) {
+#ifdef Q_OS_MACOS
+        QSKIP("RegionSelector requires the native Cocoa platform.");
+#endif
+        prefs.setPostCaptureCopy(true);
+        const QPixmap sample = nativeSnapshot(screen);
+        const QRect selection(10, 10, 120, 80);
+        manager.startPresetRegionCapture(screen, selection, sample);
+        QPointer<RegionSelector> selector = manager.m_regionSelector;
+        QVERIFY(selector);
+        QSignalSpy saved(&manager, &CaptureManager::saveCompleted);
+        RegionSelectorTestAccess::saveToFile(*selector);
+        selector->hide(); // A manual save leaves its selector hidden during the write.
+        manager.startRegionCaptureWithPreset(QRect(200, 100, 50, 50), screen);
+        QVERIFY(manager.m_regionSelector && manager.m_regionSelector != selector);
+        manager.cancelCapture();
+        QTRY_COMPARE(saved.size(), 1);
+        QVERIFY(copied);
+        QCOMPARE(copied->size(), selection.size());
+        QCOMPARE(copied->pixelColor(selection.width() / 2, selection.height() / 2), kFill);
+        QCOMPARE(copied->pixelColor(0, 0), QImage(saved.first().at(1).toString()).pixelColor(0, 0));
+    } else {
+        prefs.setPostCaptureSave(true);
+        prefs.setFullScreenCaptureAction(FullScreenCaptureAction::CopyToClipboard);
+        PlatformFeatures::ClipboardCopyCompletion complete;
+        manager.m_clipboardWriterOverride = [&](const QImage&, auto callback) {
+            complete = std::move(callback);
+        };
+        QSignalSpy saved(&manager, &CaptureManager::saveCompleted);
+        manager.startFullScreenCaptureOnScreen(screen);
+        QTRY_VERIFY(complete);
+        manager.dismissPostCaptureCard();
+        complete(PlatformFeatures::ClipboardCopyResult::Success);
+        QTRY_COMPARE(saved.size(), 1);
+        verifyNativeImage(QImage(saved.first().at(1).toString()), *testScreenFor(screen));
+    }
+    QVERIFY(!manager.m_postCaptureCard);
+}
+
+void tst_FullScreenCapture::cardPausesAndRetriesFailedSave()
+{
+    using Action = PostCaptureCard::Action;
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    prefs.setFullScreenCaptureAction(FullScreenCaptureAction::CopyToClipboard);
+    CaptureManager manager(nullptr);
+    configure(manager, nullptr);
+    auto* screen = screenNamed("Left200");
+    manager.startFullScreenCaptureOnScreen(screen);
+    QTRY_VERIFY(manager.m_postCaptureCard);
+    QPointer<PostCaptureCard> card = manager.m_postCaptureCard;
+    QEvent leave(QEvent::Leave);
+    QApplication::sendEvent(card, &leave);
+    auto& timer = card->m_timer;
+    timer.start(800);
+    QTest::qSleep(80);
+    QEnterEvent enter(QPointF(1,1), QPointF(1,1), QPointF(card->pos()));
+    QApplication::sendEvent(card, &enter);
+    QVERIFY(!timer.isActive());
+    const int paused = card->m_remainingMs;
+    QVERIFY(paused > 0 && paused < 800);
+    QTest::mousePress(card, Qt::LeftButton, Qt::NoModifier, QPoint(2, 2));
+    QApplication::sendEvent(card, &leave);
+    QVERIFY(!timer.isActive());
+    card->m_menu->popup(card->pos());
+    QTest::mouseRelease(card, Qt::LeftButton, Qt::NoModifier, QPoint(2, 2));
+    QVERIFY(!timer.isActive());
+    card->m_menu->hide();
+    QApplication::sendEvent(card, &leave);
+    QVERIFY(timer.isActive());
+    QVERIFY(timer.remainingTime() <= paused);
+
+    QFile obstruction(m_saveDirectory.filePath("not-a-directory"));
+    QVERIFY(obstruction.open(QIODevice::WriteOnly));
+    obstruction.close();
+    FileSettingsManager::instance().saveScreenshotPath(obstruction.fileName());
+    QSignalSpy failed(&manager, &CaptureManager::saveFailed);
+    QSignalSpy saved(&manager, &CaptureManager::saveCompleted);
+    emit card->actionRequested(Action::Save);
+    QTRY_COMPARE(failed.count(), 1);
+    QCOMPARE(saved.count(), 0);
+    QVERIFY(card->isVisible());
+    QVERIFY(!timer.isActive());
+
+    // Cancelling a manual retry must keep the failed save and its retry
+    // button available. Only a successful save clears this error.
+    const QString originalError = card->m_errors.value(Action::Save);
+    QVERIFY(!originalError.isEmpty());
+    FileSettingsManager::instance().saveAutoSaveScreenshots(false);
+    const bool previousDialogs = QApplication::testAttribute(Qt::AA_DontUseNativeDialogs);
+    QApplication::setAttribute(Qt::AA_DontUseNativeDialogs);
+    auto restoreDialogs = qScopeGuard([=] {
+        QApplication::setAttribute(Qt::AA_DontUseNativeDialogs, previousDialogs);
+    });
+    QTimer::singleShot(0, [] {
+        if (auto* dialog = qobject_cast<QFileDialog*>(QApplication::activeModalWidget()))
+            dialog->reject();
+    });
+    emit card->actionRequested(Action::Save);
+    QCOMPARE(saved.count(), 0);
+    QCOMPARE(failed.count(), 1);
+    QCOMPARE(card->m_errors.value(Action::Save), originalError);
+    QVERIFY(!timer.isActive());
+    FileSettingsManager::instance().saveAutoSaveScreenshots(true);
+    FileSettingsManager::instance().saveScreenshotPath(m_saveDirectory.path());
+    emit card->actionRequested(Action::Save);
+    QTRY_COMPARE(saved.count(), 1);
+    verifyNativeImage(QImage(saved.first().at(1).toString()), *testScreenFor(screen));
+    QVERIFY(card->m_errors.isEmpty());
+}
+
+void tst_FullScreenCapture::nativeCardFocusEscapeAndCaptureExclusion()
+{
+    if (QGuiApplication::platformName() != QStringLiteral("xcb"))
+        QSKIP("This check uses a native X11 desktop");
+
+    QScreen* screen = QGuiApplication::primaryScreen();
+    QWidget backdrop(nullptr, Qt::Tool | Qt::FramelessWindowHint);
+    const QColor background(24, 72, 112);
+    QPalette palette;
+    palette.setColor(QPalette::Window, background);
+    backdrop.setPalette(palette);
+    backdrop.setAutoFillBackground(true);
+    const QSize size(500, 280);
+    backdrop.setGeometry(QRect(screen->availableGeometry().bottomRight() - QPoint(size.width(), size.height()), size));
+    backdrop.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&backdrop));
+    backdrop.activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(&backdrop));
+
+    CaptureManager manager(nullptr);
+    RegionCaptureSettingsManager::instance().setPostCaptureCard(true);
+    QPixmap sample(80, 60);
+    sample.fill(Qt::red);
+    auto showCard = [&] {
+        manager.afterScreenshot(sample, ScreenshotOrigin{QStringLiteral("native-card")}, screen, CaptureManager::PrimaryAction::Pin, manager.m_postCaptureGeneration);
+    };
+    showCard();
+    QPointer<PostCaptureCard> first = manager.m_postCaptureCard;
+    QVERIFY(first && QTest::qWaitForWindowExposed(first));
+    QCOMPARE(QApplication::activeWindow(), &backdrop);
+    first->activateWindow();
+    QVERIFY(QTest::qWaitForWindowActive(first));
+    QTest::keyClick(first, Qt::Key_Escape);
+    QTRY_VERIFY(!first || !first->isVisible());
+
+    showCard();
+    QPointer<PostCaptureCard> second = manager.m_postCaptureCard;
+    QVERIFY(second && QTest::qWaitForWindowExposed(second));
+    QLabel* preview = second->findChild<QLabel*>();
+    const QPoint previewCenter = preview->rect().center();
+    QTRY_COMPARE(preview->grab().toImage().pixelColor(previewCenter * preview->devicePixelRatioF()), QColor(Qt::red));
+    const QPoint point = preview->mapToGlobal(previewCenter);
+    QVERIFY(backdrop.geometry().contains(point));
+    const QPoint local = point - screen->geometry().topLeft();
+    auto readPixel = [&] {
+        return screen->grabWindow(0, local.x(), local.y(), 1, 1).toImage().pixelColor(0, 0);
+    };
+    // X11 compositors may already omit translucent windows from root grabs.
+    // An uncomposited Xvfb root includes the visible red thumbnail.
+    QTRY_VERIFY(readPixel() == QColor(Qt::red) || readPixel() == background);
+    QColor captured;
+    manager.m_snapshotOverride = [&](QScreen*) {
+        captured = readPixel();
+        return sample; // only the synthetic pixmap goes to the selector
+    };
+    manager.startRegionCapture();
+    QCOMPARE(captured, background);
+    manager.cancelCapture();
+    QVERIFY(!second || !second->isVisible());
 }
 
 int main(int argc, char** argv)

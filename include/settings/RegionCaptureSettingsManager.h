@@ -28,6 +28,12 @@ public:
     CursorCompanionStyle cursorCompanionStyle() const;
     void setCursorCompanionStyle(CursorCompanionStyle style);
 
+    bool postCaptureCard() const;
+    void setPostCaptureCard(bool enabled);
+    bool postCaptureCopy() const;
+    void setPostCaptureCopy(bool enabled);
+    bool postCaptureSave() const;
+    void setPostCaptureSave(bool enabled);
     bool isMagnifierEnabled() const;
     void setMagnifierEnabled(bool enabled);
     bool isShortcutHintsEnabled() const;

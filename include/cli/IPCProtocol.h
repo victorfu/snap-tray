@@ -81,6 +81,7 @@ public:
      */
     static QString getServerName();
 
+    static constexpr const char* kDismissCaptureCard = "dismiss-capture-card";
     static constexpr int kConnectionTimeout = 1000;  // ms
     static constexpr int kResponseTimeout = 30000;   // ms
     static constexpr int kWaitIndefinitely = -1;

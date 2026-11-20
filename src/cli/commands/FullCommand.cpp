@@ -83,7 +83,7 @@ CLIResult FullCommand::execute(const QCommandLineParser& parser)
     }
 
     // Capture screen
-    QPixmap screenshot = screen->grabWindow(0);
+    QPixmap screenshot = grabDesktopForCommand(screen);
 
     if (screenshot.isNull()) {
         return CLIResult::error(CLIResult::Code::GeneralError, "Failed to capture screen");
