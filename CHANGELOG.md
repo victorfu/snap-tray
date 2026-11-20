@@ -6,6 +6,12 @@ This changelog is curated for release notes. GitHub Releases and the website rel
 
 ## [Unreleased]
 
+## [1.0.74] - 2026-11-21
+
+### Fixed
+
+- When a region or full-screen screenshot finishes saving, its automatic copy now preserves anything you copied more recently in SnapTray.
+
 ## [1.0.73] - 2026-11-21
 
 ### Added
