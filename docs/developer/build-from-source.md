@@ -88,6 +88,31 @@ When switching Qt versions, move aside or remove `build`, `release`, and
 Qt package paths. For a clean verification build, also set `CCACHE_DISABLE=1`
 to compile without reusing compiler-cache results.
 
+#### Run Linux tests in Docker
+
+On a Linux x86-64 host with a local Docker Engine, run the suite on a private
+Xvfb desktop. The container mounts the checkout and the Linux Qt SDK read-only.
+The media tests use their own PulseAudio server with generated audio.
+
+```bash
+export QT_ROOT_DIR="$HOME/Qt/6.12.0/gcc_64"
+./scripts/run-tests-docker.sh
+./scripts/run-tests-docker.sh -R '^Encoding_LinuxMedia$'  # Run one CTest suite
+```
+
+The first run downloads the Ubuntu 22.04 image dependencies and builds the
+Release targets. Later runs reuse the image layers and the separate
+`cmake-build-docker/build/` directory. The build and test container defaults
+to four CPUs and 8 GiB of memory, with four parallel build jobs. Override these
+with `SNAPTRAY_DOCKER_CPUS`, `SNAPTRAY_DOCKER_MEMORY`, and
+`CMAKE_BUILD_PARALLEL_LEVEL`.
+
+Each run prints its host directory under `cmake-build-docker/results/`.
+Open `test-results.xml` for JUnit results or `LastTest.log` for CTest output.
+Failed runs retain the available reports, and the script returns the failure
+status. If setup or compilation fails before CTest starts, see
+`image-build.log` or `run.log` in the same directory.
+
 ### Windows
 
 ```batch
