@@ -751,6 +751,13 @@ target_link_libraries(App_MainApplicationTrayMenu PRIVATE
 add_dependencies(App_MainApplicationTrayMenu SnapTray_lrelease)
 add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
 set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")
+if(WIN32)
+    add_test(NAME App_ClipboardPinSecondaryScreen
+        COMMAND App_MainApplicationTrayMenu -platform offscreen:configfile=App/secondary-screen-layout.json
+            pasteClipboardFile:secondary-screen-pixels pasteClipboardFile:secondary-screen-file
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+    set_tests_properties(App_ClipboardPinSecondaryScreen PROPERTIES TIMEOUT 30 LABELS "unit")
+endif()
 
 add_executable(App_FullScreenCapture
     App/tst_FullScreenCapture.cpp

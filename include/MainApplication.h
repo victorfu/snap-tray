@@ -82,8 +82,10 @@ private:
     friend class tst_MainApplicationTrayMenu;
     void pinFromClipboard(std::optional<QPoint> position = std::nullopt);
     void loadImageForPin(const QString& filePath, std::optional<QPoint> position = std::nullopt);
+    void loadImageForPin(const QStringList& filePaths, std::optional<QPoint> position,
+                        QPointer<QScreen> preferredScreen = {});
     void onImageLoaded(const QString& filePath, const QImage& image,
-                       std::optional<QPoint> position = std::nullopt);
+                       std::optional<QPoint> position, QScreen* preferredScreen);
 
     void startRegionCapture(bool showShortcutHintsOnEntry);
     void startDelayedCapture(int delaySeconds);
