@@ -4451,6 +4451,10 @@ void RegionSelector::saveToFile()
         return;
     }
 
+    // A newer copy may arrive while this save is writing in the background.
+    m_postCaptureSaveCopyRequest =
+        m_postCaptureActionsEnabled && RegionCaptureSettingsManager::instance().postCaptureCopy()
+        ? PlatformFeatures::reserveClipboardRequest() : 0;
     m_exportInProgress = true;
     hideDetachedFloatingUi();
     // A manual save already hid the fullscreen selector before opening the dialog.

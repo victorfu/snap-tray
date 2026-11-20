@@ -128,8 +128,10 @@ private:
                                  RegionCaptureSettingsManager::FullScreenCaptureAction action);
     enum class PrimaryAction { Pin, Copy, Save };
     void afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin origin, QScreen* screen,
-                         PrimaryAction primary, quint64 generation, const QString& error = {});
-    void copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done);
+                         PrimaryAction primary, quint64 generation, const QString& error = {},
+                         quint64 automaticCopyRequest = 0);
+    void copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done,
+                             quint64 reservedRequest = 0);
     QPointer<PostCaptureCard> m_postCaptureCard;
     // Dismissing the card also invalidates presentation by outstanding exports.
     quint64 m_postCaptureGeneration = 0;

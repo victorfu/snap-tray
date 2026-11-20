@@ -975,13 +975,16 @@ void tst_FullScreenCapture::automaticSaveWithoutCardKeepsOriginalPixels()
 void tst_FullScreenCapture::lateExportAfterDismissalKeepsCardHidden_data()
 {
     QTest::addColumn<bool>("region");
-    QTest::newRow("pending-full-screen-copy") << false;
-    QTest::newRow("pending-region-save") << true;
+    QTest::addColumn<bool>("newerClipboardRequest");
+    QTest::newRow("pending-full-screen-copy") << false << false;
+    QTest::newRow("pending-region-save") << true << false;
+    QTest::newRow("pending-region-save-after-newer-copy") << true << true;
 }
 
 void tst_FullScreenCapture::lateExportAfterDismissalKeepsCardHidden()
 {
     QFETCH(bool, region);
+    QFETCH(bool, newerClipboardRequest);
     auto& prefs = RegionCaptureSettingsManager::instance();
     prefs.setPostCaptureCard(true);
     auto* screen = screenNamed("Primary100");
@@ -1004,11 +1007,18 @@ void tst_FullScreenCapture::lateExportAfterDismissalKeepsCardHidden()
         manager.startRegionCaptureWithPreset(QRect(200, 100, 50, 50), screen);
         QVERIFY(manager.m_regionSelector && manager.m_regionSelector != selector);
         manager.cancelCapture();
+        if (newerClipboardRequest) {
+            PlatformFeatures::reserveClipboardRequest();
+        }
         QTRY_COMPARE(saved.size(), 1);
-        QVERIFY(copied);
-        QCOMPARE(copied->size(), selection.size());
-        QCOMPARE(copied->pixelColor(selection.width() / 2, selection.height() / 2), kFill);
-        QCOMPARE(copied->pixelColor(0, 0), QImage(saved.first().at(1).toString()).pixelColor(0, 0));
+        const QImage savedImage(saved.first().at(1).toString());
+        QCOMPARE(savedImage.size(), selection.size());
+        QCOMPARE(savedImage.pixelColor(selection.width() / 2, selection.height() / 2), kFill);
+        QCOMPARE(copied.has_value(), !newerClipboardRequest);
+        if (copied) {
+            QCOMPARE(copied->size(), selection.size());
+            QCOMPARE(copied->pixelColor(0, 0), savedImage.pixelColor(0, 0));
+        }
     } else {
         prefs.setPostCaptureSave(true);
         prefs.setFullScreenCaptureAction(FullScreenCaptureAction::CopyToClipboard);

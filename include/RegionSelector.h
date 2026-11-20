@@ -114,6 +114,7 @@ public:
     void setQuickPinMode(bool enabled);
     void setPostCaptureActionsEnabled(bool enabled) { m_postCaptureActionsEnabled = enabled; }
     bool postCaptureActionsEnabled() const { return m_postCaptureActionsEnabled; }
+    quint64 postCaptureSaveCopyRequest() const { return m_postCaptureSaveCopyRequest; }
 
     // Control whether capture shortcut hints are shown on entry.
     void setShowShortcutHintsOnEntry(bool enabled);
@@ -382,6 +383,7 @@ private:
     SharedPixmap m_sharedSourcePixmap;  // Shared for mosaic tool memory efficiency
 
     bool m_postCaptureActionsEnabled = true;
+    quint64 m_postCaptureSaveCopyRequest = 0;
     RegionInputState m_inputState;
     QPointer<QScreen> m_currentScreen;
 

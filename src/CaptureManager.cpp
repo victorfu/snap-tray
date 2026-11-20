@@ -740,7 +740,8 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
     // a failed export when the user wants a retry card or another automatic action.
     const QPixmap pixmap = prepared.pixmap;
     auto complete = [this, pixmap, source = QPointer<QScreen>(screen), geometry = screen->geometry(),
-                     generation = m_activeCaptureGeneration, historyRequest = std::move(historyRequest)](PrimaryAction primary, const QString& error = {}) {
+                     generation = m_activeCaptureGeneration, historyRequest = std::move(historyRequest)](
+                         PrimaryAction primary, const QString& error = {}, quint64 automaticCopyRequest = 0) {
         const auto& settings = RegionCaptureSettingsManager::instance();
         if (!error.isEmpty() && !settings.postCaptureCard() && !settings.postCaptureSave()
             && !settings.postCaptureCopy())
@@ -749,7 +750,7 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
         ScreenshotOrigin origin;
         origin.id = historyRequest.id;
         origin.globalRect = geometry;
-        afterScreenshot(pixmap, origin, source, primary, generation, error);
+        afterScreenshot(pixmap, origin, source, primary, generation, error, automaticCopyRequest);
     };
 
     if (action == FullScreenCaptureAction::CopyToClipboard) {
@@ -789,24 +790,26 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
         emit captureCancelled();
         return;
     }
+    const quint64 automaticCopyRequest = RegionCaptureSettingsManager::instance().postCaptureCopy()
+        ? PlatformFeatures::reserveClipboardRequest() : 0;
     if (!saveRequest.error.isEmpty()) {
         finishFullScreenExport();
-        complete(PrimaryAction::Save, saveRequest.error);
+        complete(PrimaryAction::Save, saveRequest.error, automaticCopyRequest);
         emit saveFailed(saveRequest.filePath, saveRequest.error);
         return;
     }
 
     connect(exporter, &RegionExportManager::saveCompleted, this,
-        [this, complete](const QPixmap& pixmap, const QImage&, const QString& filePath) {
+        [this, complete, automaticCopyRequest](const QPixmap& pixmap, const QImage&, const QString& filePath) {
             finishFullScreenExport();
-            complete(PrimaryAction::Save);
+            complete(PrimaryAction::Save, {}, automaticCopyRequest);
             emit saveCompleted(pixmap, filePath);
             emit captureCompleted(pixmap);
         });
     connect(exporter, &RegionExportManager::saveFailed, this,
-        [this, complete](const QString& filePath, const QString& error) {
+        [this, complete, automaticCopyRequest](const QString& filePath, const QString& error) {
             finishFullScreenExport();
-            complete(PrimaryAction::Save, error);
+            complete(PrimaryAction::Save, error, automaticCopyRequest);
             emit saveFailed(filePath, error);
         });
     exporter->savePreparedExportAsync(std::move(prepared), saveRequest);
@@ -929,21 +932,27 @@ RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEnt
     });
     connect(selector, &RegionSelector::saveCompleted, this, [this, selector, generation](const QPixmap& pixmap) {
         if (selector->postCaptureActionsEnabled())
-            afterScreenshot(pixmap, selector->lastScreenshotOrigin(), selector->screen(), PrimaryAction::Save, generation);
+            afterScreenshot(pixmap, selector->lastScreenshotOrigin(), selector->screen(),
+                            PrimaryAction::Save, generation, {}, selector->postCaptureSaveCopyRequest());
     });
     selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
     return selector;
 }
 
-void CaptureManager::copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done)
+void CaptureManager::copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done,
+                                         quint64 reservedRequest)
 {
     if (m_clipboardWriterOverride) {
+        if (reservedRequest && !PlatformFeatures::isLatestClipboardRequest(reservedRequest)) {
+            done(PlatformFeatures::ClipboardCopyResult::Superseded);
+            return;
+        }
         m_clipboardWriterOverride(image, [guard = QPointer<CaptureManager>(this), done = std::move(done)](PlatformFeatures::ClipboardCopyResult result) {
             if (guard)
                 done(result);
         });
     } else {
-        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(image, this, std::move(done));
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(image, this, std::move(done), reservedRequest);
     }
 }
 
@@ -959,11 +968,13 @@ void CaptureManager::dismissPostCaptureCard()
 }
 
 void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin origin, QScreen* screen,
-                                     PrimaryAction primary, quint64 generation, const QString& error)
+                                     PrimaryAction primary, quint64 generation, const QString& error,
+                                     quint64 automaticCopyRequest)
 {
     using Action = PostCaptureCard::Action;
     const auto& settings = RegionCaptureSettingsManager::instance();
-    const bool copy = settings.postCaptureCopy() && primary != PrimaryAction::Copy;
+    const bool copy = settings.postCaptureCopy() &&
+        (primary == PrimaryAction::Pin || (primary == PrimaryAction::Save && automaticCopyRequest));
     const bool save = settings.postCaptureSave() && primary != PrimaryAction::Save;
     const bool showCard = settings.postCaptureCard() && generation == m_postCaptureGeneration;
     if ((!showCard && !copy && !save) || pixmap.isNull())
@@ -993,7 +1004,7 @@ void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin ori
     };
 
     const QImage image = normalizeImageForExport(pixmap.toImage(), source);
-    auto copyImage = [this, card, pixmap, image, finish] {
+    auto copyImage = [this, card, pixmap, image, finish](quint64 reservedRequest) {
         if (card)
             card->setBusy(Action::Copy, true);
         copyScreenshotImage(image,
@@ -1009,7 +1020,7 @@ void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin ori
                     if (finish(Action::Copy, detail))
                         emit copyFailed(detail);
                 }
-            });
+            }, reservedRequest);
     };
     auto saveImage = [this, card, pixmap, image, source, origin, finish](bool automatic) {
         if (card)
@@ -1063,7 +1074,7 @@ void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin ori
                 if (!card || card != m_postCaptureCard || !card->isVisible())
                     return;
                 switch (action) {
-                case Action::Copy: copyImage(); return;
+                case Action::Copy: copyImage(0); return;
                 case Action::Save: saveImage(false); return;
                 case Action::Edit:
                     if (!startHistoryReplay(origin.id) && card && card->isVisible())
@@ -1089,7 +1100,7 @@ void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin ori
             });
     }
     if (copy)
-        copyImage();
+        copyImage(automaticCopyRequest);
     if (save)
         saveImage(true);
 }
