@@ -21,7 +21,6 @@
 
   const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'];
   const VALUE_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
-  const CONTENT_PATTERN = /^[a-z]{1,16}[0-9]{1,3}$/;
   const VERSION_PATTERN = /^v?\d+(\.\d+){1,3}([-.][0-9a-z.]{1,24})?$/i;
   const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9]{4,16}$/;
   const OTHER = 'other';
@@ -67,7 +66,7 @@
 
     let content = '';
     if (params.has('utm_content')) {
-      content = raw.utm_content && CONTENT_PATTERN.test(raw.utm_content) ? raw.utm_content : OTHER;
+      content = rules.contents.includes(raw.utm_content) ? raw.utm_content : OTHER;
     }
 
     return {
@@ -113,7 +112,9 @@
       return { ...stripRecognized(landing), firstSeen: now, lastSeen: now };
     }
     if (stored && typeof stored.lastSeen === 'number' && now - stored.lastSeen >= 0 && now - stored.lastSeen < ATTRIBUTION_TTL_MS) {
-      return { ...stored, lastSeen: now };
+      // Older tabs may have saved a content tag under the former format-only rule.
+      const content = stored.content && !input.rules.contents.includes(stored.content) ? OTHER : stored.content;
+      return { ...stored, content, lastSeen: now };
     }
     if (landing) {
       return { ...stripRecognized(landing), firstSeen: now, lastSeen: now };
@@ -323,7 +324,8 @@
 
     const rules = {
       campaigns: (config.rules && config.rules.campaigns) || {},
-      mediums: (config.rules && config.rules.mediums) || []
+      mediums: (config.rules && config.rules.mediums) || [],
+      contents: (config.rules && config.rules.contents) || []
     };
     const local = safeStorage(win, 'localStorage');
     const session = safeStorage(win, 'sessionStorage');
@@ -397,7 +399,6 @@
         ad_user_data: 'denied',
         ad_personalization: 'denied'
       });
-      gtag('js', new Date());
       const pageConfig = {
         send_page_view: false,
         page_location: sanitizePageLocation(win.location.href, search, rules),
@@ -409,6 +410,9 @@
         pageConfig.traffic_type = 'internal';
         pageConfig.debug_mode = true;
       }
+      // Tag initialization can emit a default hit before the stream config applies.
+      gtag('set', pageConfig);
+      gtag('js', new Date());
       gtag('config', config.measurementId, pageConfig);
       gtag('event', 'page_view', eventParams({}));
 
