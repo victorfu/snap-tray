@@ -3,6 +3,7 @@
 #include "platform/ClipboardImageFile.h"
 #include "settings/FileSettingsManager.h"
 #include <QClipboard>
+#include <QDebug>
 #include <QFutureWatcher>
 #include <QGuiApplication>
 #include <QMimeData>
@@ -64,14 +65,17 @@ QString PlatformFeatures::clipboardErrorMessage(ClipboardCopyResult result)
 
 void PlatformFeatures::cleanClipboardImageFiles()
 {
-    SnapTray::cleanClipboardImageStores([]() -> std::optional<QList<QUrl>> {
-        auto* clipboard = QGuiApplication::clipboard();
-        const auto* data = clipboard ? clipboard->mimeData() : nullptr;
-        auto urls = SnapTray::referencedClipboardFiles(data);
-        if (!urls && clipboardIsDefinitelyEmpty())
-            return QList<QUrl>{};
-        return urls;
-    });
+    SnapTray::cleanClipboardImageStores(clipboardFileReferences);
+}
+
+std::optional<QList<QUrl>> PlatformFeatures::clipboardFileReferences()
+{
+    auto* clipboard = QGuiApplication::clipboard();
+    const auto* data = clipboard ? clipboard->mimeData() : nullptr;
+    auto urls = SnapTray::referencedClipboardFiles(data);
+    if (!urls && clipboardIsDefinitelyEmpty())
+        return QList<QUrl>{};
+    return urls;
 }
 
 bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image, QString* error) const
@@ -80,11 +84,13 @@ bool PlatformFeatures::copyImageToClipboardPersistently(const QImage& image, QSt
     if (mode == Mode::ImageOnly)
         return copyImageOnlyPersistently(image);
     cleanClipboardImageFiles();
-    auto file = SnapTray::prepareClipboardImageFile(image, SnapTray::clipboardImageDirectory());
+    auto file = SnapTray::prepareClipboardImageFile(
+        image, SnapTray::clipboardImageDirectory(), SnapTray::kClipboardImageQuota, clipboardFileReferences);
     const auto result = file ? publishClipboardImageFile(image, *file, mode == Mode::ImageAndFile, true)
                              : Result::Failed;
     if (error && result != Result::Success)
-        *error = clipboardErrorMessage(result);
+        *error = result == Result::Incomplete ? clipboardErrorMessage(result)
+                                             : QStringLiteral("Failed to copy to clipboard");
     return result == Result::Success;
 }
 
@@ -94,7 +100,8 @@ bool PlatformFeatures::copyImageToClipboardForGui(const QImage& image) const
     if (mode == Mode::ImageOnly)
         return setClipboardPixels(image);
     cleanClipboardImageFiles();
-    auto file = SnapTray::prepareClipboardImageFile(image, SnapTray::clipboardImageDirectory());
+    auto file = SnapTray::prepareClipboardImageFile(
+        image, SnapTray::clipboardImageDirectory(), SnapTray::kClipboardImageQuota, clipboardFileReferences);
     return file && publishClipboardImageFile(image, *file, mode == Mode::ImageAndFile, false) == Result::Success;
 }
 
@@ -133,10 +140,25 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(const QImage& image, QObj
             }
             cleanClipboardImageFiles();
             using File = std::shared_ptr<SnapTray::ClipboardImageFile>;
+            const QString directory = SnapTray::clipboardImageDirectory();
             auto* watcher = new QFutureWatcher<File>(qApp);
             QObject::connect(watcher, &QFutureWatcher<File>::finished, qApp,
-                [this, watcher, image, target, mode, request, completion] {
+                [this, watcher, image, target, mode, request, completion, directory] {
                     auto file = watcher->future().takeResult();
+                    // Only selection inspection and eviction need the GUI thread.
+                    // Retry the disk write once, with the same encoded bytes.
+                    if (target && file && file->path.isEmpty() && isLatestClipboardRequest(request)) {
+                        if (SnapTray::reclaimClipboardImageSpace(directory, file->png.size(), clipboardFileReferences)) {
+                            watcher->setFuture(QtConcurrent::run([file, directory]() -> File {
+                                const auto result = file->save(directory, SnapTray::kClipboardImageQuota);
+                                if (result == SnapTray::ClipboardStoreResult::NeedsSpace)
+                                    qWarning() << "Another clipboard writer used the reclaimed space:" << directory;
+                                return result == SnapTray::ClipboardStoreResult::Success ? file : nullptr;
+                            }));
+                            return;
+                        }
+                        file.reset();
+                    }
                     watcher->deleteLater();
                     auto result = Result::Superseded;
                     if (target && isLatestClipboardRequest(request)) {
@@ -150,8 +172,11 @@ void PlatformFeatures::copyImageToClipboardForGuiAsync(const QImage& image, QObj
                         completion(result);
                     fileCopies.finished();
                 });
-            watcher->setFuture(QtConcurrent::run([image, directory = SnapTray::clipboardImageDirectory()] {
-                return SnapTray::prepareClipboardImageFile(image, directory);
+            watcher->setFuture(QtConcurrent::run([image, directory]() -> File {
+                auto file = SnapTray::encodeClipboardImage(image);
+                if (file && file->save(directory, SnapTray::kClipboardImageQuota) == SnapTray::ClipboardStoreResult::Failed)
+                    return {};
+                return file;
             }));
         });
     }, Qt::QueuedConnection);

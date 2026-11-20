@@ -30,6 +30,19 @@ private slots:
     void testRememberManualScreenshotSaveDirectory_StoresAbsoluteParent();
     void testRememberManualScreenshotSaveDirectory_IgnoresEmptyAndInvalidParent();
     void testDisablingLastScreenshotSaveLocation_PreservesRememberedDirectory();
+    void clipboardImageMode() {
+        using Mode = FileSettingsManager::ClipboardImageMode;
+        auto& manager = FileSettingsManager::instance();
+        QCOMPARE(manager.clipboardImageMode(), Mode::ImageOnly);
+        for (Mode mode : {Mode::ImageAndFile, Mode::FileOnly, Mode::ImageOnly}) {
+            manager.setClipboardImageMode(mode);
+            QCOMPARE(manager.clipboardImageMode(), mode);
+        }
+        for (const QVariant& invalid : QVariantList{3, -1, QStringLiteral("invalid")}) {
+            SnapTray::getSettings().setValue("files/clipboardImageMode", invalid);
+            QCOMPARE(manager.clipboardImageMode(), Mode::ImageOnly);
+        }
+    }
     void testImageExportOptions_DefaultsAndRoundtrip();
     void testImageExportOptions_NormalizesStoredValues();
 
@@ -62,6 +75,7 @@ void tst_FileSettingsManager::cleanup()
 void tst_FileSettingsManager::snapshotFileSettings()
 {
     static const QStringList keys = {
+        QStringLiteral("files/clipboardImageMode"),
         QStringLiteral("files/filenameTemplate"),
         QStringLiteral("files/filenamePrefix"),
         QStringLiteral("files/dateFormat"),
@@ -100,6 +114,7 @@ void tst_FileSettingsManager::restoreFileSettings()
 void tst_FileSettingsManager::clearFileSettings()
 {
     auto settings = SnapTray::getSettings();
+    settings.remove("files/clipboardImageMode");
     settings.remove("files/filenameTemplate");
     settings.remove("files/filenamePrefix");
     settings.remove("files/dateFormat");

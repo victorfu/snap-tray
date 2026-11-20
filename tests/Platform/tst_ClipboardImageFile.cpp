@@ -2,6 +2,11 @@
 #include <optional>
 #include <QClipboard>
 #include <QProcess>
+#include <QScopeGuard>
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <shellapi.h>
+#endif
 #include <QGuiApplication>
 #include <QMimeData>
 #include <QPainter>
@@ -40,6 +45,18 @@ private slots:
         data.setData(copiedFiles, {});
         QVERIFY(!SnapTray::referencedClipboardFiles(&data));
         const auto url = QUrl::fromLocalFile(QStringLiteral("/example/剪貼簿.png"));
+        data.setData(copiedFiles, "move\n" + url.toEncoded());
+        QVERIFY(!SnapTray::referencedClipboardFiles(&data));
+        data.setData(copiedFiles, "copy\nrelative.png");
+        QVERIFY(!SnapTray::referencedClipboardFiles(&data));
+        data.clear();
+        data.setData("text/uri-list", {});
+        QVERIFY(!SnapTray::referencedClipboardFiles(&data));
+        data.setUrls({QUrl("relative.png")});
+        QVERIFY(!SnapTray::referencedClipboardFiles(&data));
+        data.clear();
+        data.setData(copiedFiles, "cut\n" + url.toEncoded());
+        QCOMPARE(SnapTray::referencedClipboardFiles(&data).value(), QList<QUrl>{url});
         data.setData(copiedFiles, "copy\n" + url.toEncoded());
         QCOMPARE(SnapTray::referencedClipboardFiles(&data).value(), QList<QUrl>{url});
         data.clear();
@@ -80,6 +97,115 @@ private slots:
         QVERIFY(!held.exists());
     }
 
+    void quotaEvictsOldestUnreferencedFile()
+    {
+        QTemporaryDir dir;
+        const QImage image = finalSnapshot();
+        auto pending = SnapTray::prepareClipboardImageFile(image, dir.path());
+        auto active = SnapTray::prepareClipboardImageFile(image, dir.path());
+        auto oldest = SnapTray::prepareClipboardImageFile(image, dir.path());
+        auto recent = SnapTray::prepareClipboardImageFile(image, dir.path());
+        QVERIFY(pending && active && oldest && recent);
+        const auto quota = 4 * pending->png.size();
+        const auto url = QUrl::fromLocalFile(active->path);
+        const QString evicted = oldest->path;
+        const QString kept = recent->path;
+        active->offeredToClipboard = oldest->offeredToClipboard = recent->offeredToClipboard = true;
+        active.reset();
+        oldest.reset();
+        recent.reset();
+        // The active file is oldest, so ordering alone cannot protect it.
+        QFile protectedFile(url.toLocalFile());
+        QVERIFY(protectedFile.open(QIODevice::ReadWrite));
+        QVERIFY(protectedFile.setFileTime(QDateTime::currentDateTimeUtc().addDays(-2), QFileDevice::FileModificationTime));
+        protectedFile.close();
+        QFile old(evicted);
+        QVERIFY(old.open(QIODevice::ReadWrite));
+        QVERIFY(old.setFileTime(QDateTime::currentDateTimeUtc().addDays(-1), QFileDevice::FileModificationTime));
+        old.close();
+        bool read = false;
+        SnapTray::pruneClipboardImages(dir.path(), [&] { read = true; return QList<QUrl>{}; });
+        QVERIFY(!read);
+        QVERIFY(old.exists());
+        QVERIFY(!SnapTray::prepareClipboardImageFile(image, dir.path(), quota, [] { return std::nullopt; }));
+        QVERIFY(SnapTray::prepareClipboardImageFile(image, dir.path(), quota, [&] { return QList<QUrl>{url}; }));
+        QVERIFY(!old.exists());
+        QVERIFY(QFile::exists(kept));
+        QVERIFY(QFile::exists(pending->path));
+        QVERIFY(QFile::exists(url.toLocalFile()));
+        QFile unrelated(dir.filePath("Screenshot-other.png"));
+        QVERIFY(unrelated.open(QIODevice::WriteOnly));
+        QVERIFY(unrelated.setFileTime(QDateTime::currentDateTimeUtc().addDays(-8), QFileDevice::FileModificationTime));
+        unrelated.close();
+        QFile interrupted(kept + ".ABCDEF");
+        QVERIFY(interrupted.open(QIODevice::WriteOnly));
+        QVERIFY(interrupted.setFileTime(QDateTime::currentDateTimeUtc().addDays(-8), QFileDevice::FileModificationTime));
+        interrupted.close();
+        SnapTray::pruneClipboardImages(dir.path(), [] { return QList<QUrl>{}; });
+        QVERIFY(unrelated.exists());
+        QVERIFY(!interrupted.exists());
+    }
+
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
+    void textCopyDuringFilePreparationSupersedesImage()
+    {
+        auto& manager = FileSettingsManager::instance();
+        const auto initialMode = manager.clipboardImageMode();
+        const auto restore = qScopeGuard([&] { manager.setClipboardImageMode(initialMode); });
+        manager.setClipboardImageMode(Mode::ImageAndFile);
+        std::optional<Result> result;
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(finalSnapshot(), this, [&](Result r) { result = r; });
+        // Dispatch the queued start without delivering the worker completion.
+        QCoreApplication::sendPostedEvents(this, QEvent::MetaCall);
+        auto* clipboard = QGuiApplication::clipboard();
+        clipboard->setText(QStringLiteral("newer text"));
+        QTRY_VERIFY_WITH_TIMEOUT(result.has_value(), 15000);
+        QCOMPARE(*result, Result::Superseded);
+        QCOMPARE(clipboard->text(), QStringLiteral("newer text"));
+    }
+#endif
+
+#ifdef Q_OS_WIN
+    void nativeWindowsFormats_data()
+    {
+        QTest::addColumn<bool>("includePixels");
+        QTest::newRow("file-only") << false;
+        QTest::newRow("image-and-file") << true;
+    }
+
+    void nativeWindowsFormats()
+    {
+        QFETCH(bool, includePixels);
+        auto& manager = FileSettingsManager::instance();
+        const auto initialMode = manager.clipboardImageMode();
+        const auto restore = qScopeGuard([&] { manager.setClipboardImageMode(initialMode); });
+        manager.setClipboardImageMode(includePixels ? Mode::ImageAndFile : Mode::FileOnly);
+        const auto image = finalSnapshot();
+        QVERIFY(PlatformFeatures::instance().copyImageToClipboardPersistently(image));
+        const auto urls = QGuiApplication::clipboard()->mimeData()->urls();
+        QCOMPARE(urls.size(), 1);
+        const auto path = urls.first().toLocalFile();
+        QCOMPARE(QFileInfo(path).absolutePath(), SnapTray::clipboardImageDirectory());
+        QVERIFY(QFileInfo(path).fileName().startsWith("Screenshot-"));
+        const auto cleanup = qScopeGuard([&] {
+            QGuiApplication::clipboard()->clear();
+            QFile::remove(path);
+        });
+        QCOMPARE(QImage(path).convertToFormat(image.format()), image);
+        QVERIFY(OpenClipboard(nullptr));
+        const auto close = qScopeGuard([] { CloseClipboard(); });
+        auto drop = static_cast<HDROP>(GetClipboardData(CF_HDROP));
+        QVERIFY(drop);
+        QCOMPARE(DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0), 1u);
+        std::wstring fileName(DragQueryFileW(drop, 0, nullptr, 0) + 1, L'\0');
+        const auto length = DragQueryFileW(drop, 0, fileName.data(), UINT(fileName.size()));
+        QVERIFY(length);
+        QCOMPARE(QDir::fromNativeSeparators(QString::fromWCharArray(fileName.data(), length)), path);
+        QCOMPARE(bool(IsClipboardFormatAvailable(RegisterClipboardFormatW(L"PNG")) || IsClipboardFormatAvailable(CF_DIB)
+                      || IsClipboardFormatAvailable(CF_DIBV5)), includePixels);
+    }
+#endif
+
     void isolatedClipboard()
     {
 #ifndef CLIPBOARD_PROBE_PATH
@@ -90,10 +216,20 @@ private slots:
             QSKIP("Requires a private Xvfb clipboard");
         QTemporaryDir dir;
         QVERIFY(dir.isValid());
+        const auto dataHome = qgetenv("XDG_DATA_HOME");
+        const auto appImage = qgetenv("APPIMAGE");
+        const auto restore = qScopeGuard([&] {
+            if (dataHome.isNull()) qunsetenv("XDG_DATA_HOME");
+            else qputenv("XDG_DATA_HOME", dataHome);
+            if (appImage.isNull()) qunsetenv("APPIMAGE");
+            else qputenv("APPIMAGE", appImage);
+        });
         qputenv("XDG_DATA_HOME", dir.path().toUtf8());
         qputenv("APPIMAGE", CLIPBOARD_PROBE_PATH);
         auto& manager = FileSettingsManager::instance();
-        QCOMPARE(manager.clipboardImageMode(), Mode::ImageOnly);
+        const auto initialMode = manager.clipboardImageMode();
+        const auto restoreMode = qScopeGuard([&] { manager.setClipboardImageMode(initialMode); });
+        QCOMPARE(initialMode, Mode::ImageOnly);
         auto& platform = PlatformFeatures::instance();
         auto* clipboard = QGuiApplication::clipboard();
         const auto image = finalSnapshot();
@@ -117,6 +253,20 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(first && latest, 15000);
         QCOMPARE(*first, Result::Superseded);
         QCOMPARE(*latest, Result::Success);
+        // Destroying a caller after its worker starts must also release its
+        // allocation and allow the next queued copy to finish.
+        clipboard->setText(QStringLiteral("release previous reference"));
+        auto context = std::make_unique<QObject>();
+        bool called = false;
+        platform.copyImageToClipboardForGuiAsync(image, context.get(), [&](Result) { called = true; });
+        QCoreApplication::sendPostedEvents(context.get(), QEvent::MetaCall);
+        context.reset();
+        latest.reset();
+        platform.copyImageToClipboardForGuiAsync(image, this, [&](Result r) { latest = r; });
+        QTRY_VERIFY_WITH_TIMEOUT(latest.has_value(), 15000);
+        QCOMPARE(*latest, Result::Success);
+        QVERIFY(!called);
+        QCOMPARE(QDir(SnapTray::clipboardImageDirectory()).entryList({"Screenshot-*.png"}, QDir::Files).size(), 2);
         QVERIFY(ballast.remove());
         const auto urls = clipboard->mimeData()->urls();
         QCOMPARE(urls.size(), 1);
@@ -131,7 +281,7 @@ private slots:
         qputenv("APPIMAGE", dir.filePath("missing-owner").toUtf8());
         QString error;
         QVERIFY(!platform.copyImageToClipboardPersistently(image, &error));
-        QCOMPARE(error, PlatformFeatures::clipboardErrorMessage(Result::Failed));
+        QCOMPARE(error, QStringLiteral("Failed to copy to clipboard"));
         QCOMPARE(clipboard->mimeData()->urls(), urls);
         QCOMPARE(QDir(SnapTray::clipboardImageDirectory()).entryList({"*.png"}, QDir::Files).size(), fileCount);
         qputenv("APPIMAGE", CLIPBOARD_PROBE_PATH);
@@ -157,10 +307,13 @@ private slots:
         bool started = false;
         QVERIFY(!SnapTray::copyFileToLinuxClipboard(urls.first().toLocalFile(), true,
             QString::fromUtf8(CLIPBOARD_PROBE_PATH), started, *currentOwner + 1));
+        QVERIFY(!started);
         QCOMPARE(clipboard->text(), QStringLiteral("replacement"));
 
         QProcess gui;
         auto environment = QProcessEnvironment::systemEnvironment();
+        // The detached owner must serve the encoded PNG even when its decoder
+        // cannot allocate enough memory for the uncompressed image.
         environment.insert("QT_IMAGEIO_MAXALLOC", "1");
         gui.setProcessEnvironment(environment);
         gui.start(QString::fromUtf8(CLIPBOARD_PROBE_PATH), {QStringLiteral("--gui-file-copy")});

@@ -3,6 +3,7 @@
 #include "platform/ClipboardImageFile.h"
 #include <QBuffer>
 #include <QClipboard>
+#include <QDebug>
 #include <QDataStream>
 #include <QElapsedTimer>
 #include <QGuiApplication>
@@ -27,6 +28,8 @@ constexpr qint64 kMaxDecodedPixels = 128 * 1024 * 1024;
 constexpr int kTokenBytes = 16;
 constexpr char kAccepted = 1;
 constexpr char kReadyToPublish = 2;
+constexpr char kOwnerReplaced = 3;
+constexpr char kUnreadableFile = 4;
 
 int remaining(const QElapsedTimer& timer, int timeoutMs)
 {
@@ -83,7 +86,10 @@ bool handoff(const QByteArray& payload, const QString& mode, const QString& laun
     owner.setStandardErrorFile(QProcess::nullDevice());
     QElapsedTimer deadline;
     deadline.start();
-    if (!owner.startDetached()) return false;
+    if (!owner.startDetached()) {
+        qWarning() << "Cannot start X11 clipboard owner:" << launchPath << owner.errorString();
+        return false;
+    }
     if (!server.hasPendingConnections()
         && !server.waitForNewConnection(remaining(deadline, timeoutMs))) return false;
     std::unique_ptr<QLocalSocket> socket(server.nextPendingConnection());
@@ -98,13 +104,23 @@ bool handoff(const QByteArray& payload, const QString& mode, const QString& laun
     if (publicationStarted) {
         // The child has prepared the snapshot. Until we acknowledge,
         // it cannot publish the URL, so earlier failures can discard the PNG.
-        if (!readBytes(*socket, 1, received, deadline, timeoutMs)
-            || received.at(0) != kReadyToPublish) return false;
+        if (!readBytes(*socket, 1, received, deadline, timeoutMs))
+            return false;
+        if (received.at(0) != kReadyToPublish) {
+            if (received.at(0) == kUnreadableFile)
+                qWarning() << "X11 clipboard owner could not read screenshot:" << QString::fromUtf8(payload);
+            return false;
+        }
         *publicationStarted = true;
         if (!writeBytes(*socket, QByteArray(1, kReadyToPublish), deadline, timeoutMs)) return false;
     }
-    if (!readBytes(*socket, 1, received, deadline, timeoutMs)
-        || received.at(0) != kAccepted) return false;
+    if (!readBytes(*socket, 1, received, deadline, timeoutMs))
+        return false;
+    if (received.at(0) != kAccepted) {
+        if (publicationStarted && received.at(0) == kOwnerReplaced)
+            *publicationStarted = false;
+        return false;
+    }
     // Commit only after the child confirms ownership. A disconnected parent
     // during setup must not leave an unacknowledged owner running forever.
     if (!writeBytes(*socket, QByteArray(1, kAccepted), deadline, timeoutMs)) return false;
@@ -148,8 +164,11 @@ bool copyFileToLinuxClipboard(const QString& path, bool includePixels, const QSt
                               bool& publicationStarted, quint32 expectedOwner)
 {
     publicationStarted = false;
-    return handoff(path.toUtf8(), includePixels ? QStringLiteral("image-file") : QStringLiteral("file"),
-                   launchPath, kClipboardHandoffTimeoutMs, &publicationStarted, expectedOwner);
+    const bool accepted = handoff(path.toUtf8(), includePixels ? QStringLiteral("image-file") : QStringLiteral("file"),
+                                  launchPath, kClipboardHandoffTimeoutMs, &publicationStarted, expectedOwner);
+    if (!accepted)
+        qWarning() << "X11 clipboard owner handoff failed:" << path << "publication may have started:" << publicationStarted;
+    return accepted;
 }
 
 int runLinuxClipboardOwner(const QStringList& arguments)
@@ -186,14 +205,19 @@ int runLinuxClipboardOwner(const QStringList& arguments)
     if (!mode.isEmpty()) {
         const QString path = QString::fromUtf8(payload);
         QFile file(path);
-        if (!file.open(QIODevice::ReadOnly) || file.size() <= 0 || file.size() > kClipboardImageQuota)
+        if (!file.open(QIODevice::ReadOnly) || file.size() <= 0 || file.size() > kClipboardImageQuota) {
+            writeBytes(socket, QByteArray(1, kUnreadableFile), deadline, kClipboardHandoffTimeoutMs);
             return 1;
+        }
         const QUrl url = QUrl::fromLocalFile(path);
         mime->setUrls({url});
         mime->setData(QStringLiteral("x-special/gnome-copied-files"), "copy\n" + url.toEncoded());
         if (mode == QStringLiteral("image-file")) {
             const auto png = file.readAll();
-            if (png.size() != file.size()) return 1;
+            if (png.size() != file.size()) {
+                writeBytes(socket, QByteArray(1, kUnreadableFile), deadline, kClipboardHandoffTimeoutMs);
+                return 1;
+            }
             mime->setData(QStringLiteral("image/png"), png);
         }
     } else {
@@ -213,7 +237,10 @@ int runLinuxClipboardOwner(const QStringList& arguments)
             || bytes.at(0) != kReadyToPublish)) return 1;
     // A normal GUI exit transfers only the selection it still owns. The
     // previous owner may have been replaced while this process was starting.
-    if (expectedOwner && linuxClipboardOwnerWindow() != expectedOwner) return 1;
+    if (expectedOwner && linuxClipboardOwnerWindow() != expectedOwner) {
+        writeBytes(socket, QByteArray(1, kOwnerReplaced), deadline, kClipboardHandoffTimeoutMs);
+        return 1;
+    }
     clipboard->setMimeData(mime.release());
     QGuiApplication::sync();
     if (!clipboard->ownsClipboard()

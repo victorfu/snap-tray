@@ -6,6 +6,7 @@
 #include "WindowDetector.h"
 #include <QBuffer>
 #include <QClipboard>
+#include <QDebug>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QDir>
@@ -176,14 +177,37 @@ PlatformFeatures::ClipboardCopyResult SnapTray::writeClipboardImageFile(
             ? [NSData dataWithBytes:file.png.constData() length:file.png.size()] : nil;
         if (!url || !board || (includePixels && !png))
             return Result::Failed;
+        id<NSPasteboardWriting> object = url;
+        if (includePixels) {
+            NSPasteboardItem* item = [[[NSPasteboardItem alloc] init] autorelease];
+            // Carry the native NSURL representations alongside the rendered PNG.
+            for (NSPasteboardType type in [url writableTypesForPasteboard:board]) {
+                id value = [url pasteboardPropertyListForType:type];
+                BOOL prepared;
+                if ([value isKindOfClass:[NSString class]])
+                    prepared = [item setString:value forType:type];
+                else if ([value isKindOfClass:[NSData class]])
+                    prepared = [item setData:value forType:type];
+                else
+                    prepared = value && [item setPropertyList:value forType:type];
+                if (!prepared) {
+                    qWarning() << "Cannot prepare clipboard file URL:" << file.path << QString::fromNSString(type);
+                    return Result::Failed;
+                }
+            }
+            if (![item.types containsObject:NSPasteboardTypeFileURL] || ![item setData:png forType:NSPasteboardTypePNG]) {
+                qWarning() << "Cannot prepare clipboard PNG:" << file.path << file.png.size();
+                return Result::Failed;
+            }
+            object = item;
+        }
         [board clearContents];
-        // Write the NSURL itself so sandboxed receivers get native file access.
-        if (![board writeObjects:@[url]])
-            return Result::Incomplete;
+        // From here the pasteboard server may have received the URL.
         file.offeredToClipboard = true;
-        if (includePixels && (![board addTypes:@[NSPasteboardTypePNG] owner:nil]
-            || ![board setData:png forType:NSPasteboardTypePNG]))
+        if (![board writeObjects:@[object]]) {
+            qWarning() << "Pasteboard rejected screenshot after clearing:" << file.path;
             return Result::Incomplete;
+        }
         return Result::Success;
     }
 }

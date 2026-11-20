@@ -19,4 +19,6 @@ XDG_SESSION_TYPE=x11 SNAPTRAY_TEST_X11_CLIPBOARD=1 xvfb-run -a \
     ctest --test-dir build -R '^(Platform_ClipboardImageFile|Platform_LinuxClipboardOwner|PinWindow_StyleSync)$' --output-on-failure
 ```
 
-Finder and Explorer paste, including paste after quitting and restarting SnapTray, still require native desktop verification.
+On Windows with Qt 6.12.0, a separate process read the clipboard after a test publisher exited. Both file modes exposed one native file path through `CF_HDROP`. The Windows Shell copied a byte-identical 320 × 200 PNG from the OLE clipboard data object into an empty folder with `IFileOperation::CopyItems`. Only **Image and PNG file** exposed bitmap pixels through DIB formats.
+
+Interactive Finder and Explorer paste, including paste after restarting SnapTray, still require native desktop verification.

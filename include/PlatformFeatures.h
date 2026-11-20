@@ -9,6 +9,8 @@
 
 #include <atomic>
 #include <functional>
+#include <optional>
+#include <QUrl>
 
 #include "platform/PlatformCapabilities.h"
 
@@ -24,7 +26,7 @@ public:
     enum class ClipboardCopyResult {
         Success,
         Failed,
-        Incomplete,
+        Incomplete, // Publication started and any file already offered must remain available.
         Superseded,
     };
 
@@ -43,8 +45,8 @@ public:
     // Base tray / menu bar artwork; MainApplication badges it with the recording state.
     QPixmap createTrayPixmap() const;
 
-    // Copy image to clipboard using native APIs for flows that must survive process exit,
-    // such as the CLI capture command.
+    // Copy in the configured image/file mode for use after exit. File preparation
+    // can fail at the store quota. File-mode failures fill error when supplied.
     bool copyImageToClipboardPersistently(const QImage& image, QString* error = nullptr) const;
 
     // Copy image to clipboard for interactive GUI flows.
@@ -58,12 +60,14 @@ public:
     // (#353).
     static quint64 reserveClipboardRequest();
     static bool isLatestClipboardRequest(quint64 request);
+    // File-mode preparation can also be superseded after this call reserves its own request.
     void copyImageToClipboardForGuiAsync(
         const QImage& image,
         QObject* context = nullptr,
         ClipboardCopyCompletion completion = {},
         quint64 reservedRequest = 0) const;
 
+    // Prune expired snapshots at startup and before file-mode copies.
     static void cleanClipboardImageFiles();
 
     // CLI installation
@@ -87,8 +91,9 @@ private:
     bool copyImageOnlyPersistently(const QImage& image) const;
     ClipboardCopyResult publishClipboardImageFile(const QImage& image,
         SnapTray::ClipboardImageFile& file, bool includePixels, bool persistent) const;
-    static quint64 nativeClipboardRevision();
+    static quint64 nativeClipboardRevision(); // X11 uses change notifications and returns zero.
     static bool clipboardIsDefinitelyEmpty();
+    static std::optional<QList<QUrl>> clipboardFileReferences();
     static inline quint64 s_clipboardRevision = 0;
 
     PlatformFeatures();

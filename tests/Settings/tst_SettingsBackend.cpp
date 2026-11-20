@@ -84,6 +84,18 @@ private slots:
     void testMagnifierEnabled_RoundTripPersistsAndSignals();
     void testFullScreenCaptureAction_RoundTripPersistsAndSignals();
     void testNormalizeRecordingAudioSettings_PreservesUnavailableLoadedDevice();
+    void clipboardImageMode() {
+        SettingsBackend backend;
+        QSignalSpy changed(&backend, &SettingsBackend::clipboardImageModeChanged);
+        QCOMPARE(backend.clipboardImageMode(), 0);
+        for (int value : {-1, 3, 1, 1})
+            backend.setClipboardImageMode(value);
+        QCOMPARE(changed.count(), 1);
+        QCOMPARE(SettingsBackend().clipboardImageMode(), 1);
+        backend.resetSetting("clipboardImageMode");
+        QCOMPARE(backend.clipboardImageMode(), 0);
+        QCOMPARE(changed.count(), 2);
+    }
     void optionalSensitiveCategoriesRoundTrip() {
         SettingsBackend backend;
         const QStringList categories{"email", "ipv4"};
@@ -127,6 +139,7 @@ void tst_SettingsBackend::initTestCase()
         QStringLiteral("regionCapture/cursorCompanionStyle"),
         QStringLiteral("regionCapture/fullScreenCaptureAction"),
         QStringLiteral("update/lastCheckTime"),
+        QStringLiteral("files/clipboardImageMode"),
         QStringLiteral("files/filenameTemplate"),
         QStringLiteral("files/useLastScreenshotSaveLocation"),
     };
@@ -175,6 +188,7 @@ void tst_SettingsBackend::clearTestSettings()
     settings.remove("regionCapture/cursorCompanionStyle");
     settings.remove("regionCapture/fullScreenCaptureAction");
     settings.remove("update/lastCheckTime");
+    settings.remove("files/clipboardImageMode");
     settings.remove("files/filenameTemplate");
     settings.remove("files/useLastScreenshotSaveLocation");
     settings.sync();
