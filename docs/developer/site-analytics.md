@@ -57,11 +57,13 @@ UTM values are lowercased and must be listed in `analytics_campaigns.yml`:
 
 - Unknown `utm_campaign` → every field is `other` and the market is `unknown`.
 - Known campaign with an unlisted source or medium → that field is `other`.
-- `utm_content` must look like `post01` / `group2` (letters, then 1–3 digits); anything else is `other`.
+- `utm_content` must match an entry in the `contents` list (such as `post01`); other values are reported as `other` and omitted from the page URL.
 
 Never put email addresses, account names or free text into a UTM tag. Add new channels to the YAML **before** publishing their links.
 
 Attribution is kept in `sessionStorage` (`snaptray.attribution`) only after consent:
+
+SnapTray does not assign its own persistent visitor ID. After opt-in, GA4 uses first-party `_ga` cookies to recognize returning browsers, as disclosed in the website privacy policy.
 
 1. A recognized campaign in the URL starts a new attribution and replaces an earlier one.
 2. Otherwise a stored attribution is kept if the last page view was less than 30 minutes ago, so in-site navigation and language switches keep the original campaign.

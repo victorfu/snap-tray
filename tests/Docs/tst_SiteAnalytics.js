@@ -13,6 +13,7 @@ const analytics = require(path.join(ROOT, 'docs/assets/js/analytics.js'));
 const HOST = 'snaptray.cc';
 const REPO = 'victorfu/snap-tray';
 const RULES = {
+  contents: ['post01', 'group2'],
   mediums: ['community', 'social', 'article', 'video'],
   campaigns: {
     korea_launch_20261115: { market: 'KR', sources: ['geeknews'] },
@@ -63,6 +64,11 @@ test('unlisted UTM values are never passed through', () => {
   assert.equal(badParts.source, 'other');
   assert.equal(badParts.medium, 'other');
   assert.equal(badParts.content, 'other');
+
+  const search = KR_SEARCH + '&utm_content=someone123';
+  assert.equal(resolve({ search }).content, 'other');
+  assert.equal(new URL(analytics.sanitizePageLocation('https://snaptray.cc/' + search, search, RULES)).searchParams.has('utm_content'), false);
+  assert.equal(resolve({ stored: { ...badParts, content: 'someone123' } }).content, 'other');
 
   const tooLong = resolve({ search: `?utm_campaign=${'a'.repeat(65)}` });
   assert.equal(tooLong.campaign, 'other');
@@ -334,6 +340,8 @@ test('accepting loads GA with sanitized page data and tracks downloads', () => {
   const consent = calls.find((args) => args[0] === 'consent');
   assert.equal(consent[2].ad_storage, 'denied');
   const config = calls.find((args) => args[0] === 'config');
+  assert.deepEqual(calls.slice(0, 4).map(([command]) => command), ['consent', 'set', 'js', 'config']);
+  assert.deepEqual(calls[1][1], config[2], 'the first automatic hit must inherit the sanitized settings');
   assert.equal(config[2].send_page_view, false);
   assert.equal(config[2].allow_google_signals, false);
   assert.ok(!config[2].page_location.includes('email'), config[2].page_location);
