@@ -41,7 +41,11 @@
 #include <QLocalSocket>
 #include <QUuid>
 #include <QImageReader>
+#include <QFutureWatcher>
+#include <QMimeData>
 #include <QTemporaryDir>
+#include <QThreadPool>
+#include <QUrl>
 #include <QScreen>
 #include <QPainter>
 #include <QSet>
@@ -237,6 +241,8 @@ private slots:
     void cliClipboardPinPosition();
     void cliFilePinUsesImageLoader_data();
     void cliFilePinUsesImageLoader();
+    void pasteClipboardFile_data();
+    void pasteClipboardFile();
 
 private:
     void clearAllTestSettings();
@@ -1186,11 +1192,14 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader_data()
     QTest::addColumn<int>("orientation");
     QTest::addColumn<bool>("large");
     QTest::addColumn<bool>("positioned");
-    QTest::newRow("rotate90") << 6 << false << false;
-    QTest::newRow("rotate270") << 8 << false << false;
-    QTest::newRow("mirror") << 2 << false << true;
-    QTest::newRow("large") << 1 << true << false;
-    QTest::newRow("large-positioned") << 1 << true << true;
+    QTest::addColumn<bool>("clipboardFile");
+    QTest::newRow("rotate90") << 6 << false << false << false;
+    QTest::newRow("rotate270") << 8 << false << false << false;
+    QTest::newRow("mirror") << 2 << false << true << false;
+    QTest::newRow("large") << 1 << true << false << false;
+    QTest::newRow("large-positioned") << 1 << true << true << false;
+    QTest::newRow("clipboard-rotate90") << 6 << false << false << true;
+    QTest::newRow("clipboard-large-positioned") << 1 << true << true << true;
 }
 
 void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
@@ -1198,6 +1207,7 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     QFETCH(int, orientation);
     QFETCH(bool, large);
     QFETCH(bool, positioned);
+    QFETCH(bool, clipboardFile);
     installFakeUpdateService(InstallSource::DirectDownload, false);
     MainApplication application;
     application.initialize();
@@ -1216,7 +1226,7 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     QByteArray segment = QByteArray::fromHex("ffe10022") + exif;
     jpeg.insert(2, segment);
     QTemporaryDir dir;
-    const QString path = dir.filePath("oriented.jpg");
+    const QString path = dir.filePath(QStringLiteral("oriented \u5716\u7247.jpg"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly));
     QCOMPARE(file.write(jpeg), qint64(jpeg.size()));
@@ -1231,7 +1241,33 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     const QPoint position = screen->availableGeometry().topLeft() + QPoint(37, 43);
     SnapTray::CLI::IPCMessage command;
     command.command = "pin";
-    command.options = {{"file", path}};
+    auto* clipboard = QGuiApplication::clipboard();
+    if (clipboardFile) {
+        const QString removedPath = dir.filePath("removed.jpg");
+        QImage sibling(24, 18, QImage::Format_RGB32);
+        sibling.fill(Qt::green);
+        QVERIFY(sibling.save(removedPath + QStringLiteral(".png")));
+        const QString corruptPath = dir.filePath("corrupt.jpg");
+        QFile corrupt(corruptPath);
+        QVERIFY(corrupt.open(QIODevice::WriteOnly));
+        QVERIFY(corrupt.write("Not a JPEG") > 0);
+        corrupt.close();
+        QUrl fileUrl = QUrl::fromLocalFile(path);
+        if (positioned) {
+            fileUrl.setHost(QStringLiteral("localhost"));
+        }
+        auto* mime = new QMimeData;
+        mime->setUrls({QUrl(QStringLiteral("https://example.invalid/image.jpg")),
+                       QUrl(QStringLiteral("file://example.invalid/share/image.jpg")),
+                       QUrl(QStringLiteral("file::/icons/icons/snaptray.png")),
+                       QUrl::fromLocalFile(removedPath),
+                       QUrl::fromLocalFile(dir.path()), QUrl::fromLocalFile(corruptPath),
+                       fileUrl});
+        clipboard->setMimeData(mime);
+        command.options = {{"clipboard", true}};
+    } else {
+        command.options = {{"file", path}};
+    }
     if (positioned) { command.options["x"] = position.x(); command.options["y"] = position.y(); }
     QSignalSpy created(application.m_pinWindowManager, &PinWindowManager::windowCreated);
     // A pin first shown at its unzoomed size can reach a neighbouring monitor;
@@ -1240,7 +1276,9 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     connect(application.m_pinWindowManager, &PinWindowManager::windowCreated, application.m_pinWindowManager,
             [&sizeWhenShown](PinWindow* window) { if (window->isVisible()) sizeWhenShown = window->size(); });
     application.handleCLICommand(command.toJson());
+    if (clipboardFile) clipboard->setText(QStringLiteral("Replacement clipboard contents"));
     QTRY_COMPARE(created.count(), 1);
+    if (clipboardFile) clipboard->clear();
     PinWindow* pin = application.m_pinWindowManager->windows().first();
     const auto placement = computeInitialPinWindowPlacement(QPixmap::fromImage(expected), screen->availableGeometry());
     QCOMPARE(sizeWhenShown, placement.displaySize);
@@ -1305,6 +1343,77 @@ void tst_MainApplicationTrayMenu::cliClipboardPinPosition()
     application.m_pinWindowManager->closeAllWindows();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     clipboard->clear();
+}
+
+void tst_MainApplicationTrayMenu::pasteClipboardFile_data()
+{
+    QTest::addColumn<bool>("hasPixels");
+    QTest::addColumn<bool>("fileRemoved");
+    QTest::addColumn<bool>("quitDuringLoad");
+    QTest::newRow("transparent-png") << false << false << false;
+    QTest::newRow("pixels-url-and-text") << true << false << false;
+    QTest::newRow("removed-file-and-text") << false << true << false;
+    QTest::newRow("quit-during-load") << false << false << true;
+}
+
+void tst_MainApplicationTrayMenu::pasteClipboardFile()
+{
+    QFETCH(bool, hasPixels);
+    QFETCH(bool, fileRemoved);
+    QFETCH(bool, quitDuringLoad);
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    auto application = std::make_unique<MainApplication>();
+    application->initialize();
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath("transparent.png");
+    QImage fileImage(96, 72, QImage::Format_ARGB32);
+    fileImage.fill(Qt::transparent);
+    fileImage.setPixelColor(20, 20, Qt::red);
+    QVERIFY(fileImage.save(path));
+    QPixmap clipboardPixels(fileImage.size());
+    clipboardPixels.fill(Qt::green);
+    auto* mime = new QMimeData;
+    mime->setUrls({QUrl::fromLocalFile(path)});
+    mime->setText(QStringLiteral("Clipboard file description"));
+    if (hasPixels) {
+        mime->setImageData(clipboardPixels);
+    }
+    auto* clipboard = QGuiApplication::clipboard();
+    clipboard->setMimeData(mime);
+    if (fileRemoved) {
+        QVERIFY(QFile::remove(path));
+    }
+
+    QSignalSpy created(application->m_pinWindowManager, &PinWindowManager::windowCreated);
+    application->onPasteFromClipboard();
+    clipboard->clear();
+    if (hasPixels) {
+        QCOMPARE(created.count(), 1);
+    } else {
+        QVERIFY(application->findChild<QFutureWatcherBase*>());
+        if (quitDuringLoad) {
+            application.reset();
+            QVERIFY(QThreadPool::globalInstance()->waitForDone(5000));
+            QCOMPARE(created.count(), 0);
+            return;
+        }
+        QTRY_VERIFY(!application->findChild<QFutureWatcherBase*>());
+        QCOMPARE(created.count(), fileRemoved ? 0 : 1);
+    }
+    if (!fileRemoved) {
+        const auto* pin = application->m_pinWindowManager->windows().first();
+        const QImage pixels = pin->exportPixmapForMerge().toImage();
+        const QColor expectedColor = hasPixels
+            ? QColor(Qt::green)
+            : convertImageForDisplay(fileImage).pixelColor(20, 20);
+        QCOMPARE(pixels.size(), fileImage.size());
+        QCOMPARE(pixels.pixelColor(20, 20), expectedColor);
+        QCOMPARE(pixels.pixelColor(0, 0).alpha(), hasPixels ? 255 : 0);
+    }
+    application->m_pinWindowManager->closeAllWindows();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 void tst_MainApplicationTrayMenu::recordingWarnings_stayOffTheRecordedScreen()
