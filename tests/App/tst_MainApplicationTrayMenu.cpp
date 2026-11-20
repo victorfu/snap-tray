@@ -45,6 +45,7 @@
 #include <QMimeData>
 #include <QTemporaryDir>
 #include <QThreadPool>
+#include <QScopeGuard>
 #include <QUrl>
 #include <QScreen>
 #include <QPainter>
@@ -1211,7 +1212,8 @@ void tst_MainApplicationTrayMenu::cliFilePinUsesImageLoader()
     installFakeUpdateService(InstallSource::DirectDownload, false);
     MainApplication application;
     application.initialize();
-    QScreen* screen = QGuiApplication::primaryScreen();
+    QScreen* screen = clipboardFile && !positioned ? QGuiApplication::screenAt(QCursor::pos()) : nullptr;
+    if (!screen) screen = QGuiApplication::primaryScreen();
     QVERIFY(screen);
     const QSize size = large ? screen->availableGeometry().size() * 2 : QSize(120, 80);
     QImage input(size, QImage::Format_RGB32);
@@ -1350,10 +1352,13 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile_data()
     QTest::addColumn<bool>("hasPixels");
     QTest::addColumn<bool>("fileRemoved");
     QTest::addColumn<bool>("quitDuringLoad");
-    QTest::newRow("transparent-png") << false << false << false;
-    QTest::newRow("pixels-url-and-text") << true << false << false;
-    QTest::newRow("removed-file-and-text") << false << true << false;
-    QTest::newRow("quit-during-load") << false << false << true;
+    QTest::addColumn<bool>("secondaryScreen");
+    QTest::newRow("transparent-png") << false << false << false << false;
+    QTest::newRow("pixels-url-and-text") << true << false << false << false;
+    QTest::newRow("removed-file-and-text") << false << true << false << false;
+    QTest::newRow("quit-during-load") << false << false << true << false;
+    QTest::newRow("secondary-screen-pixels") << true << false << false << true;
+    QTest::newRow("secondary-screen-file") << false << false << false << true;
 }
 
 void tst_MainApplicationTrayMenu::pasteClipboardFile()
@@ -1361,6 +1366,27 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
     QFETCH(bool, hasPixels);
     QFETCH(bool, fileRemoved);
     QFETCH(bool, quitDuringLoad);
+    QFETCH(bool, secondaryScreen);
+    QScreen* targetScreen = nullptr;
+    const QPoint originalCursorPosition = QCursor::pos();
+    const auto restoreCursor = qScopeGuard([&] {
+        if (targetScreen) {
+            QCursor::setPos(originalCursorPosition);
+        }
+    });
+    if (secondaryScreen) {
+        for (QScreen* screen : QGuiApplication::screens()) {
+            if (screen != QGuiApplication::primaryScreen()) {
+                targetScreen = screen;
+                break;
+            }
+        }
+        if (!targetScreen) {
+            QSKIP("This case requires a second screen");
+        }
+        QCursor::setPos(targetScreen->geometry().center());
+        QTRY_COMPARE(QGuiApplication::screenAt(QCursor::pos()), targetScreen);
+    }
     installFakeUpdateService(InstallSource::DirectDownload, false);
     auto application = std::make_unique<MainApplication>();
     application->initialize();
@@ -1368,16 +1394,19 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
     QTemporaryDir dir;
     QVERIFY(dir.isValid());
     const QString path = dir.filePath("transparent.png");
-    QImage fileImage(96, 72, QImage::Format_ARGB32);
+    const QSize fileSize = targetScreen && !hasPixels
+        ? targetScreen->availableGeometry().size() * 2
+        : QSize(96, 72);
+    QImage fileImage(fileSize, QImage::Format_ARGB32);
     fileImage.fill(Qt::transparent);
     fileImage.setPixelColor(20, 20, Qt::red);
     QVERIFY(fileImage.save(path));
-    QPixmap clipboardPixels(fileImage.size());
-    clipboardPixels.fill(Qt::green);
     auto* mime = new QMimeData;
     mime->setUrls({QUrl::fromLocalFile(path)});
     mime->setText(QStringLiteral("Clipboard file description"));
     if (hasPixels) {
+        QPixmap clipboardPixels(fileSize);
+        clipboardPixels.fill(Qt::green);
         mime->setImageData(clipboardPixels);
     }
     auto* clipboard = QGuiApplication::clipboard();
@@ -1388,6 +1417,9 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
 
     QSignalSpy created(application->m_pinWindowManager, &PinWindowManager::windowCreated);
     application->onPasteFromClipboard();
+    if (secondaryScreen && !hasPixels) {
+        QCursor::setPos(QGuiApplication::primaryScreen()->geometry().center());
+    }
     clipboard->clear();
     if (hasPixels) {
         QCOMPARE(created.count(), 1);
@@ -1404,6 +1436,16 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
     }
     if (!fileRemoved) {
         const auto* pin = application->m_pinWindowManager->windows().first();
+        if (targetScreen) {
+            QCOMPARE(QGuiApplication::screenAt(pin->geometry().center()), targetScreen);
+            if (!hasPixels) {
+                const auto placement = computeInitialPinWindowPlacement(
+                    QPixmap::fromImage(fileImage), targetScreen->availableGeometry());
+                QCOMPARE(pin->pos(), placement.position);
+                QCOMPARE(pin->size(), placement.displaySize);
+                QCOMPARE(pin->zoomLevel(), placement.zoomLevel);
+            }
+        }
         const QImage pixels = pin->exportPixmapForMerge().toImage();
         const QColor expectedColor = hasPixels
             ? QColor(Qt::green)

@@ -1022,7 +1022,8 @@ void MainApplication::loadImageForPin(const QString& filePath, std::optional<QPo
     loadImageForPin(QStringList{filePath}, position);
 }
 
-void MainApplication::loadImageForPin(const QStringList& filePaths, std::optional<QPoint> position)
+void MainApplication::loadImageForPin(const QStringList& filePaths, std::optional<QPoint> position,
+                                      QPointer<QScreen> preferredScreen)
 {
     const QString singlePath = filePaths.size() == 1 ? filePaths.first() : QString();
     SnapTray::QmlToast::screenToast().showToast(
@@ -1035,10 +1036,10 @@ void MainApplication::loadImageForPin(const QStringList& filePaths, std::optiona
     // also destroys the watcher; the decoding task never holds a QObject pointer.
     using LoadedImage = std::pair<QString, QImage>;
     auto* watcher = new QFutureWatcher<LoadedImage>(this);
-    connect(watcher, &QFutureWatcher<LoadedImage>::finished, this, [this, watcher, position] {
+    connect(watcher, &QFutureWatcher<LoadedImage>::finished, this, [this, watcher, position, preferredScreen] {
         const auto [filePath, image] = watcher->result();
         watcher->deleteLater();
-        onImageLoaded(filePath, image, position);
+        onImageLoaded(filePath, image, position, preferredScreen.data());
     });
     watcher->setFuture(QtConcurrent::run([filePaths, singlePath]() -> LoadedImage {
         for (const QString& filePath : filePaths) {
@@ -1088,7 +1089,8 @@ void MainApplication::onHistoryWindow()
     m_historyWindow->activateWindow();
 }
 
-void MainApplication::onImageLoaded(const QString& filePath, const QImage& image, std::optional<QPoint> position)
+void MainApplication::onImageLoaded(const QString& filePath, const QImage& image,
+                                    std::optional<QPoint> position, QScreen* preferredScreen)
 {
     if (image.isNull()) {
         const QString fileName = QFileInfo(filePath).fileName();
@@ -1102,7 +1104,7 @@ void MainApplication::onImageLoaded(const QString& filePath, const QImage& image
     }
 
     // Get screen geometry
-    QScreen* screen = position ? QGuiApplication::screenAt(*position) : nullptr;
+    QScreen* screen = position ? QGuiApplication::screenAt(*position) : preferredScreen;
     if (!screen) screen = QGuiApplication::primaryScreen();
     if (!screen) {
         qCritical() << "MainApplication: No valid screen available for pin window";
@@ -1323,6 +1325,7 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
         return;
     }
 
+    const QPointer<QScreen> pasteScreen(QGuiApplication::screenAt(QCursor::pos()));
     QClipboard *clipboard = QGuiApplication::clipboard();
     QPixmap pixmap = clipboard->pixmap();
 
@@ -1350,7 +1353,7 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
                 }
             }
             if (!filePaths.isEmpty()) {
-                loadImageForPin(filePaths, requestedPosition);
+                loadImageForPin(filePaths, requestedPosition, pasteScreen);
                 return;
             }
             if (mimeData->hasText()) {
@@ -1364,7 +1367,7 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
 
     if (!pixmap.isNull()) {
         // Create pin window at screen center
-        QScreen *screen = QGuiApplication::screenAt(QCursor::pos());
+        QScreen *screen = pasteScreen.data();
         if (!screen) {
             screen = QGuiApplication::primaryScreen();
         }
