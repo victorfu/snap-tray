@@ -79,6 +79,8 @@ This 30-minute tab window is our own rule and is not the same as a GA4 session. 
 
 ## One-time GA4 setup
 
+On 2026-11-20 we checked the **SnapTray Website** property in GA4 Admin. The web stream for `https://snaptray.cc` matched the measurement ID in `_config.yml` and reported traffic in the preceding 48 hours. Enhanced measurement and Google signals were off. Ads personalization was allowed in 0 of 307 regions. Both user and event data retention were set to 2 months, with reset on new user activity off. These observations cover the web stream and privacy settings. Campaign-level event delivery and Data API access still require separate verification.
+
 Do these in the GA4 admin before setting the measurement ID:
 
 1. Create a GA4 property and a web data stream for `https://snaptray.cc`. Record the account owner.

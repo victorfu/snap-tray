@@ -119,6 +119,8 @@ faq:
   eyebrow: 자주 묻는 질문
   title: 자주 묻는 질문
   items:
+    - q: "SnapTray는 사용 통계를 수집하나요?"
+      a: "데스크톱 앱은 사용 통계를 수집하지 않습니다. snaptray.cc에서는 동의한 경우에만 Google 애널리틱스 4로 방문과 링크 클릭을 집계합니다. 페이지 하단의 분석 설정에서 언제든지 선택을 변경할 수 있습니다."
     - q: SnapTray란 무엇인가요?
       a: SnapTray는 macOS, Windows, Ubuntu 22.04 X11 beta용 무료 경량 스크린샷·주석 도구입니다. 시스템 트레이에 상주하며 영역 캡처, 스크린샷 주석 추가, 이미지 고정이 가능합니다. 녹화와 OCR은 Linux beta에 포함되지 않습니다.
     - q: SnapTray는 무료인가요?

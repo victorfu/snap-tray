@@ -119,6 +119,8 @@ faq:
   eyebrow: 常見問題
   title: 常見問題
   items:
+    - q: "SnapTray 會統計使用情況嗎？"
+      a: "桌面版不會蒐集使用統計。只有在你允許後，snaptray.cc 才會使用 Google Analytics 4 統計造訪與連結點擊。你可以在頁尾的統計設定變更選擇。"
     - q: SnapTray 是什麼？
       a: SnapTray 是一款免費、輕量的截圖與標註工具，支援 macOS、Windows 與 Ubuntu 22.04 X11 beta。常駐系統托盤，可擷取區域、標註截圖並釘選圖片。Linux beta 不包含錄影與 OCR。
     - q: SnapTray 是免費的嗎？

@@ -1,9 +1,9 @@
 ---
 layout: page
 title: Privacy Policy
-seo_title: "SnapTray Privacy Policy: Local-First, No Telemetry"
+seo_title: "SnapTray privacy policy"
 permalink: /privacy/
-description: SnapTray privacy policy. Local-first with no telemetry or tracking.
+description: "The desktop app does not collect usage statistics. On snaptray.cc, Google Analytics 4 measures visits and link clicks only if you allow it. You can change your choice in Analytics settings at the bottom of the page."
 lang: en
 route_key: privacy
 ---
@@ -84,8 +84,8 @@ The website asks before using analytics. Only if you choose **Allow** in the web
 
 After you allow it, the website sends:
 
-- Page views: the page path without its query string, and the page language
-- The referring website's domain (not its full address)
+- Page views include the page address and language. Only recognized campaign parameters are kept in the address.
+- For referrals from other sites, only the origin is sent. For links within snaptray.cc, the referring page path is also included.
 - Campaign tags from the link you arrived through (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`), only when they match the website's predefined list; other values are recorded as "other"
 - Clicks on download, Microsoft Store and GitHub links: platform, release version, and where the link is on the page
 
@@ -99,7 +99,7 @@ Cookies and browser storage:
 | `snaptray.analyticsConsent` | Local storage | When you choose Allow or Decline | Remember your choice | 12 months |
 | `snaptray.attribution` | Session storage | After you allow analytics | Keep the campaign you arrived from while you browse | Until the tab closes, or after 30 minutes without a page view |
 
-Analytics data is kept in Google Analytics for 2 months and then deleted. Aggregated reports (for example, total download clicks per campaign) may be kept longer.
+GA4 retains user and event data for 2 months. New activity does not restart the user data retention period. Aggregated reports may be available for longer.
 
 To change your choice, use **Analytics settings** at the bottom of any page. Declining after allowing stops analytics and deletes this website's Google Analytics cookies in that browser.
 

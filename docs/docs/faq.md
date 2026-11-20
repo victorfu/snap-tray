@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-11-20
 layout: docs
 title: FAQ
 seo_title: "SnapTray FAQ: Privacy, Formats, OCR and Automation Help"
@@ -10,6 +10,8 @@ route_key: docs_faq
 doc_group: advanced
 doc_order: 3
 faq_schema:
+  - question: "Does SnapTray collect usage statistics?"
+    answer: "The desktop app does not collect usage statistics. On snaptray.cc, Google Analytics 4 measures visits and link clicks only if you allow it. You can change your choice in Analytics settings at the bottom of the page."
   - question: "Does SnapTray upload my captures?"
     answer: "No automatic upload happens. Capture, annotation, and pinning stay local. Recording is macOS/Windows only and also stays local."
   - question: "Which output format should I use?"
@@ -25,6 +27,10 @@ faq_schema:
   - question: "Where should I report bugs?"
     answer: "Open an issue on GitHub and include your OS version, SnapTray version, reproducible steps, and screenshots or recordings when relevant."
 ---
+
+## Does SnapTray collect usage statistics?
+
+The desktop app does not collect usage statistics. On snaptray.cc, Google Analytics 4 measures visits and link clicks only if you allow it. You can change your choice in Analytics settings at the bottom of the page. [Privacy policy](/privacy/#website)
 
 ## Does SnapTray upload my captures?
 
