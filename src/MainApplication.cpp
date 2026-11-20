@@ -484,10 +484,10 @@ void MainApplication::initialize()
                 MainApplication::tr("Copied to clipboard"));
         });
     connect(m_captureManager, &CaptureManager::copyFailed,
-        this, []() {
+        this, [](const QString& message) {
             SnapTray::QmlToast::screenToast().showToast(
                 SnapTray::QmlToast::Level::Error,
-                MainApplication::tr("Copy failed"),
+                message,
                 QString(), 5000);
         });
 

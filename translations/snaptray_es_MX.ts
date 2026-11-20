@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Intensidad de difuminado</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Copiar capturas de pantalla como</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Imagen</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Imagen y archivo PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Archivo PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9167,6 +9183,13 @@ Puede estar en uso por otra aplicación.</translation>
     <message>
         <source>Apply</source>
         <translation>Aplicar</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>La copia está incompleta. Es posible que el portapapeles haya cambiado. Vuelve a copiar.</translation>
     </message>
 </context>
 </TS>

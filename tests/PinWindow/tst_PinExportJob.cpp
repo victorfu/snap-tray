@@ -396,12 +396,15 @@ void TestPinExportJob::staleReservedClipboardCopyIsSuperseded()
 
 void TestPinExportJob::anyOtherClipboardChangeSupersedesAReservedCopy()
 {
-    // A text copy (OCR result, pin info) or another app changing the
-    // clipboard while the beautified picture renders: Qt reports it with
-    // dataChanged, emitted here so the real clipboard is left alone.
+    QGuiApplication::clipboard()->setText(QStringLiteral("Previous clipboard value"));
+    // Native backends distinguish a delayed signal from a new clipboard revision.
     const quint64 reserved = PlatformFeatures::reserveClipboardRequest();
     QVERIFY(PlatformFeatures::isLatestClipboardRequest(reserved));
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
     emit QGuiApplication::clipboard()->dataChanged();
+    QVERIFY(PlatformFeatures::isLatestClipboardRequest(reserved));
+#endif
+    QGuiApplication::clipboard()->setText(QStringLiteral("Pin export clipboard ordering test"));
     QVERIFY(!PlatformFeatures::isLatestClipboardRequest(reserved));
 
     std::optional<PlatformFeatures::ClipboardCopyResult> result;

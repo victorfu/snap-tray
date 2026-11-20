@@ -28,9 +28,11 @@
 #include "PinWindowManager.h"
 #include "SnapTrayApplication.h"
 #include "pinwindow/PinWindowPlacement.h"
+#include "history/HistoryRecorder.h"
 #include "pinwindow/PinExportJob.h"
 #include "pinwindow/PinClosePrompt.h"
 #include <QClipboard>
+#include <QMimeData>
 #include "PlatformFeatures.h"
 #include "qml/PinToolOptionsViewModel.h"
 #include "qml/RedactionReview.h"
@@ -183,6 +185,7 @@ private slots:
     void saveOnCloseCanRetry();
     void closeDuringFailedSaveOrClipboardRender();
     void lateTextEditSurvivesCloseDuringSave();
+    void beautifiedFileCopySurvivesPinDestruction();
     void arrowBindingUsesReleasePosition();
     void arrowControlReleaseKeepsLastDragPosition();
     void testLongScreenshotAnnotationToolbar();
@@ -792,6 +795,69 @@ void TestPinWindowStyleSync::closeDuringFailedSaveOrClipboardRender()
     poll.start(5);
     QVERIFY(window.close());
     QVERIFY(!poll.isActive());
+}
+
+void TestPinWindowStyleSync::beautifiedFileCopySurvivesPinDestruction()
+{
+#ifndef CLIPBOARD_PROBE_PATH
+    QSKIP("Requires the private X11 clipboard test");
+#else
+    if (qEnvironmentVariable("SNAPTRAY_TEST_X11_CLIPBOARD") != "1"
+        || QGuiApplication::platformName() != QStringLiteral("xcb"))
+        QSKIP("Requires a private Xvfb clipboard");
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const auto previousData = qgetenv("XDG_DATA_HOME");
+    const auto previousAppImage = qgetenv("APPIMAGE");
+    auto& settings = FileSettingsManager::instance();
+    const auto previousMode = settings.clipboardImageMode();
+    const auto restore = qScopeGuard([&] {
+        settings.setClipboardImageMode(previousMode);
+        if (previousData.isNull()) qunsetenv("XDG_DATA_HOME"); else qputenv("XDG_DATA_HOME", previousData);
+        if (previousAppImage.isNull()) qunsetenv("APPIMAGE"); else qputenv("APPIMAGE", previousAppImage);
+    });
+    qputenv("XDG_DATA_HOME", dir.path().toUtf8());
+    qputenv("APPIMAGE", CLIPBOARD_PROBE_PATH);
+    settings.setClipboardImageMode(FileSettingsManager::ClipboardImageMode::ImageAndFile);
+    auto* clipboard = QGuiApplication::clipboard();
+    clipboard->setText(QStringLiteral("sentinel"));
+    QCoreApplication::processEvents();
+    {
+        QPixmap source(160, 100);
+        source.fill(Qt::red);
+        PinWindow pin(source, {});
+        pin.initializeAnnotationComponents();
+        pin.m_annotationLayer->addItem(std::make_unique<ShapeAnnotation>(
+            QRect(0, 0, 160, 100), ShapeType::Rectangle, Qt::black, 2, true));
+        pin.m_annotationLayer->addItem(std::make_unique<TextBoxAnnotation>(
+            QPointF(5, 5), QStringLiteral("Visible"), QFont(), Qt::white));
+        BeautifySettings look;
+        look.backgroundType = BeautifyBackgroundType::Transparent;
+        look.padding = 12;
+        look.cornerRadius = 0;
+        look.shadowEnabled = false;
+        pin.onBeautifyCopy(look);
+    }
+    QTRY_VERIFY_WITH_TIMEOUT(!clipboard->mimeData()->urls().isEmpty(), 15000);
+    const auto urls = clipboard->mimeData()->urls();
+    QCOMPARE(urls.size(), 1);
+    const QImage file = QImage(urls.first().toLocalFile()).convertToFormat(QImage::Format_ARGB32);
+    QCOMPARE(file.size(), QSize(184, 124));
+    QCOMPARE(clipboard->image().convertToFormat(file.format()), file);
+    QCOMPARE(file.pixelColor(0, 0).alpha(), 0);
+    QCOMPARE(file.pixelColor(90, 62), QColor(Qt::black));
+    bool hasText = false;
+    for (int y = 12; y < 112; ++y) {
+        for (int x = 12; x < 172; ++x) {
+            const QColor pixel = file.pixelColor(x, y);
+            QCOMPARE(pixel.red(), pixel.green()); // the underlying red pixels are fully masked
+            hasText |= pixel.red() > 0;
+        }
+    }
+    QVERIFY(hasText);
+    clipboard->setText(QStringLiteral("done"));
+    QVERIFY(SnapTray::HistoryRecorder::instance().waitForIdleForTests());
+#endif
 }
 
 void TestPinWindowStyleSync::lateTextEditSurvivesCloseDuringSave()

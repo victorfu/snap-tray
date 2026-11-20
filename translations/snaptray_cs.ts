@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Intenzita rozmazání</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Kopírovat snímky obrazovky jako</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Obrázek</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Obrázek a soubor PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Soubor PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9171,6 +9187,13 @@ Může být používána jinou aplikací.</translation>
     <message>
         <source>Apply</source>
         <translation>Použít</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopírování nebylo dokončeno. Obsah schránky se mohl změnit. Zkuste kopírování znovu.</translation>
     </message>
 </context>
 </TS>

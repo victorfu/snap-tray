@@ -78,6 +78,7 @@ Rectangle {
             e("general", "GeneralSettings", QT_TRANSLATE_NOOP("GeneralSettings", "Display language"), "languageCombo", QT_TRANSLATE_NOOP("GeneralSettings", "Language")),
             e("general", "GeneralSettings", QT_TRANSLATE_NOOP("GeneralSettings", "App theme"), "appThemeCombo", QT_TRANSLATE_NOOP("GeneralSettings", "Appearance")),
             e("general", "GeneralSettings", QT_TRANSLATE_NOOP("GeneralSettings", "CLI Status"), "cliInstallationRow", QT_TRANSLATE_NOOP("GeneralSettings", "Command Line")),
+            e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Copy screenshots as"), "clipboardImageMode", QT_TRANSLATE_NOOP("CaptureSettings", "After Capture")),
             e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "After full screen capture"), "fullScreenCaptureAction", QT_TRANSLATE_NOOP("CaptureSettings", "After Capture")),
             e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Cursor companion"), "cursorCompanionStyle", QT_TRANSLATE_NOOP("CaptureSettings", "Region Selector")),
             e("capture", "CaptureSettings", QT_TRANSLATE_NOOP("CaptureSettings", "Show shortcut hints"), "shortcutHintsEnabled", QT_TRANSLATE_NOOP("CaptureSettings", "Region Selector")),

@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Sumennuksen voimakkuus</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Kopioi kuvakaappaukset muodossa</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Kuva</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Kuva ja PNG-tiedosto</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG-tiedosto</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9167,6 +9183,13 @@ Se saattaa olla toisen sovelluksen käytössä.</translation>
     <message>
         <source>Apply</source>
         <translation>Käytä</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopiointi jäi kesken. Leikepöydän sisältö on saattanut muuttua. Yritä kopioida uudelleen.</translation>
     </message>
 </context>
 </TS>

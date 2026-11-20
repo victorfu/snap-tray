@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>흐림 강도</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>스크린샷 복사 형식</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>이미지</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>이미지 및 PNG 파일</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG 파일</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9163,6 +9179,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>적용</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>복사가 완료되지 않았습니다. 클립보드가 변경되었을 수 있습니다. 다시 복사하세요.</translation>
     </message>
 </context>
 </TS>

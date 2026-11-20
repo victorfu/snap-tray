@@ -38,6 +38,18 @@ Flickable {
             onActivated: function(index) { settingsBackend.fullScreenCaptureAction = index }
         }
 
+        SettingsCombo {
+            resetKey: "clipboardImageMode"
+            label: qsTr("Copy screenshots as")
+            model: [
+                { text: qsTr("Image"), value: 0 },
+                { text: qsTr("Image and PNG file"), value: 1 },
+                { text: qsTr("PNG file"), value: 2 }
+            ]
+            currentIndex: settingsBackend.clipboardImageMode
+            onActivated: function(index) { settingsBackend.clipboardImageMode = index }
+        }
+
         SettingsSection { title: qsTr("Region Selector") }
 
         SettingsCombo {

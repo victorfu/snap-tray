@@ -129,10 +129,12 @@ CLIResult emitCaptureOutput(
         QImage clipboardImage = prepareImageForClipboard(screenshot, metadata.sourceScreen);
 
         // Use native clipboard API for reliable persistence in CLI mode
-        if (PlatformFeatures::instance().copyImageToClipboardPersistently(clipboardImage)) {
+        QString error;
+        if (PlatformFeatures::instance().copyImageToClipboardPersistently(clipboardImage, &error)) {
             return CLIResult::success("Screenshot copied to clipboard");
         }
-        return CLIResult::error(CLIResult::Code::GeneralError, "Failed to copy to clipboard");
+        return CLIResult::error(CLIResult::Code::GeneralError,
+            error.isEmpty() ? QStringLiteral("Failed to copy to clipboard") : error);
     }
 
     ImageSaveUtils::UniqueSaveSpec uniqueSpec;

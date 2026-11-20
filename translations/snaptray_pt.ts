@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Intensidade do desfoque</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Copiar capturas de tela como</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Imagem</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Imagem e arquivo PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>Arquivo PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9167,6 +9183,13 @@ Ele pode estar em uso por outro aplicativo.</translation>
     <message>
         <source>Apply</source>
         <translation>Aplicar</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Cópia incompleta. A área de transferência pode ter mudado. Tente copiar novamente.</translation>
     </message>
 </context>
 </TS>

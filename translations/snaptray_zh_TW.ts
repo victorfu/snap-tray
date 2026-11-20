@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>模糊強度</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>複製截圖的格式</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>圖片</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>圖片和 PNG 檔案</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG 檔案</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9163,6 +9179,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>套用</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>複製未完成。剪貼簿可能已變更，請再複製一次。</translation>
     </message>
 </context>
 </TS>

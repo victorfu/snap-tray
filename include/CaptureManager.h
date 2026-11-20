@@ -80,7 +80,7 @@ signals:
     void saveCompleted(const QPixmap &screenshot, const QString &filePath);
     void saveFailed(const QString &filePath, const QString &error);
     void copyCompleted(const QPixmap &screenshot);
-    void copyFailed();
+    void copyFailed(const QString& message);
     // The full screen capture no longer owns the screen (grabbed and exported,
     // handed to the editor, failed, or cancelled).
     void fullScreenCaptureFinished();

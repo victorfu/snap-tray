@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>شدة الضبابية</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>نسخ لقطات الشاشة بصيغة</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>صورة</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>صورة وملف PNG</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>ملف PNG</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9183,6 +9199,13 @@ It may be in use by another application.</source>
     <message>
         <source>Apply</source>
         <translation>تطبيق</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>لم يكتمل النسخ. ربما تغير محتوى الحافظة. حاول النسخ مرة أخرى.</translation>
     </message>
 </context>
 </TS>

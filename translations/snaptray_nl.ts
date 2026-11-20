@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Vervagingsintensiteit</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Schermafbeeldingen kopiëren als</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Afbeelding</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Afbeelding en PNG-bestand</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG-bestand</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9167,6 +9183,13 @@ Deze wordt mogelijk gebruikt door een andere applicatie.</translation>
     <message>
         <source>Apply</source>
         <translation>Toepassen</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopiëren is niet voltooid. Het klembord is mogelijk gewijzigd. Probeer opnieuw te kopiëren.</translation>
     </message>
 </context>
 </TS>

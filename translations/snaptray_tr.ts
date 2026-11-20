@@ -538,6 +538,22 @@
         <source>Blur intensity</source>
         <translation>Bulanıklık yoğunluğu</translation>
     </message>
+    <message>
+        <source>Copy screenshots as</source>
+        <translation>Ekran görüntülerini şu biçimde kopyala</translation>
+    </message>
+    <message>
+        <source>Image</source>
+        <translation>Görüntü</translation>
+    </message>
+    <message>
+        <source>Image and PNG file</source>
+        <translation>Görüntü ve PNG dosyası</translation>
+    </message>
+    <message>
+        <source>PNG file</source>
+        <translation>PNG dosyası</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
@@ -9163,6 +9179,13 @@ Başka bir uygulama tarafından kullanılıyor olabilir.</translation>
     <message>
         <source>Apply</source>
         <translation>Uygula</translation>
+    </message>
+</context>
+<context>
+    <name>Clipboard</name>
+    <message>
+        <source>Copy incomplete. The clipboard may have changed. Try copying again.</source>
+        <translation>Kopyalama tamamlanmadı. Pano değişmiş olabilir. Yeniden kopyalamayı deneyin.</translation>
     </message>
 </context>
 </TS>

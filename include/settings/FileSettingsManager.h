@@ -16,6 +16,10 @@ class FileSettingsManager
 public:
     static FileSettingsManager& instance();
 
+    enum class ClipboardImageMode { ImageOnly, ImageAndFile, FileOnly };
+    ClipboardImageMode clipboardImageMode() const;
+    void setClipboardImageMode(ClipboardImageMode mode);
+
     // Screenshot path settings
     QString loadScreenshotPath() const;
     void saveScreenshotPath(const QString& path);

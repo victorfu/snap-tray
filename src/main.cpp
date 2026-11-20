@@ -1,3 +1,4 @@
+#include "PlatformFeatures.h"
 #include <QLocalSocket>
 #include "MainApplication.h"
 #include "SnapTrayApplication.h"
@@ -212,6 +213,7 @@ int main(int argc, char* argv[])
         &MainApplication::handleCLICommand);
 
     mainApp.initialize();
+    PlatformFeatures::cleanClipboardImageFiles();
 #ifdef Q_OS_LINUX
     // Confirm only after single-instance ownership and tray initialization.
     const auto updateAck = qEnvironmentVariable("SNAPTRAY_UPDATE_ACK");
