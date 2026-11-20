@@ -105,6 +105,12 @@ Report definitions:
 - `download_click` count ÷ sessions is a **click ratio** and can exceed 100%. Only "sessions with ≥1 download_click ÷ sessions" is a session conversion rate.
 - GitHub `download_count` and stars are separate sources and are not attributable to one campaign.
 
+### Public launch report for issue 311
+
+From the repository root, run `python scripts/launch_public_report.py --output PATH` with a persistent local directory outside the website. The first Windows run used `%LOCALAPPDATA%\SnapTray\launch-reports\311`. The collector needs Python 3, HTTPS access to the public sources, and no credentials. It reads public GitHub releases and their paginated asset lists, and records the accessibility of the GeekNews post. If the forum denies access, its metrics remain unavailable. The report does not contact GA4 or send messages.
+
+Each run writes its observation times, GitHub counts keyed by asset ID, and source status to `observations.sqlite3`. Keep this database to preserve the baseline. The Markdown report for a Taipei calendar date shows the latest run on that date. To regenerate it offline, use `python scripts/launch_public_report.py --output PATH --render YYYY-MM-DD`. Counts are compared with the first successful observation and with the last successful observation before that day. A counter decrease is flagged, and replacement IDs are reported separately. The first observation followed the Korean launch. Comparisons with an actual pre-launch baseline are unavailable.
+
 ## Known limits
 
 - Only visitors who choose **Allow** and send no GPC/DNT signal are counted; ad blockers and network failures reduce counts further. Treat numbers as lower bounds, not visitor totals.
