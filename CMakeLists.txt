@@ -897,6 +897,8 @@ target_compile_definitions(snaptray_cli PRIVATE
 # snaptray_ui: UI components (widgets, tools, renderers)
 # ----------------------------------------------------------------------------
 add_library(snaptray_ui STATIC
+    include/capture/PostCaptureCard.h
+    src/capture/PostCaptureCard.cpp
     # Rendering
     src/GlassRenderer.cpp
     src/GlassPanelCSS.cpp
@@ -964,6 +966,7 @@ add_library(snaptray_ui STATIC
     src/region/RegionExportManager.cpp
     src/region/CaptureShortcutHintsOverlay.cpp
     src/history/AnnotationSerializer.cpp
+    include/history/HistoryRecorder.h
     src/history/HistoryRecorder.cpp
     src/history/HistoryReplayDocument.cpp
     src/history/HistoryStore.cpp

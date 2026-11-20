@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG-tiedosto</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Näytä kuvakaappauksen toimintokortti</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Kopioi jokainen kuvakaappaus automaattisesti</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Tallenna jokainen kuvakaappaus automaattisesti</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

@@ -31,6 +31,8 @@ On macOS, this page also shows Screen Recording and Accessibility permission sta
 - **Region Selector**: the cursor companion (magnifier) and shortcut hints.
 - **Auto Blur**: blur type and intensity used when Auto Blur hides faces and text.
 
+The three screenshot options start off. You can show the action card, copy each screenshot, and save each screenshot to the configured screenshot folder independently. The card shows the latest screenshot for six seconds. Hover over it to pause. Use **…** to pin it, reopen its annotations from history, or beautify it. Starting another capture dismisses the card.
+
 On macOS and Windows, **Capture → Auto Blur** can also look for email addresses, HTTP(S) URLs, IPv4 addresses, formatted phone numbers, and payment card numbers with a valid checksum. These categories start off. Review each proposed region before applying it. A card number wrapped onto a second line has a region on each line. If OCR cannot locate individual characters, the preview can cover a whole text block.
 
 Check the finished image before sharing. For example, the phone rule flags `Order #202-555-0142` and misses the unformatted mobile number `0912345678`. The IPv4 rule flags `Version: 1.2.3.4`. Pixelation and Gaussian blur retain visual information. For opaque coverage, use a filled opaque rectangle and export the composited image.

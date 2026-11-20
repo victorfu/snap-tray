@@ -227,6 +227,14 @@ void MainApplication::handleCLICommand(const QByteArray& commandData, QLocalSock
     qDebug() << "  recordingManager->isActive():" << m_recordingManager->isActive();
     qDebug() << "  screenPickerDialog active:" << static_cast<bool>(m_screenPickerDialog);
 
+    if (msg.command == IPCProtocol::kDismissCaptureCard) {
+        m_captureManager->dismissPostCaptureCard();
+        IPCResponse response;
+        response.success = true;
+        sendCLIResponse(replySocket, response);
+        return;
+    }
+
     // CLI commands should preempt existing capture mode
     // This ensures CLI commands work reliably even if RegionSelector is stuck
     if (msg.command != "gui" && m_captureManager->isActive()) {
@@ -937,6 +945,7 @@ void MainApplication::onScreenCanvas()
         popup->close();
     }
 
+    m_captureManager->dismissPostCaptureCard();
     m_screenCanvasManager->toggle();
 }
 
@@ -1169,6 +1178,8 @@ SnapTray::QmlSettingsWindow* MainApplication::ensureSettingsWindow()
 
     m_settingsWindow = new SnapTray::QmlSettingsWindow(this);
 
+    connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::postCaptureCardDisabled,
+            m_captureManager, &CaptureManager::dismissPostCaptureCard);
     connect(m_settingsWindow, &SnapTray::QmlSettingsWindow::ocrLanguagesChanged,
             m_pinWindowManager, &PinWindowManager::updateOcrLanguages);
 
@@ -1907,6 +1918,7 @@ void MainApplication::startScreenRecordingFlow(QScreen* preferredScreen)
         return;
     }
 
+    m_captureManager->dismissPostCaptureCard();
     QVector<SnapTray::ScreenSource> sources = SnapTray::ScreenSourceService::availableSources(true);
     if (sources.isEmpty()) {
         SnapTray::QmlToast::screenToast().showToast(

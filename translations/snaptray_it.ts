@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>File PNG</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Mostra la scheda delle azioni per lo screenshot</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Copia automaticamente ogni screenshot</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Salva automaticamente ogni screenshot</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG-bestand</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Actiekaart voor schermafbeeldingen tonen</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Elke schermafbeelding automatisch kopiëren</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Elke schermafbeelding automatisch opslaan</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

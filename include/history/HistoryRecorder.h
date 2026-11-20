@@ -2,12 +2,14 @@
 
 #include "history/HistoryStore.h"
 
+#include <QObject>
 #include <QThreadPool>
 
 namespace SnapTray {
 
-class HistoryRecorder
+class HistoryRecorder : public QObject
 {
+    Q_OBJECT
 public:
     static HistoryRecorder& instance();
 
@@ -15,6 +17,9 @@ public:
 
     // Test helper for draining the background queue deterministically.
     bool waitForIdleForTests(int timeoutMs = 5000);
+
+signals:
+    void captureSessionWritten(const QString& id, bool success);
 
 private:
     HistoryRecorder();

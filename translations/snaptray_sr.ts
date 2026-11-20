@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG датотека</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Прикажи картицу са радњама за снимак екрана</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Аутоматски копирај сваки снимак екрана</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Аутоматски сачувај сваки снимак екрана</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

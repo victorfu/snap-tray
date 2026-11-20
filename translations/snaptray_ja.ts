@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG ファイル</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>スクリーンショットの操作カードを表示</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>各スクリーンショットを自動でコピー</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>各スクリーンショットを自動で保存</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>

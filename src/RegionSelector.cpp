@@ -1543,7 +1543,7 @@ void RegionSelector::initializeForScreen(QScreen* screen, const QPixmap& preCapt
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
     m_historyReplayBeautify.reset();
-    m_lastRecordedHistoryEntryId.clear();
+    m_lastScreenshotOrigin = {};
     resetInitialRevealState();
     clearPreservedSelection();
     hideSelectionPreviewOverlays();
@@ -1620,7 +1620,7 @@ void RegionSelector::initializeWithRegion(QScreen* screen,
     m_historyReplayIndex = -1;
     m_historyReplayActive = false;
     m_historyReplayBeautify.reset();
-    m_lastRecordedHistoryEntryId.clear();
+    m_lastScreenshotOrigin = {};
     resetInitialRevealState();
     clearPreservedSelection();
     hideSelectionPreviewOverlays();
@@ -1989,7 +1989,7 @@ void RegionSelector::recordCaptureSession(const QPixmap& resultPixmap)
         return;
     }
 
-    m_lastRecordedHistoryEntryId = snapshot->entryId;
+    m_lastScreenshotOrigin = snapshot->origin;
     const QPixmap resultPixmapCopy = resultPixmap;
     QTimer::singleShot(0, qApp, [snapshot = std::move(*snapshot), resultPixmapCopy]() mutable {
         if (resultPixmapCopy.isNull()) {
@@ -2035,7 +2035,7 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     }
 
     HistoryCaptureSnapshot snapshot;
-    snapshot.entryId = SnapTray::HistoryStore::newEntryId(createdAt);
+    snapshot.origin.id = SnapTray::HistoryStore::newEntryId(createdAt);
     snapshot.backgroundPixmap = m_backgroundPixmap;
     snapshot.selectionRect = selectionRect;
     snapshot.captureRegions = currentHistoryCaptureRegions();
@@ -2045,14 +2045,18 @@ std::optional<RegionSelector::HistoryCaptureSnapshot> RegionSelector::makeHistor
     snapshot.cornerRadius = m_cornerRadius;
     snapshot.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
     snapshot.createdAt = createdAt;
-    snapshot.windowTitle = m_selectionWindowTitle;
-    snapshot.ownerApp = m_selectionOwnerApp;
+    snapshot.origin.windowTitle = m_selectionWindowTitle;
+    snapshot.origin.ownerApp = m_selectionOwnerApp;
+    snapshot.origin.regionIndex = m_inputState.multiRegionMode && m_multiRegionManager
+        ? m_multiRegionManager->activeIndex() : -1;
+    snapshot.origin.globalRect = localToGlobal(selectionRect);
+    snapshot.origin.beautify = m_historyReplayBeautify;
     return snapshot;
 }
 
 void RegionSelector::submitPendingHistorySubmission(PendingHistorySubmission submission)
 {
-    m_lastRecordedHistoryEntryId = submission.snapshot.entryId;
+    m_lastScreenshotOrigin = submission.snapshot.origin;
     QTimer::singleShot(0, qApp, [submission = std::move(submission)]() mutable {
         if (submission.resultImage.isNull() ||
             submission.snapshot.backgroundPixmap.isNull() ||
@@ -2069,7 +2073,7 @@ SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteReq
     const PendingHistorySubmission& submission)
 {
     SnapTray::CaptureSessionWriteRequest request;
-    request.id = submission.snapshot.entryId;
+    request.id = submission.snapshot.origin.id;
     request.canvasImage = submission.snapshot.backgroundPixmap.toImage();
     request.resultImage = submission.resultImage;
     request.selectionRect = submission.snapshot.selectionRect;
@@ -2080,8 +2084,8 @@ SnapTray::CaptureSessionWriteRequest RegionSelector::buildCaptureSessionWriteReq
     request.cornerRadius = submission.snapshot.cornerRadius;
     request.maxEntries = submission.snapshot.maxEntries;
     request.createdAt = submission.snapshot.createdAt;
-    request.windowTitle = submission.snapshot.windowTitle;
-    request.ownerApp = submission.snapshot.ownerApp;
+    request.windowTitle = submission.snapshot.origin.windowTitle;
+    request.ownerApp = submission.snapshot.origin.ownerApp;
     return request;
 }
 
@@ -4411,7 +4415,8 @@ void RegionSelector::saveToFile()
     }
 
     const QRect selectionRect = m_selectionManager->selectionRect();
-    const bool usesDialog = !FileSettingsManager::instance().loadAutoSaveScreenshots();
+    const bool autoSave = m_postCaptureActionsEnabled && RegionCaptureSettingsManager::instance().postCaptureSave();
+    const bool usesDialog = !autoSave && !FileSettingsManager::instance().loadAutoSaveScreenshots();
     if (usesDialog) {
         m_saveDialogOpen = true;
         hideDetachedFloatingUi();
@@ -4419,7 +4424,7 @@ void RegionSelector::saveToFile()
     }
 
     const RegionExportManager::SaveRequest saveRequest =
-        m_exportManager->createSaveRequest(selectionRect, nullptr);
+        m_exportManager->createSaveRequest(selectionRect, nullptr, autoSave);
 
     if (usesDialog) {
         m_saveDialogOpen = false;
@@ -5328,7 +5333,7 @@ void RegionSelector::onQRCodeComplete(bool success, const QString& text, const Q
                 // metadata. Open the pin near the current selection instead of (0, 0).
                 const QRect globalRect;
                 // Not this selection's picture: no history document to continue.
-                m_lastRecordedHistoryEntryId.clear();
+                m_lastScreenshotOrigin = {};
                 m_historyReplayBeautify.reset();
                 emit regionSelected(pixmap, selectionGlobalTopLeft, globalRect);
                 dialog->close();

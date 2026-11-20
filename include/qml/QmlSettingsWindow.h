@@ -29,6 +29,7 @@ public:
     bool isVisible() const;
 
 signals:
+    void postCaptureCardDisabled();
     void ocrLanguagesChanged(const QStringList& languages);
 
 private:

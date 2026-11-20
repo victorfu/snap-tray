@@ -156,6 +156,7 @@ public:
     // The history entry this pin's picture came from, and the Beautify
     // settings to continue from when that entry was itself beautified (#344).
     void setHistoryOrigin(const QString& entryId, const std::optional<BeautifySettings>& beautify);
+    void showBeautifyPanel();
     void startLiveCapture();
     void stopLiveCapture();
     QList<WId> liveCaptureExcludedWindowIds();
@@ -771,7 +772,6 @@ private:
     bool m_livePaused = false;
 
     // Beautify
-    void showBeautifyPanel();
     void rememberBeautifyLook(const BeautifySettings& settings);
     void onBeautifyCopy(const BeautifySettings& settings);
     void onBeautifySave(BeautifySettings settings);

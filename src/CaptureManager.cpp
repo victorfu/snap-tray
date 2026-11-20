@@ -2,8 +2,11 @@
 #include "RegionSelector.h"
 #include "PinWindowManager.h"
 #include "PinWindow.h"
+#include "ImageColorSpaceHelper.h"
 #include "capture/OwnWindowCaptureHider.h"
 #include "capture/ScreenSnapshot.h"
+#include "capture/PostCaptureCard.h"
+#include "pinwindow/PinWindowPlacement.h"
 #include "platform/WindowLevel.h"
 #include "WindowDetector.h"
 #include "PlatformFeatures.h"
@@ -69,6 +72,7 @@ SnapTray::CaptureSessionWriteRequest makeFullScreenHistoryRequest(
     const AnnotationLayer emptyAnnotations;
 
     SnapTray::CaptureSessionWriteRequest request;
+    request.id = SnapTray::HistoryStore::newEntryId(request.createdAt);
     request.canvasImage = snapshot.toImage();
     request.resultImage = resultImage;
     request.selectionRect = localRect;
@@ -77,6 +81,15 @@ SnapTray::CaptureSessionWriteRequest makeFullScreenHistoryRequest(
     request.canvasLogicalSize = screen->geometry().size();
     request.maxEntries = PinWindowSettingsManager::instance().loadMaxCacheFiles();
     return request;
+}
+
+void applyScreenshotOrigin(PinWindow* pin, const ScreenshotOrigin& origin, QScreen* screen)
+{
+    pin->setHistoryOrigin(origin.id, origin.beautify);
+    if (screen && !origin.globalRect.isEmpty() && PlatformFeatures::instance().capabilities().supportsLiveCapture)
+        pin->setSourceRegion(origin.globalRect, screen);
+    if (!origin.layout.isEmpty())
+        pin->setMultiRegionData(origin.layout);
 }
 
 QScreen* chooseReplayScreen(const SnapTray::HistoryEntry& entry)
@@ -102,10 +115,15 @@ CaptureManager::CaptureManager(PinWindowManager *pinManager, QObject *parent)
     , m_windowDetector(PlatformFeatures::instance().createWindowDetector(this))
     , m_ownWindowHider(std::make_unique<snaptray::capture::OwnWindowCaptureHider>())
 {
+    connect(this, &CaptureManager::captureStarted, this, [this] {
+        dismissPostCaptureCard();
+        m_activeCaptureGeneration = m_postCaptureGeneration;
+    });
 }
 
 CaptureManager::~CaptureManager()
 {
+    delete m_postCaptureCard.data();
 }
 
 bool CaptureManager::isActive() const
@@ -417,31 +435,16 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
     const bool scripted = m_scriptedCapturePending;
     const bool createPin = !scripted || m_scriptedCapture.pinResult;
 
-    // Use the global coordinates computed by RegionSelector
+    ScreenshotOrigin origin = m_regionSelector ? m_regionSelector->lastScreenshotOrigin() : ScreenshotOrigin{};
+    origin.globalRect = globalRect;
+    QScreen* targetScreen = globalRect.isEmpty() ? nullptr : QGuiApplication::screenAt(globalRect.center());
+    if (!targetScreen)
+        targetScreen = QGuiApplication::screenAt(globalPosition);
+    if (!targetScreen && m_regionSelector)
+        targetScreen = m_regionSelector->screen();
+
     if (m_pinManager && createPin) {
-        QScreen *targetScreen = nullptr;
-        if (!globalRect.isEmpty()) {
-            targetScreen = QGuiApplication::screenAt(globalRect.center());
-        }
-        if (!targetScreen) {
-            targetScreen = QGuiApplication::screenAt(globalPosition);
-        }
-        if (!targetScreen && m_regionSelector) {
-            targetScreen = m_regionSelector->screen();
-        }
-
-        PinWindow *window = m_pinManager->createPinWindow(screenshot, globalPosition, false);
-        if (window
-            && PlatformFeatures::instance().capabilities().supportsLiveCapture
-            && !globalRect.isEmpty()
-            && targetScreen) {
-            window->setSourceRegion(globalRect, targetScreen);
-        }
-        if (window && m_regionSelector) {
-            window->setHistoryOrigin(m_regionSelector->lastRecordedHistoryEntryId(),
-                                     m_regionSelector->historyReplayBeautify());
-        }
-
+        PinWindow* window = m_pinManager->createPinWindow(screenshot, globalPosition, false);
         // Pass multi-region data if this was a multi-region capture
         if (window && m_regionSelector && m_regionSelector->isMultiRegionCapture()) {
             MultiRegionManager* mrm = m_regionSelector->multiRegionManager();
@@ -452,7 +455,6 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
                 auto regions = mrm->regions();
                 QRect bounds = mrm->boundingBox();
 
-                QVector<LayoutRegion> layoutRegions;
                 for (int i = 0; i < regions.size() && i < images.size(); ++i) {
                     LayoutRegion lr;
                     // Convert region rect to be relative to bounding box
@@ -462,14 +464,13 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
                     lr.color = regions[i].color;
                     lr.index = regions[i].index;
                     lr.isSelected = false;
-                    layoutRegions.append(lr);
+                    origin.layout.append(lr);
                 }
-
-                window->setMultiRegionData(layoutRegions);
             }
         }
 
         if (window) {
+            applyScreenshotOrigin(window, origin, targetScreen);
             window->showPreparedWindow();
             if (m_pinManager->arePinsHidden()) {
                 m_pinManager->setAllPinsVisible(true);
@@ -477,6 +478,9 @@ void CaptureManager::onRegionSelected(const QPixmap &screenshot, const QPoint &g
         }
     }
 
+    if (!scripted && m_regionSelector && !globalRect.isEmpty()) {
+        afterScreenshot(screenshot, origin, targetScreen, PrimaryAction::Pin, m_activeCaptureGeneration);
+    }
     if (scripted) {
         m_scriptedCapturePending = false;
         emit scriptedCaptureFinished(screenshot, globalRect);
@@ -539,6 +543,7 @@ bool CaptureManager::startScriptedRegionCapture(const ScriptedCaptureOptions& op
     m_scriptedCapture = options;
     m_scriptedCapturePending = options.reportResult;
     if (m_scriptedCapturePending) {
+        m_regionSelector->setPostCaptureActionsEnabled(false);
         // Copy, Save and other actions also close the selector; the script
         // then gets no capture, which is reported like a cancel.
         connect(m_regionSelector, &QObject::destroyed, this, [this]() {
@@ -731,48 +736,54 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
     SnapTray::CaptureSessionWriteRequest historyRequest =
         makeFullScreenHistoryRequest(snapshot, prepared.image, localRect, screen);
 
+    // Retain the same image and history ID across the primary export, including
+    // a failed export when the user wants a retry card or another automatic action.
+    const QPixmap pixmap = prepared.pixmap;
+    auto complete = [this, pixmap, source = QPointer<QScreen>(screen), geometry = screen->geometry(),
+                     generation = m_activeCaptureGeneration, historyRequest = std::move(historyRequest)](PrimaryAction primary, const QString& error = {}) {
+        const auto& settings = RegionCaptureSettingsManager::instance();
+        if (!error.isEmpty() && !settings.postCaptureCard() && !settings.postCaptureSave()
+            && !settings.postCaptureCopy())
+            return;
+        SnapTray::HistoryRecorder::instance().submitCaptureSession(historyRequest);
+        ScreenshotOrigin origin;
+        origin.id = historyRequest.id;
+        origin.globalRect = geometry;
+        afterScreenshot(pixmap, origin, source, primary, generation, error);
+    };
+
     if (action == FullScreenCaptureAction::CopyToClipboard) {
-        const QPixmap pixmap = prepared.pixmap;
-        auto finishCopy = [this, pixmap, historyRequest = std::move(historyRequest)](
+        auto finishCopy = [this, pixmap, complete](
                               PlatformFeatures::ClipboardCopyResult result) mutable {
             finishFullScreenExport();
             switch (result) {
             case PlatformFeatures::ClipboardCopyResult::Success:
-                SnapTray::HistoryRecorder::instance().submitCaptureSession(
-                    std::move(historyRequest));
+                complete(PrimaryAction::Copy);
                 emit copyCompleted(pixmap);
                 emit captureCompleted(pixmap);
                 break;
             case PlatformFeatures::ClipboardCopyResult::Incomplete:
             case PlatformFeatures::ClipboardCopyResult::Failed:
                 qWarning() << "CaptureManager: Failed to copy full screen capture to clipboard";
+                complete(PrimaryAction::Copy, PlatformFeatures::clipboardErrorMessage(result));
                 emit copyFailed(PlatformFeatures::clipboardErrorMessage(result));
                 break;
-            case PlatformFeatures::ClipboardCopyResult::Superseded:
+            case PlatformFeatures::ClipboardCopyResult::Superseded: {
+                const auto& settings = RegionCaptureSettingsManager::instance();
+                if (settings.postCaptureCard() || settings.postCaptureSave())
+                    complete(PrimaryAction::Copy);
                 emit captureCancelled();
                 break;
             }
+            }
         };
 
-        if (m_clipboardWriterOverride) {
-            const QPointer<CaptureManager> guard(this);
-            m_clipboardWriterOverride(
-                prepared.image,
-                [guard, finishCopy = std::move(finishCopy)](bool success) mutable {
-                    if (guard) {
-                        finishCopy(success ? PlatformFeatures::ClipboardCopyResult::Success
-                                           : PlatformFeatures::ClipboardCopyResult::Failed);
-                    }
-                });
-        } else {
-            PlatformFeatures::instance().copyImageToClipboardForGuiAsync(
-                prepared.image, this, std::move(finishCopy));
-        }
+        copyScreenshotImage(prepared.image, std::move(finishCopy));
         return;
     }
 
     const RegionExportManager::SaveRequest saveRequest =
-        exporter->createSaveRequest(localRect, nullptr);
+        exporter->createSaveRequest(localRect, nullptr, RegionCaptureSettingsManager::instance().postCaptureSave());
     if (saveRequest.cancelled) {
         finishFullScreenExport();
         emit captureCancelled();
@@ -780,22 +791,22 @@ void CaptureManager::exportFullScreenCapture(QScreen* screen,
     }
     if (!saveRequest.error.isEmpty()) {
         finishFullScreenExport();
+        complete(PrimaryAction::Save, saveRequest.error);
         emit saveFailed(saveRequest.filePath, saveRequest.error);
         return;
     }
 
     connect(exporter, &RegionExportManager::saveCompleted, this,
-        [this, historyRequest = std::move(historyRequest)](
-            const QPixmap& pixmap, const QImage& image, const QString& filePath) mutable {
+        [this, complete](const QPixmap& pixmap, const QImage&, const QString& filePath) {
             finishFullScreenExport();
-            historyRequest.resultImage = image;
-            SnapTray::HistoryRecorder::instance().submitCaptureSession(std::move(historyRequest));
+            complete(PrimaryAction::Save);
             emit saveCompleted(pixmap, filePath);
             emit captureCompleted(pixmap);
         });
     connect(exporter, &RegionExportManager::saveFailed, this,
-        [this](const QString& filePath, const QString& error) {
+        [this, complete](const QString& filePath, const QString& error) {
             finishFullScreenExport();
+            complete(PrimaryAction::Save, error);
             emit saveFailed(filePath, error);
         });
     exporter->savePreparedExportAsync(std::move(prepared), saveRequest);
@@ -911,6 +922,174 @@ void CaptureManager::refreshWindowDetectorAsync(QScreen *screen)
 RegionSelector *CaptureManager::createRegionSelector(bool showShortcutHintsOnEntry)
 {
     auto *selector = new RegionSelector();
+    const quint64 generation = m_activeCaptureGeneration;
+    connect(selector, &RegionSelector::copyRequested, this, [this, selector, generation](const QPixmap& pixmap) {
+        if (selector->postCaptureActionsEnabled())
+            afterScreenshot(pixmap, selector->lastScreenshotOrigin(), selector->screen(), PrimaryAction::Copy, generation);
+    });
+    connect(selector, &RegionSelector::saveCompleted, this, [this, selector, generation](const QPixmap& pixmap) {
+        if (selector->postCaptureActionsEnabled())
+            afterScreenshot(pixmap, selector->lastScreenshotOrigin(), selector->screen(), PrimaryAction::Save, generation);
+    });
     selector->setShowShortcutHintsOnEntry(showShortcutHintsOnEntry);
     return selector;
+}
+
+void CaptureManager::copyScreenshotImage(const QImage& image, PlatformFeatures::ClipboardCopyCompletion done)
+{
+    if (m_clipboardWriterOverride) {
+        m_clipboardWriterOverride(image, [guard = QPointer<CaptureManager>(this), done = std::move(done)](PlatformFeatures::ClipboardCopyResult result) {
+            if (guard)
+                done(result);
+        });
+    } else {
+        PlatformFeatures::instance().copyImageToClipboardForGuiAsync(image, this, std::move(done));
+    }
+}
+
+void CaptureManager::dismissPostCaptureCard()
+{
+    ++m_postCaptureGeneration;
+    if (m_postCaptureCard) {
+        m_postCaptureCard->close();
+        m_postCaptureCard.clear();
+        // Flush the native unmap before an immediately following desktop grab.
+        QGuiApplication::sync();
+    }
+}
+
+void CaptureManager::afterScreenshot(const QPixmap& pixmap, ScreenshotOrigin origin, QScreen* screen,
+                                     PrimaryAction primary, quint64 generation, const QString& error)
+{
+    using Action = PostCaptureCard::Action;
+    const auto& settings = RegionCaptureSettingsManager::instance();
+    const bool copy = settings.postCaptureCopy() && primary != PrimaryAction::Copy;
+    const bool save = settings.postCaptureSave() && primary != PrimaryAction::Save;
+    const bool showCard = settings.postCaptureCard() && generation == m_postCaptureGeneration;
+    if ((!showCard && !copy && !save) || pixmap.isNull())
+        return;
+
+    const QPointer<QScreen> source(screen);
+    QPointer<PostCaptureCard> card;
+    QScreen* display = source ? source.data() : QGuiApplication::primaryScreen();
+    if (showCard && display) {
+        if (m_postCaptureCard)
+            m_postCaptureCard->close();
+        card = new PostCaptureCard(pixmap, display);
+        m_postCaptureCard = card;
+    }
+
+    // Each callback addresses only its original window. An evicted card's
+    // save may finish on disk, without changing the replacement card.
+    auto finish = [card, hadCard = bool(card)](Action action, const std::optional<QString>& message) {
+        if (!hadCard)
+            return true; // Automatic actions without a card use normal notifications.
+        if (!card || !card->isVisible())
+            return false;
+        if (message)
+            card->setError(action, *message);
+        card->setBusy(action, false);
+        return true;
+    };
+
+    const QImage image = normalizeImageForExport(pixmap.toImage(), source);
+    auto copyImage = [this, card, pixmap, image, finish] {
+        if (card)
+            card->setBusy(Action::Copy, true);
+        copyScreenshotImage(image,
+            [this, finish, pixmap](PlatformFeatures::ClipboardCopyResult result) {
+                using Result = PlatformFeatures::ClipboardCopyResult;
+                if (result == Result::Success) {
+                    if (finish(Action::Copy, QString()))
+                        emit copyCompleted(pixmap);
+                } else if (result == Result::Superseded) {
+                    finish(Action::Copy, std::nullopt);
+                } else {
+                    const QString detail = PlatformFeatures::clipboardErrorMessage(result);
+                    if (finish(Action::Copy, detail))
+                        emit copyFailed(detail);
+                }
+            });
+    };
+    auto saveImage = [this, card, pixmap, image, source, origin, finish](bool automatic) {
+        if (card)
+            card->setBusy(Action::Save, true);
+        auto* exporter = new RegionExportManager(this);
+        exporter->setSourceScreen(source);
+        exporter->setWindowMetadata(origin.windowTitle, origin.ownerApp);
+        exporter->setRegionIndex(origin.regionIndex);
+        exporter->setMonitorIdentifier(monitorIdentifier(source));
+        const QRect bounds(QPoint(), pixmap.deviceIndependentSize().toSize());
+        // The dialog runs a nested event loop. A new capture can evict the
+        // card during that loop, so the card cannot own the dialog.
+        const auto request = exporter->createSaveRequest(bounds, nullptr, automatic);
+        if (!request.isValid()) {
+            exporter->deleteLater();
+            if (request.cancelled) {
+                finish(Action::Save, std::nullopt);
+            } else if (finish(Action::Save, request.error)) {
+                emit saveFailed(request.filePath, request.error);
+            }
+            return;
+        }
+        connect(exporter, &RegionExportManager::saveCompleted, this,
+            [this, exporter, finish](const QPixmap& saved, const QImage&, const QString& path) {
+                exporter->deleteLater();
+                if (finish(Action::Save, QString()))
+                    emit saveCompleted(saved, path);
+            });
+        connect(exporter, &RegionExportManager::saveFailed, this,
+            [this, exporter, finish](const QString& path, const QString& detail) {
+                exporter->deleteLater();
+                if (finish(Action::Save, detail))
+                    emit saveFailed(path, detail);
+            });
+        exporter->savePreparedExportAsync({pixmap, image}, request);
+    };
+    if (card) {
+        // Region captures can queue the history submission until after the
+        // selector closes. Enable Edit only once this exact document is ready.
+        connect(&SnapTray::HistoryRecorder::instance(), &SnapTray::HistoryRecorder::captureSessionWritten,
+                card, [card, id = origin.id](const QString& writtenId, bool success) {
+                    if (writtenId == id && card)
+                        card->setReplayAvailable(success);
+                }, Qt::QueuedConnection);
+        const auto entry = SnapTray::HistoryStore::loadEntry(origin.id);
+        card->setReplayAvailable(entry && entry->replayAvailable);
+        if (!error.isEmpty())
+            card->setError(primary == PrimaryAction::Save ? Action::Save : Action::Copy, error);
+        connect(card, &PostCaptureCard::actionRequested, this,
+            [this, card, source, pixmap, origin, copyImage, saveImage](Action action) {
+                if (!card || card != m_postCaptureCard || !card->isVisible())
+                    return;
+                switch (action) {
+                case Action::Copy: copyImage(); return;
+                case Action::Save: saveImage(false); return;
+                case Action::Edit:
+                    if (!startHistoryReplay(origin.id) && card && card->isVisible())
+                        card->setError(action, QCoreApplication::translate("PinHistoryWindow", "Failed to load cached screenshot."));
+                    return;
+                case Action::Pin:
+                case Action::Beautify:
+                    if (m_pinManager) {
+                        const auto placement = computeInitialPinWindowPlacement(
+                            pixmap, card->screen()->availableGeometry());
+                        auto* pin = m_pinManager->createPinWindow(pixmap, placement.position, true, placement.zoomLevel);
+                        if (pin) {
+                            applyScreenshotOrigin(pin, origin, source);
+                            if (action == Action::Beautify)
+                                pin->showBeautifyPanel();
+                            card->close();
+                            return;
+                        }
+                    }
+                    card->setError(action, QCoreApplication::translate("PinHistoryWindow", "Pin Failed"));
+                    return;
+                }
+            });
+    }
+    if (copy)
+        copyImage();
+    if (save)
+        saveImage(true);
 }

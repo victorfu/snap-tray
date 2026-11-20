@@ -11,6 +11,7 @@
 #include "IVideoEncoder.h"
 
 #include "cli/IPCProtocol.h"
+#include "capture/PostCaptureCard.h"
 #include "cli/CLIResult.h"
 #include "cli/commands/GuiCommand.h"
 #include "RegionSelector.h"
@@ -225,6 +226,7 @@ private slots:
     void recordingWarnings_stayOffTheRecordedScreen();
     void onCheckForUpdates_usesSharedSettingsWindowFlowWithoutShowingSettings();
     void initialize_externalManaged_disablesCheckForUpdatesAction();
+    void dismissCaptureCardAcknowledgedDuringCountdown();
     void handleCLICommand_removedRecordCommandIsIgnored();
     void handleCLICommand_deferredUntilFullScreenExportFinishes();
     void scriptedGui_finishRepliesWithSelectionAndImage();
@@ -726,6 +728,35 @@ void tst_MainApplicationTrayMenu::initialize_externalManaged_disablesCheckForUpd
     QVERIFY(!application.m_checkForUpdatesAction->isEnabled());
 }
 
+void tst_MainApplicationTrayMenu::dismissCaptureCardAcknowledgedDuringCountdown()
+{
+    using namespace SnapTray::CLI;
+    installFakeUpdateService(InstallSource::DirectDownload, false);
+    MainApplication application;
+    application.initialize();
+    auto* manager = application.m_captureManager;
+    auto& prefs = RegionCaptureSettingsManager::instance();
+    prefs.setPostCaptureCard(true);
+    auto restore = qScopeGuard([&prefs] { prefs.setPostCaptureCard(false); });
+    QPixmap sample(48, 32);
+    sample.fill(Qt::blue);
+    manager->afterScreenshot(sample, ScreenshotOrigin{QStringLiteral("cli-card")}, QGuiApplication::primaryScreen(),
+                             CaptureManager::PrimaryAction::Pin, manager->m_postCaptureGeneration);
+    QPointer<PostCaptureCard> card = manager->m_postCaptureCard;
+    QVERIFY(card && card->isVisible());
+    manager->startDelayedRegionCapture(10);
+    CLISocketPair pair;
+    QVERIFY(pair.open());
+    const IPCMessage dismiss{IPCProtocol::kDismissCaptureCard, {}};
+    application.handleCLICommand(dismiss.toJson(), pair.serverSide);
+    IPCResponse response;
+    QVERIFY(pair.readResponse(&response));
+    QVERIFY(response.success);
+    QVERIFY(!card || !card->isVisible());
+    QVERIFY(manager->isDelayedCapturePending());
+    manager->cancelCapture();
+}
+
 void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExportFinishes()
 {
     installFakeUpdateService(InstallSource::DirectDownload, false);
@@ -743,9 +774,9 @@ void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExport
         pixmap.setDevicePixelRatio(screen->devicePixelRatio());
         return pixmap;
     };
-    std::function<void(bool)> finishClipboardWrite;
+    PlatformFeatures::ClipboardCopyCompletion finishClipboardWrite;
     captureManager->m_clipboardWriterOverride =
-        [&finishClipboardWrite](const QImage&, std::function<void(bool)> done) {
+        [&finishClipboardWrite](const QImage&, PlatformFeatures::ClipboardCopyCompletion done) {
             finishClipboardWrite = std::move(done);
         };
     captureManager->startFullScreenCaptureOnScreen(QGuiApplication::primaryScreen());
@@ -769,7 +800,7 @@ void tst_MainApplicationTrayMenu::handleCLICommand_deferredUntilFullScreenExport
     QCOMPARE(created.count(), 0);
     QCOMPARE(application.m_deferredCLICommands.size(), 1);
 
-    finishClipboardWrite(true);
+    finishClipboardWrite(PlatformFeatures::ClipboardCopyResult::Success);
     QVERIFY(!captureManager->isFullScreenCaptureInProgress());
     QTRY_COMPARE(created.count(), 1);
     QVERIFY(application.m_deferredCLICommands.isEmpty());

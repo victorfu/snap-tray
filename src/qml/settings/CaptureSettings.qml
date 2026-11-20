@@ -38,6 +38,27 @@ Flickable {
             onActivated: function(index) { settingsBackend.fullScreenCaptureAction = index }
         }
 
+        SettingsToggle {
+            resetKey: "postCaptureCard"
+            label: qsTr("Show screenshot action card")
+            checked: settingsBackend.postCaptureCard
+            onToggled: function(enabled) { settingsBackend.postCaptureCard = enabled }
+        }
+
+        SettingsToggle {
+            resetKey: "postCaptureCopy"
+            label: qsTr("Automatically copy each screenshot")
+            checked: settingsBackend.postCaptureCopy
+            onToggled: function(enabled) { settingsBackend.postCaptureCopy = enabled }
+        }
+
+        SettingsToggle {
+            resetKey: "postCaptureSave"
+            label: qsTr("Automatically save each screenshot")
+            checked: settingsBackend.postCaptureSave
+            onToggled: function(enabled) { settingsBackend.postCaptureSave = enabled }
+        }
+
         SettingsCombo {
             resetKey: "clipboardImageMode"
             label: qsTr("Copy screenshots as")

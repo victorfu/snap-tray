@@ -53,6 +53,9 @@ class SettingsBackend : public QObject
     Q_PROPERTY(int cursorCompanionStyle READ cursorCompanionStyle WRITE setCursorCompanionStyle NOTIFY cursorCompanionStyleChanged)
     Q_PROPERTY(bool shortcutHintsEnabled READ shortcutHintsEnabled WRITE setShortcutHintsEnabled NOTIFY shortcutHintsEnabledChanged)
     Q_PROPERTY(int clipboardImageMode READ clipboardImageMode WRITE setClipboardImageMode NOTIFY clipboardImageModeChanged)
+    Q_PROPERTY(bool postCaptureCard READ postCaptureCard WRITE setPostCaptureCard NOTIFY postCaptureCardChanged)
+    Q_PROPERTY(bool postCaptureCopy READ postCaptureCopy WRITE setPostCaptureCopy NOTIFY postCaptureCopyChanged)
+    Q_PROPERTY(bool postCaptureSave READ postCaptureSave WRITE setPostCaptureSave NOTIFY postCaptureSaveChanged)
     Q_PROPERTY(int fullScreenCaptureAction READ fullScreenCaptureAction WRITE setFullScreenCaptureAction NOTIFY fullScreenCaptureActionChanged)
     Q_PROPERTY(bool blurEmail READ blurEmail WRITE setBlurEmail NOTIFY sensitiveCategoriesChanged)
     Q_PROPERTY(bool blurUrl READ blurUrl WRITE setBlurUrl NOTIFY sensitiveCategoriesChanged)
@@ -177,6 +180,12 @@ public:
     void setShortcutHintsEnabled(bool v);
     int clipboardImageMode() const;
     void setClipboardImageMode(int mode);
+    bool postCaptureCard() const;
+    void setPostCaptureCard(bool enabled);
+    bool postCaptureCopy() const;
+    void setPostCaptureCopy(bool enabled);
+    bool postCaptureSave() const;
+    void setPostCaptureSave(bool enabled);
     int fullScreenCaptureAction() const;
     void setFullScreenCaptureAction(int v);
     bool blurEmail() const { return m_sensitiveCategories.contains(SensitiveCategory::Email); }
@@ -363,6 +372,9 @@ signals:
     void cursorCompanionStyleChanged();
     void shortcutHintsEnabledChanged();
     void clipboardImageModeChanged();
+    void postCaptureCardChanged();
+    void postCaptureCopyChanged();
+    void postCaptureSaveChanged();
     void fullScreenCaptureActionChanged();
     void sensitiveCategoriesChanged();
     void blurIntensityChanged();

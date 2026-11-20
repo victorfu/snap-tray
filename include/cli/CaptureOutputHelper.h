@@ -28,6 +28,7 @@ struct CaptureMetadata
     QString captureType;
 };
 
+QPixmap grabDesktopForCommand(QScreen* screen);
 void applyOptionalDelay(int delayMs);
 bool writeRawOutputToStdout(const QByteArray& data);
 CLIResult emitCaptureOutput(

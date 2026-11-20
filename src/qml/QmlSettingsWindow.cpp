@@ -129,6 +129,10 @@ void QmlSettingsWindow::ensureView()
         m_view, QStringLiteral("QmlSettingsWindow"));
     m_cursorOwnerId = CursorSurfaceSupport::defaultOwnerId(QStringLiteral("QmlSettingsWindow"));
 
+    connect(m_backend, &SettingsBackend::postCaptureCardChanged, this, [this] {
+        if (!m_backend->postCaptureCard())
+            emit postCaptureCardDisabled();
+    });
     connect(m_backend, &SettingsBackend::ocrLanguagesChanged,
             this, &QmlSettingsWindow::ocrLanguagesChanged);
     connect(m_backend, &SettingsBackend::languageChanged,

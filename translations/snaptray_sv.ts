@@ -554,6 +554,18 @@
         <source>PNG file</source>
         <translation>PNG-fil</translation>
     </message>
+    <message>
+        <source>Show screenshot action card</source>
+        <translation>Visa åtgärdskort för skärmbilder</translation>
+    </message>
+    <message>
+        <source>Automatically copy each screenshot</source>
+        <translation>Kopiera varje skärmbild automatiskt</translation>
+    </message>
+    <message>
+        <source>Automatically save each screenshot</source>
+        <translation>Spara varje skärmbild automatiskt</translation>
+    </message>
 </context>
 <context>
     <name>CaptureShortcutHintsOverlay</name>
