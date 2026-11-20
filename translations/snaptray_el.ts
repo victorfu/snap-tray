@@ -7337,9 +7337,19 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="573" />
-        <source>Could not match the selected screen. Recording from main display instead.</source>
-        <translation>Δεν ήταν δυνατή η αντιστοίχιση της επιλεγμένης οθόνης. Η εγγραφή θα γίνει από την κύρια οθόνη.</translation>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="57" />
+        <source>Could not identify the selected screen. Please try again.</source>
+        <translation>Δεν ήταν δυνατή η αναγνώριση της επιλεγμένης οθόνης. Δοκιμάστε ξανά.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="60" />
+        <source>The selected screen is no longer available for capture. Please try again.</source>
+        <translation>Η επιλεγμένη οθόνη δεν είναι πλέον διαθέσιμη για καταγραφή. Δοκιμάστε ξανά.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="63" />
+        <source>The selected screen was moved or resized. Please try again.</source>
+        <translation>Άλλαξε η θέση ή το μέγεθος της επιλεγμένης οθόνης. Δοκιμάστε ξανά.</translation>
     </message>
     <message>
         <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="617" />

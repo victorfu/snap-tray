@@ -54,13 +54,13 @@ static QString displayResolutionError(SnapTray::CaptureDisplayResolution resolut
     switch (resolution) {
     case SnapTray::CaptureDisplayResolution::IdentityUnknown:
         return QCoreApplication::translate("SCKCaptureEngine",
-            "Could not identify the selected screen. Please choose the screen again.");
+            "Could not identify the selected screen. Please try again.");
     case SnapTray::CaptureDisplayResolution::NotShareable:
         return QCoreApplication::translate("SCKCaptureEngine",
-            "The selected screen is no longer available for capture. Please choose the screen again.");
+            "The selected screen is no longer available for capture. Please try again.");
     case SnapTray::CaptureDisplayResolution::GeometryChanged:
         return QCoreApplication::translate("SCKCaptureEngine",
-            "The selected screen was moved or resized. Please choose the screen again.");
+            "The selected screen was moved or resized. Please try again.");
     case SnapTray::CaptureDisplayResolution::Resolved:
         break;
     }
