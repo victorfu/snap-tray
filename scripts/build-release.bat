@@ -3,6 +3,7 @@ REM Build release version of SnapTray (without running)
 
 setlocal enabledelayedexpansion
 set "VSLANG=1033"
+if not defined CMAKE_BUILD_PARALLEL_LEVEL set "CMAKE_BUILD_PARALLEL_LEVEL=4"
 
 set "SCRIPT_DIR=%~dp0"
 set "PROJECT_DIR=%SCRIPT_DIR%.."

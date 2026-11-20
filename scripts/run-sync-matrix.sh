@@ -6,6 +6,7 @@
 # REPORT_DIR holds this run's reports only: earlier reports in it are removed
 # first, so a row this run skips can never pass as rerun (#178 review).
 set -euo pipefail
+export CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-4}"
 cd "$(dirname "$0")/.."
 REPORT_DIR=""
 FULL=0

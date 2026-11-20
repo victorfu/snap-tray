@@ -110,6 +110,8 @@ The Windows scripts reconfigure an existing build directory when its cached Qt i
 
 For validation, prefer `build.sh` / `build.bat` and the test scripts. Running the app is useful for manual QA but not required for every change.
 
+The build and test scripts default to four parallel build jobs to limit peak memory use. Set `CMAKE_BUILD_PARALLEL_LEVEL` to override the default, for example `CMAKE_BUILD_PARALLEL_LEVEL=2 ./scripts/build.sh` on Linux or macOS, or `$env:CMAKE_BUILD_PARALLEL_LEVEL = '2'` before running the script in PowerShell.
+
 ## Windows capture toolbar timing
 
 Set `SNAPTRAY_TOOLBAR_TIMING=1` before launching SnapTray to trace single-region
@@ -214,7 +216,7 @@ Use manual configure/build only when you need custom flags or when debugging the
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
-cmake --build build --parallel
+cmake --build build --parallel 4
 # Output: build/bin/SnapTray-Debug.app
 ```
 
@@ -222,7 +224,7 @@ cmake --build build --parallel
 
 ```bash
 cmake -S . -B release -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
-cmake --build release --parallel
+cmake --build release --parallel 4
 # Output: release/bin/SnapTray.app
 ```
 
@@ -230,7 +232,7 @@ cmake --build release --parallel
 
 ```batch
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
-cmake --build build --parallel
+cmake --build build --parallel 4
 C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 ```
 
@@ -238,7 +240,7 @@ C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe build\bin\SnapTray-Debug.exe
 
 ```batch
 cmake -S . -B release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/Qt/6.12.0/msvc2022_64
-cmake --build release --parallel
+cmake --build release --parallel 4
 C:\Qt\6.12.0\msvc2022_64\bin\windeployqt.exe --release release\bin\SnapTray.exe
 ```
 
