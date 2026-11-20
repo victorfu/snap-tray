@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-06-13
+last_modified_at: 2026-11-20
 layout: docs
 title: 자주 묻는 질문
 seo_title: "SnapTray FAQ: 개인 정보 보호, 형식, OCR, 자동화 도움말"
@@ -10,6 +10,8 @@ route_key: docs_faq
 doc_group: advanced
 doc_order: 3
 faq_schema:
+  - question: "SnapTray는 사용 통계를 수집하나요?"
+    answer: "데스크톱 앱은 사용 통계를 수집하지 않습니다. snaptray.cc에서는 동의한 경우에만 Google 애널리틱스 4로 방문과 링크 클릭을 집계합니다. 페이지 하단의 분석 설정에서 언제든지 선택을 변경할 수 있습니다."
   - question: "SnapTray가 캡처 이미지를 업로드하나요?"
     answer: "자동 업로드는 없습니다. 캡처, 주석, 고정은 로컬에 유지됩니다. 녹화는 macOS/Windows 전용이며 역시 로컬에 유지됩니다."
   - question: "어떤 출력 형식을 사용해야 하나요?"
@@ -25,6 +27,10 @@ faq_schema:
   - question: "버그는 어디에 보고하나요?"
     answer: "GitHub에 이슈를 열고 OS 버전, SnapTray 버전, 재현 단계, 관련 스크린샷이나 녹화를 포함하세요."
 ---
+
+## SnapTray는 사용 통계를 수집하나요?
+
+데스크톱 앱은 사용 통계를 수집하지 않습니다. snaptray.cc에서는 동의한 경우에만 Google 애널리틱스 4로 방문과 링크 클릭을 집계합니다. 페이지 하단의 분석 설정에서 언제든지 선택을 변경할 수 있습니다. [개인정보 처리방침](/ko/privacy/#website)
 
 ## SnapTray가 캡처 이미지를 업로드하나요?
 

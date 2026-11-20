@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-11-20
 layout: docs
 title: 常見問題
 seo_title: "SnapTray 常見問題：隱私、檔案格式、OCR、快捷鍵、自動化與平台限制"
@@ -10,6 +10,8 @@ route_key: docs_faq
 doc_group: advanced
 doc_order: 3
 faq_schema:
+  - question: "SnapTray 會統計使用情況嗎？"
+    answer: "桌面版不會蒐集使用統計。只有在你允許後，snaptray.cc 才會使用 Google Analytics 4 統計造訪與連結點擊。你可以在頁尾的統計設定變更選擇。"
   - question: "SnapTray 會上傳我的畫面嗎？"
     answer: "不會自動上傳。截圖、標註與釘選都在本機完成。錄影僅支援 macOS/Windows，且同樣在本機完成。"
   - question: "錄影格式要怎麼選？"
@@ -25,6 +27,10 @@ faq_schema:
   - question: "哪裡回報問題最快？"
     answer: "到 GitHub issue 回報，並盡量附上 OS 版本、SnapTray 版本、可重現步驟，以及截圖或錄影。"
 ---
+
+## SnapTray 會統計使用情況嗎？
+
+桌面版不會蒐集使用統計。只有在你允許後，snaptray.cc 才會使用 Google Analytics 4 統計造訪與連結點擊。你可以在頁尾的統計設定變更選擇。 [隱私政策](/zh-tw/privacy/#website)
 
 ## SnapTray 會上傳我的畫面嗎？
 

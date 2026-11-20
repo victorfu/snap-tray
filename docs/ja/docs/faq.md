@@ -1,5 +1,5 @@
 ---
-last_modified_at: 2026-03-26
+last_modified_at: 2026-11-20
 layout: docs
 title: よくある質問
 seo_title: "SnapTray よくある質問：プライバシー、フォーマット、OCR、自動化"
@@ -10,6 +10,8 @@ route_key: docs_faq
 doc_group: advanced
 doc_order: 3
 faq_schema:
+  - question: "SnapTray は利用状況を収集しますか？"
+    answer: "デスクトップアプリは利用統計を収集しません。snaptray.cc では、許可した場合に限り、Google アナリティクス 4 で訪問やリンクのクリックを集計します。選択はページ下部の解析設定から変更できます。"
   - question: "SnapTray はキャプチャをアップロードしますか？"
     answer: "自動アップロードは行われません。キャプチャ、注釈、ピン留めはローカルに保存されます。録画は macOS/Windows のみで、こちらもローカルに保存されます。"
   - question: "どの出力フォーマットを使えばよいですか？"
@@ -25,6 +27,10 @@ faq_schema:
   - question: "バグはどこに報告すればよいですか？"
     answer: "GitHub で Issue を開き、OS バージョン、SnapTray バージョン、再現手順、関連するスクリーンショットや録画を含めてください。"
 ---
+
+## SnapTray は利用状況を収集しますか？
+
+デスクトップアプリは利用統計を収集しません。snaptray.cc では、許可した場合に限り、Google アナリティクス 4 で訪問やリンクのクリックを集計します。選択はページ下部の解析設定から変更できます。 [プライバシーポリシー](/ja/privacy/#website)
 
 ## SnapTray はキャプチャをアップロードしますか？
 

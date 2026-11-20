@@ -119,6 +119,8 @@ faq:
   eyebrow: FAQ
   title: Frequently Asked Questions
   items:
+    - q: "Does SnapTray collect usage statistics?"
+      a: "The desktop app does not collect usage statistics. On snaptray.cc, Google Analytics 4 measures visits and link clicks only if you allow it. You can change your choice in Analytics settings at the bottom of the page."
     - q: What is SnapTray?
       a: SnapTray is a free, lightweight screenshot and annotation tool for macOS, Windows, and Ubuntu 22.04 X11 beta. It lives in your system tray and lets you capture regions, annotate screenshots, and pin images. Recording and OCR are not included in the Linux beta.
     - q: Is SnapTray free?

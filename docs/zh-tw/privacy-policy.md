@@ -1,9 +1,9 @@
 ---
 layout: page
 title: 隱私政策
-seo_title: "SnapTray 隱私政策：本機優先處理，不做遙測、不追蹤、不上傳內容"
+seo_title: "SnapTray 隱私政策"
 permalink: /zh-tw/privacy/
-description: SnapTray 隱私政策。本機優先，無遙測或追蹤。
+description: "桌面版不會蒐集使用統計。只有在你允許後，snaptray.cc 才會使用 Google Analytics 4 統計造訪與連結點擊。你可以在頁尾的統計設定變更選擇。"
 lang: zh-tw
 route_key: privacy
 ---
@@ -84,8 +84,8 @@ SnapTray 會向 `api.github.com` 查詢是否有新版本。此功能預設啟�
 
 你允許後，網站會傳送：
 
-- 頁面瀏覽：不含查詢字串的頁面路徑，以及頁面語言
-- 來源網站的網域（不含完整網址）
+- 頁面瀏覽包含頁面網址與語言。網址僅保留通過檢查的活動參數。
+- 從外站進入時，只傳送來源網站的通訊協定、網域及連接埠。站內連結另包含來源頁面的路徑。
 - 你點進來的連結所帶的活動標記（`utm_source`、`utm_medium`、`utm_campaign`、`utm_content`），僅限符合網站預先定義清單的值；其他值一律記為「other」
 - 下載、Microsoft Store 與 GitHub 連結的點擊：平台、版本號，以及連結在頁面上的位置
 
@@ -99,7 +99,7 @@ Cookie 與瀏覽器儲存：
 | `snaptray.analyticsConsent` | Local storage | 你選擇允許或拒絕時 | 記住你的選擇 | 12 個月 |
 | `snaptray.attribution` | Session storage | 你允許統計後 | 瀏覽期間保留你的來源活動 | 分頁關閉，或 30 分鐘內未瀏覽新頁面時清除 |
 
-Google Analytics 中的統計資料保存 2 個月後刪除；彙總報表（例如各活動的下載點擊總數）可能保存較久。
+GA4 的使用者與事件資料保留 2 個月。新的活動不會重新起算使用者資料的保留期限。彙總報表可能保留較久。
 
 若要變更選擇，請使用任一頁面底部的**網站統計設定**。允許後再改為拒絕，會停止統計並刪除該瀏覽器中本網站的 Google Analytics Cookie。
 
