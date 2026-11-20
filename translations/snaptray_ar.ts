@@ -7353,9 +7353,19 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="573" />
-        <source>Could not match the selected screen. Recording from main display instead.</source>
-        <translation>تعذّر مطابقة الشاشة المحددة. سيتم التسجيل من الشاشة الرئيسية بدلًا من ذلك.</translation>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="57" />
+        <source>Could not identify the selected screen. Please try again.</source>
+        <translation>تعذّر التعرّف على الشاشة المحددة. يرجى المحاولة مرة أخرى.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="60" />
+        <source>The selected screen is no longer available for capture. Please try again.</source>
+        <translation>لم تعد الشاشة المحددة متاحة للالتقاط. يرجى المحاولة مرة أخرى.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="63" />
+        <source>The selected screen was moved or resized. Please try again.</source>
+        <translation>تغيّر موضع الشاشة المحددة أو حجمها. يرجى المحاولة مرة أخرى.</translation>
     </message>
     <message>
         <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="617" />

@@ -7333,9 +7333,19 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="573" />
-        <source>Could not match the selected screen. Recording from main display instead.</source>
-        <translation>Không thể khớp màn hình đã chọn. Sẽ ghi từ màn hình chính.</translation>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="57" />
+        <source>Could not identify the selected screen. Please try again.</source>
+        <translation>Không thể xác định màn hình đã chọn. Vui lòng thử lại.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="60" />
+        <source>The selected screen is no longer available for capture. Please try again.</source>
+        <translation>Màn hình đã chọn không còn khả dụng để chụp. Vui lòng thử lại.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="63" />
+        <source>The selected screen was moved or resized. Please try again.</source>
+        <translation>Vị trí hoặc kích thước của màn hình đã chọn đã thay đổi. Vui lòng thử lại.</translation>
     </message>
     <message>
         <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="617" />

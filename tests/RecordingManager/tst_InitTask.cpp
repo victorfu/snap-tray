@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFile>
 #include <QScopeGuard>
+#include <thread>
 #include "settings/RecordingSettingsManager.h"
 #include "settings/Settings.h"
 #include <type_traits>
@@ -65,6 +66,8 @@ private slots:
     void testNormalizedRegionFrameSizeAlignment();
     void testScreenMetadataSnapshot();
     void testSckInitializationUsesScreenSnapshot();
+    void testCaptureStartErrorReachesResult();
+    void testStartErrorIgnoresOtherThreads();
 
     // Cancellation tests
     void testCancelBeforeRun();
@@ -263,6 +266,63 @@ void TestRecordingInitTask::testSckInitializationUsesScreenSnapshot()
     QVERIFY(content.contains("CaptureScreenInfo screenInfo"));
     QVERIFY(!content.contains("QScreen *targetScreen"));
     QVERIFY(!content.contains("d->targetScreen"));
+}
+
+void TestRecordingInitTask::testCaptureStartErrorReachesResult()
+{
+    // The engine reports why it refused the source while the worker is still
+    // initializing, before RecordingManager connects to its signals.
+    class Capture : public ICaptureEngine {
+    public:
+        bool setRegion(const QRect&, QScreen*) override { return true; }
+        bool setRegion(const QRect&, const CaptureScreenInfo&) override { return true; }
+        bool start() override
+        {
+            emit error(QStringLiteral("The selected screen is no longer available"));
+            return false;
+        }
+        void stop() override {}
+        bool isRunning() const override { return false; }
+        QImage captureFrame() override { return {}; }
+        QString engineName() const override { return "test capture"; }
+    };
+    auto config = createTestConfig();
+    config.preferGraphicsCapture = false;
+    RecordingInitTask task(config);
+    task.m_createFallbackCapture = []() -> ICaptureEngine* { return new Capture; };
+
+    QVERIFY(!task.initializeCaptureEngine());
+    QVERIFY(!task.result().captureEngineStarted);
+    QCOMPARE(task.result().error, QStringLiteral("The selected screen is no longer available"));
+    task.result().cleanup();
+    QVERIFY(!task.result().captureEngine);
+}
+
+void TestRecordingInitTask::testStartErrorIgnoresOtherThreads()
+{
+    // Native callback threads (WGC frame pool, X11 capture loop) can emit
+    // error() while start() runs. Only the starting thread's own report is
+    // collected; another thread must never write the caller's result.
+    class Capture : public ICaptureEngine {
+    public:
+        bool setRegion(const QRect&, QScreen*) override { return true; }
+        bool setRegion(const QRect&, const CaptureScreenInfo&) override { return true; }
+        bool start() override
+        {
+            std::thread callback([this] { emit error(QStringLiteral("from callback thread")); });
+            callback.join();
+            emit error(QStringLiteral("from start"));
+            return false;
+        }
+        void stop() override {}
+        bool isRunning() const override { return false; }
+        QImage captureFrame() override { return {}; }
+        QString engineName() const override { return "test capture"; }
+    };
+    Capture engine;
+    QString startError;
+    QVERIFY(!engine.startCollectingError(&startError));
+    QCOMPARE(startError, QStringLiteral("from start"));
 }
 
 // ============================================================================

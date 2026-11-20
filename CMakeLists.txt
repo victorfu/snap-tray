@@ -625,6 +625,7 @@ add_library(snaptray_platform STATIC
     include/encoding/WebPAnimEncoder.h
     include/recording/ScreenSourceService.h
     include/capture/ICaptureEngine.h
+    include/capture/CaptureDisplayResolver.h
     include/capture/IAudioCaptureEngine.h
     include/capture/TimestampedPcmMixer.h
     include/capture/ScreenSnapshot.h

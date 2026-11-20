@@ -7337,9 +7337,19 @@ Päivämäärätunnisteet: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} tai {date}</
 <context>
     <name>SCKCaptureEngine</name>
     <message>
-        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="573" />
-        <source>Could not match the selected screen. Recording from main display instead.</source>
-        <translation>Valittua näyttöä ei voitu täsmätä. Tallennetaan sen sijaan päänäytöltä.</translation>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="57" />
+        <source>Could not identify the selected screen. Please try again.</source>
+        <translation>Valittua näyttöä ei voitu tunnistaa. Yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="60" />
+        <source>The selected screen is no longer available for capture. Please try again.</source>
+        <translation>Valittu näyttö ei ole enää käytettävissä kaappausta varten. Yritä uudelleen.</translation>
+    </message>
+    <message>
+        <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="63" />
+        <source>The selected screen was moved or resized. Please try again.</source>
+        <translation>Valitun näytön sijainti tai koko muuttui. Yritä uudelleen.</translation>
     </message>
     <message>
         <location filename="../src/capture/SCKCaptureEngine_mac.mm" line="617" />

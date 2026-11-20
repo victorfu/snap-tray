@@ -7460,9 +7460,12 @@ void PinWindow::startLiveCapture()
 #endif
     setWindowExcludedFromCapture(this, true);
 
-    if (!m_captureEngine->start()) {
-        qWarning() << "Failed to start live capture engine";
+    QString startError;
+    if (!m_captureEngine->startCollectingError(&startError)) {
+        qWarning() << "Failed to start live capture engine:" << startError;
         stopLiveCapture();
+        if (!startError.isEmpty())
+            m_toast->showToast(SnapTray::QmlToast::Level::Error, startError);
         return;
     }
 
