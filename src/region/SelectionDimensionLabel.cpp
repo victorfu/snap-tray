@@ -66,6 +66,65 @@ bool canUseInsideFallback(const QRect& selectionRect, const QSize& size, int ins
            insideBounds.height() >= size.height() + kDimensionPanelTopGap;
 }
 
+QRect clampIntoBounds(QRect rect, const QRect& bounds)
+{
+    if (rect.right() > bounds.right()) {
+        rect.moveRight(bounds.right());
+    }
+    if (rect.left() < bounds.left()) {
+        rect.moveLeft(bounds.left());
+    }
+    if (rect.bottom() > bounds.bottom()) {
+        rect.moveBottom(bounds.bottom());
+    }
+    if (rect.top() < bounds.top()) {
+        rect.moveTop(bounds.top());
+    }
+    return rect;
+}
+
+// A selection too small to host the label gets it placed beside the selection.
+// Candidates are tried in order; each slides only along the selection edge it
+// is attached to, so it can never be pushed back over the selection.
+QRect compactPanelRect(const QRect& sel, const QSize& size, const QRect& bounds)
+{
+    enum class Slide { Vertical, Horizontal };
+    struct Candidate {
+        QPoint topLeft;
+        Slide slide;
+    };
+
+    const Candidate candidates[] = {
+        {{sel.left() - size.width() - kDimensionPanelSideGap, sel.top()}, Slide::Vertical},
+        {{sel.right() + 1 + kDimensionPanelSideGap, sel.top()}, Slide::Vertical},
+        {{sel.left(), sel.top() - size.height() - kDimensionPanelTopGap}, Slide::Horizontal},
+        {{sel.left(), sel.bottom() + 1 + kDimensionPanelTopGap}, Slide::Horizontal},
+    };
+
+    const QRect preferred(candidates[0].topLeft, size);
+    if (!bounds.isValid()) {
+        return preferred;
+    }
+    if (bounds.width() < size.width() || bounds.height() < size.height()) {
+        return clampIntoBounds(preferred, bounds);
+    }
+
+    for (const Candidate& candidate : candidates) {
+        QRect rect(candidate.topLeft, size);
+        if (candidate.slide == Slide::Vertical) {
+            rect.moveTop(qBound(bounds.top(), rect.top(), bounds.bottom() - size.height() + 1));
+        } else {
+            rect.moveLeft(qBound(bounds.left(), rect.left(), bounds.right() - size.width() + 1));
+        }
+        if (bounds.contains(rect) && !rect.intersects(sel)) {
+            return rect;
+        }
+    }
+
+    // Only reachable when the viewport itself is too small for any outside slot.
+    return clampIntoBounds(preferred, bounds);
+}
+
 QFont panelFont(const QFont& baseFont)
 {
     QFont font(baseFont);
@@ -151,79 +210,48 @@ SelectionDimensionLabel::AttachmentLayout SelectionDimensionLabel::selectionPane
     const QSize& viewportSize,
     const QSize& controlAnchorSize)
 {
-    AttachmentLayout layout;
     Q_UNUSED(controlAnchorSize);
+    return placePanel(selectionRect, panelSize(label, baseFont), viewportSize);
+}
+
+SelectionDimensionLabel::AttachmentLayout SelectionDimensionLabel::placePanel(
+    const QRect& selectionRect,
+    const QSize& panelSize,
+    const QSize& viewportSize)
+{
+    AttachmentLayout layout;
 
     const QRect sel = selectionRect.normalized();
-    if (!sel.isValid() || sel.isEmpty()) {
-        return layout;
-    }
-
-    const QSize size = panelSize(label, baseFont);
-    if (!size.isValid() || size.isEmpty()) {
+    if (!sel.isValid() || sel.isEmpty() || !panelSize.isValid() || panelSize.isEmpty()) {
         return layout;
     }
 
     const bool fitsHorizontallyInside =
-        canFitHorizontallyInsideSelection(sel, size, kDimensionPanelInset);
-    const bool mustFallbackInside = !hasRoomAboveSelection(sel, size);
+        canFitHorizontallyInsideSelection(sel, panelSize, kDimensionPanelInset);
+    const bool mustFallbackInside = !hasRoomAboveSelection(sel, panelSize);
     layout.compactRegion =
         !fitsHorizontallyInside ||
-        (mustFallbackInside && !canUseInsideFallback(sel, size, kDimensionPanelInset));
+        (mustFallbackInside && !canUseInsideFallback(sel, panelSize, kDimensionPanelInset));
 
-    QRect textRect(QPoint(0, 0), size);
-    int textX = sel.left();
-    int textY = sel.top() - textRect.height() - kDimensionPanelTopGap;
+    const QRect bounds = viewportSize.isValid()
+        ? QRect(QPoint(kDimensionPanelInset, kDimensionPanelInset),
+                QPoint(viewportSize.width() - kDimensionPanelInset,
+                       viewportSize.height() - kDimensionPanelInset))
+        : QRect();
 
     if (layout.compactRegion) {
-        textRect.moveTo(sel.left() - textRect.width() - kDimensionPanelSideGap, sel.top());
-
-        if (viewportSize.isValid()) {
-            const int maxX = viewportSize.width() - kDimensionPanelInset;
-            const int maxY = viewportSize.height() - kDimensionPanelInset;
-            if (textRect.right() > maxX) {
-                textRect.moveRight(maxX);
-            }
-            if (textRect.left() < kDimensionPanelInset) {
-                textRect.moveLeft(kDimensionPanelInset);
-            }
-            if (textRect.bottom() > maxY) {
-                textRect.moveBottom(maxY);
-            }
-            if (textRect.top() < kDimensionPanelInset) {
-                textRect.moveTop(kDimensionPanelInset);
-            }
-        }
-
-        layout.panelRect = textRect;
+        layout.panelRect = compactPanelRect(sel, panelSize, bounds);
         return layout;
     }
 
-    if (textY < kDimensionPanelInset) {
-        textY = sel.top() + kDimensionPanelInset;
-        textX = sel.left() + kDimensionPanelInset;
+    QRect textRect(QPoint(0, 0), panelSize);
+    if (mustFallbackInside) {
+        textRect.moveTo(sel.left() + kDimensionPanelInset, sel.top() + kDimensionPanelInset);
+    } else {
+        textRect.moveTo(sel.left(), sel.top() - panelSize.height() - kDimensionPanelTopGap);
     }
 
-    textRect.moveTo(textX, textY);
-
-    if (viewportSize.isValid()) {
-        const int maxX = viewportSize.width() - kDimensionPanelInset;
-        const int maxY = viewportSize.height() - kDimensionPanelInset;
-        if (textRect.right() > maxX) {
-            textRect.moveRight(maxX);
-        }
-        if (textRect.left() < kDimensionPanelInset) {
-            textRect.moveLeft(kDimensionPanelInset);
-        }
-        if (textRect.bottom() > maxY) {
-            textRect.moveBottom(maxY);
-        }
-        if (textRect.top() < kDimensionPanelInset) {
-            textRect.moveTop(kDimensionPanelInset);
-        }
-    }
-
-    layout.panelRect = textRect;
+    layout.panelRect = bounds.isValid() ? clampIntoBounds(textRect, bounds) : textRect;
     return layout;
 }
 

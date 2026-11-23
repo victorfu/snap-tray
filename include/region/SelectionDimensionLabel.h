@@ -35,6 +35,11 @@ public:
                                                  const QFont& baseFont,
                                                  const QSize& viewportSize,
                                                  const QSize& controlAnchorSize);
+    // Places a panel of the given size next to the selection without letting
+    // viewport clamping push a compact-region label back over the selection.
+    static AttachmentLayout placePanel(const QRect& selectionRect,
+                                       const QSize& panelSize,
+                                       const QSize& viewportSize);
     static QSize controlAnchorSize(bool ratioLocked);
 };
 

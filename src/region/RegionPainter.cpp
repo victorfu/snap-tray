@@ -36,8 +36,6 @@ constexpr int kSelectionHandleRadius = kSelectionHandleDiameter / 2;
 constexpr int kSelectionChromeMargin = kSelectionHandleRadius + 1;
 constexpr int kDimensionPanelHeight = 28;
 constexpr int kDimensionPanelPadding = 24;
-constexpr int kDimensionPanelTopGap = 8;
-constexpr int kDimensionPanelInset = 5;
 const QColor kRegionDimColor(0, 0, 0, 100);
 
 QColor dimensionLabelTextColor(const ToolbarStyleConfig& styleConfig)
@@ -560,33 +558,8 @@ QRect RegionPainter::dimensionInfoPanelRect(const QRect& selectionRect, const QS
     const int actualWidth = fm.horizontalAdvance(label) + kDimensionPanelPadding;
     const int width = qMax(fixedWidth, actualWidth);
 
-    QRect textRect(0, 0, width, kDimensionPanelHeight);
-
-    int textX = sel.left();
-    int textY = sel.top() - textRect.height() - kDimensionPanelTopGap;
-    if (textY < kDimensionPanelInset) {
-        textY = sel.top() + kDimensionPanelInset;
-        textX = sel.left() + kDimensionPanelInset;
-    }
-
-    textRect.moveTo(textX, textY);
-
-    const int maxX = m_parentWidget->width() - kDimensionPanelInset;
-    const int maxY = m_parentWidget->height() - kDimensionPanelInset;
-    if (textRect.right() > maxX) {
-        textRect.moveRight(maxX);
-    }
-    if (textRect.left() < kDimensionPanelInset) {
-        textRect.moveLeft(kDimensionPanelInset);
-    }
-    if (textRect.bottom() > maxY) {
-        textRect.moveBottom(maxY);
-    }
-    if (textRect.top() < kDimensionPanelInset) {
-        textRect.moveTop(kDimensionPanelInset);
-    }
-
-    return textRect;
+    return SelectionDimensionLabel::placePanel(
+        sel, QSize(width, kDimensionPanelHeight), m_parentWidget->size()).panelRect;
 }
 
 QRect RegionPainter::selectionChromeBounds(const QRect& selectionRect) const
