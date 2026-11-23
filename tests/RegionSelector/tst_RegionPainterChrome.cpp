@@ -171,6 +171,10 @@ private slots:
     void testWindowHighlightVisualRectIncludesHandlesAndPanel();
     void testCompactSelectionDimensionLabelStaysOutsideSelection();
     void testTopEdgeShortSelectionUsesCompactDimensionLabel();
+    void testCompactDimensionLabelNeverCoversSelectionNearEdges_data();
+    void testCompactDimensionLabelNeverCoversSelectionNearEdges();
+    void testCompactDimensionLabelAtLeftEdgeMovesRight();
+    void testMultiRegionDimensionLabelNeverCoversSmallSelectionNearEdges();
     void testFractionalDprPartialBackgroundRepaintMatchesFullPaint();
     void testFractionalDprSelectionTransitionNeedsFullRepaint();
     void testPencilPreviewExtendsBeyondDetachedAnnotationViewport();
@@ -487,6 +491,104 @@ void tst_RegionPainterChrome::testTopEdgeShortSelectionUsesCompactDimensionLabel
     QVERIFY(dimensionRect.isValid());
     QVERIFY(dimensionRect.right() < topEdgeShortSelectionRect.left());
     QVERIFY(!topEdgeShortSelectionRect.intersects(dimensionRect));
+}
+
+namespace {
+
+QRect dimensionPanelBounds(const QSize& viewportSize)
+{
+    constexpr int kPanelInset = 5;
+    return QRect(QPoint(kPanelInset, kPanelInset),
+                 QPoint(viewportSize.width() - kPanelInset,
+                        viewportSize.height() - kPanelInset));
+}
+
+QRect widgetDimensionPanelRect(const QRect& selectionRect, const QSize& viewportSize)
+{
+    QFont font;
+    font.setPointSize(12);
+    font.setBold(true);
+    return SelectionDimensionLabel::selectionPanelLayout(
+        selectionRect,
+        SelectionDimensionLabel::widgetLabel(selectionRect, 1.0),
+        font,
+        viewportSize,
+        SelectionDimensionLabel::controlAnchorSize(false)).panelRect;
+}
+
+QList<QRect> smallSelectionsNearEdges(const QSize& viewportSize)
+{
+    const int w = viewportSize.width();
+    const int h = viewportSize.height();
+    return {
+        QRect(0, 0, 30, 20),             // top-left corner
+        QRect(4, 150, 40, 20),           // left edge
+        QRect(w - 34, 150, 30, 20),      // right edge
+        QRect(w - 30, h - 20, 30, 20),   // bottom-right corner
+        QRect(0, h - 20, 30, 20),        // bottom-left corner
+        QRect(w - 30, 0, 30, 20),        // top-right corner
+        QRect(180, 0, 30, 12),           // top edge
+        QRect(180, h - 12, 30, 12),      // bottom edge
+        QRect(40, 150, 12, 12),          // tiny, close to left edge
+    };
+}
+
+} // namespace
+
+void tst_RegionPainterChrome::testCompactDimensionLabelNeverCoversSelectionNearEdges_data()
+{
+    QTest::addColumn<QRect>("selectionRect");
+    const auto selections = smallSelectionsNearEdges(kHostRect.size());
+    for (const QRect& rect : selections) {
+        QTest::newRow(qPrintable(QStringLiteral("%1,%2 %3x%4")
+                                     .arg(rect.x()).arg(rect.y())
+                                     .arg(rect.width()).arg(rect.height())))
+            << rect;
+    }
+}
+
+void tst_RegionPainterChrome::testCompactDimensionLabelNeverCoversSelectionNearEdges()
+{
+    QFETCH(QRect, selectionRect);
+
+    const QRect panelRect = widgetDimensionPanelRect(selectionRect, kHostRect.size());
+    QVERIFY(panelRect.isValid());
+    QVERIFY2(!panelRect.intersects(selectionRect),
+             qPrintable(QStringLiteral("panel %1,%2 %3x%4 covers selection")
+                            .arg(panelRect.x()).arg(panelRect.y())
+                            .arg(panelRect.width()).arg(panelRect.height())));
+    QVERIFY(dimensionPanelBounds(kHostRect.size()).contains(panelRect));
+}
+
+void tst_RegionPainterChrome::testCompactDimensionLabelAtLeftEdgeMovesRight()
+{
+    const QRect selectionRect(4, 150, 40, 20);
+    const QRect panelRect = widgetDimensionPanelRect(selectionRect, kHostRect.size());
+
+    QVERIFY(panelRect.isValid());
+    QCOMPARE(panelRect.top(), selectionRect.top());
+    QVERIFY(panelRect.left() - selectionRect.right() >= 8);
+}
+
+void tst_RegionPainterChrome::testMultiRegionDimensionLabelNeverCoversSmallSelectionNearEdges()
+{
+    QWidget hostWidget;
+    hostWidget.resize(kHostRect.size());
+
+    RegionPainter painter;
+    painter.setParentWidget(&hostWidget);
+    painter.setDevicePixelRatio(1.0);
+
+    const auto selections = smallSelectionsNearEdges(kHostRect.size());
+    for (const QRect& selectionRect : selections) {
+        const QRect panelRect = painter.dimensionInfoPanelRect(
+            selectionRect, SelectionDimensionLabel::label(selectionRect, 1.0), QFont());
+        QVERIFY(panelRect.isValid());
+        QVERIFY2(!panelRect.intersects(selectionRect),
+                 qPrintable(QStringLiteral("selection %1,%2 covered")
+                                .arg(selectionRect.x()).arg(selectionRect.y())));
+        QVERIFY(dimensionPanelBounds(kHostRect.size()).contains(panelRect));
+    }
 }
 
 void tst_RegionPainterChrome::testFractionalDprPartialBackgroundRepaintMatchesFullPaint()
