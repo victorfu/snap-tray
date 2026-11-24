@@ -36,6 +36,9 @@ constexpr int kSharpnessRatio = 3;
 // At least this share of an anti-aliased pixel must look like the scanned
 // side for the pixel to count on that side.
 constexpr double kCoverageForScannedSide = 0.5;
+// Bilinear resampling up to 2x (a 1x image on a Retina screen) spreads a hard
+// edge over up to two blended pixels: a run of at most this many steps.
+constexpr int kMaxResampledEdgeSteps = 3;
 
 constexpr int kChannels = 4;
 using Pixel = std::array<int, kChannels>;
@@ -265,9 +268,75 @@ private:
                 }
             }
         }
+        if (const std::optional<int> edge = resampledEdge(start, steps, end, direction, channel)) {
+            return {edge, end};
+        }
         // A soft ramp. Scanning resumes where it ended, so a sharp step back
         // there (a card at the end of its shadow) is found as the next edge.
         return {std::nullopt, end};
+    }
+
+    // A hard edge resampled at up to 2x: the whole monotonic run, including
+    // steps behind @p start, is at most kMaxResampledEdgeSteps long and both
+    // sides of it are flat. Its middle step is not sharp enough on its own
+    // (3/4 and 1/4 blends give steps of 1/4, 1/2, 1/4), so the run is judged
+    // as a whole and each blended pixel goes to the side covering most of it.
+    std::optional<int> resampledEdge(int start, const std::vector<Step>& steps, int end,
+                                     int direction, int channel) const
+    {
+        if (end >= m_count) {
+            return std::nullopt;   // The run may go on past the scanned range.
+        }
+        int runStart = start;
+        int total = 0;
+        for (const Step& step : steps) {
+            total += step.size;
+        }
+        int runSteps = static_cast<int>(steps.size());
+        while (runSteps <= kMaxResampledEdgeSteps) {
+            const int behind = precedingStep(runStart, direction, channel);
+            if (behind == 0) {
+                break;
+            }
+            total += behind;
+            --runStart;
+            ++runSteps;
+        }
+        if (runSteps > kMaxResampledEdgeSteps || total <= m_threshold) {
+            return std::nullopt;
+        }
+
+        // Flat on both sides: the steps just outside the run are small.
+        const int before = std::abs(stepInto(runStart - 1, channel));
+        const int after = std::abs(channelValue(end, channel) - channelValue(end - 1, channel));
+        if (total <= kSharpnessRatio * runSteps * std::max(before, after)) {
+            return std::nullopt;
+        }
+
+        const int from = channelValue(runStart - 1, channel);
+        const int settled = channelValue(end - 1, channel);
+        int edge = end - 1;
+        for (int i = runStart; i < end - 1; ++i) {
+            const double scannedSideCoverage =
+                static_cast<double>(settled - channelValue(i, channel)) / (settled - from);
+            if (scannedSideCoverage < kCoverageForScannedSide) {
+                edge = i;
+                break;
+            }
+        }
+        // An edge behind the origin belongs to the opposite direction.
+        return edge > 0 ? std::optional<int>(edge) : std::nullopt;
+    }
+
+    // Signed difference into pixel @p index from the one before it, or 0 when
+    // either lies outside the image.
+    int stepInto(int index, int channel) const
+    {
+        if (!m_image.rect().contains(m_origin + index * m_step)
+            || !m_image.rect().contains(m_origin + (index - 1) * m_step)) {
+            return 0;
+        }
+        return channelValue(index, channel) - channelValue(index - 1, channel);
     }
 
     // Size of the step into pixel @p index - 1 when it moves in @p direction,
