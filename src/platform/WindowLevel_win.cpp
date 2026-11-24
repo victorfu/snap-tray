@@ -14,25 +14,33 @@
 #include <Windows.h>
 #include <dwmapi.h>
 
-bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPointF& grabOffset)
+bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPointF& grabOffset,
+                                                  std::optional<QPointF> eventPosition)
 {
     if (!widget->windowHandle())
         return false;
 
-    POINT cursor;
-    if (!GetCursorPos(&cursor))
-        return false;
-
     const auto hwnd = reinterpret_cast<HWND>(widget->winId());
-    const auto moveAtScale = [&](qreal scale) {
-        const QPoint position = QPoint(cursor.x, cursor.y) - (grabOffset * scale).toPoint();
+    const qreal scale = widget->devicePixelRatioF();
+    POINT cursor;
+    if (eventPosition) {
+        // Button-up can be delivered after the hardware pointer has moved on.
+        const QPoint clientPosition = (*eventPosition * scale).toPoint();
+        cursor = {clientPosition.x(), clientPosition.y()};
+        if (!ClientToScreen(hwnd, &cursor))
+            return false;
+    } else if (!GetCursorPos(&cursor)) {
+        return false;
+    }
+
+    const auto moveAtScale = [&](qreal windowScale) {
+        const QPoint position = QPoint(cursor.x, cursor.y) - (grabOffset * windowScale).toPoint();
         return SetWindowPos(hwnd, nullptr, position.x(), position.y(), 0, 0,
                             SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOZORDER);
     };
 
     // Keep both positions in the continuous native desktop coordinate space.
     // Qt's logical screen geometries can have gaps with mixed Windows scaling.
-    const qreal scale = widget->devicePixelRatioF();
     if (!moveAtScale(scale))
         return false;
 

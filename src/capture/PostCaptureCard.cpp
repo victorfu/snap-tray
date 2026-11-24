@@ -187,7 +187,7 @@ void PostCaptureCard::mouseReleaseEvent(QMouseEvent* event)
 {
     if (!m_dragging || event->button() != Qt::LeftButton)
         return;
-    SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition);
+    SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition, event->position());
     m_dragging = false;
     updateCountdown();
 }
