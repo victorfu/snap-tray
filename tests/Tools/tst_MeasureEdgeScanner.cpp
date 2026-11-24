@@ -33,6 +33,8 @@ private slots:
     void edgeFoundFromItsAntiAliasedPixel_data();
     void edgeFoundFromItsAntiAliasedPixel();
     void transparentStripIsAnEdge();
+    void edgeResampledAt2xIsFound();
+    void widerBlurStaysARamp();
     void originOutsideIsClampedAndOtherFormatsRefused();
     void largeImageHoverIsFast();
 };
@@ -316,6 +318,61 @@ void TestMeasureEdgeScanner::transparentStripIsAnEdge()
     QImage image = filled(100, 40, Qt::black);
     fillRect(image, QRect(30, 0, 20, 40), QColor(0, 0, 0, 0));
     verifySpan(scanned(image, QPoint(40, 20), Qt::Horizontal), 30, 49, true, true);
+}
+
+// A 1x image shown at 100% on a 2x screen is upscaled with bilinear
+// filtering, so each hard edge becomes two blended pixels: 3/4 of one side
+// and 1/4 of the other, then the reverse (#412). Each blended pixel goes to
+// the side covering most of it, so the spans are those of the 1x image
+// doubled: 60, 40 and so on.
+void TestMeasureEdgeScanner::edgeResampledAt2xIsFound()
+{
+    const QList<int> columns = [] {
+        QList<int> levels;
+        const auto run = [&](int count, int level) { levels.append(QList<int>(count, level)); };
+        run(40, 250);               // background 0..39
+        levels << 241 << 224;       // 250 | 215 blended at 40, 41
+        run(58, 215);               // band 42..99
+        levels << 185 << 125;       // 215 | 95 blended at 100, 101 (the #400 capture)
+        run(38, 95);                // dark band 102..139
+        levels << 134 << 211;       // 95 | 250 blended at 140, 141
+        run(38, 250);               // background 142..179
+        return levels;
+    }();
+    QImage image = filled(columns.size(), 40, Qt::white);
+    for (int x = 0; x < columns.size(); ++x) {
+        fillRect(image, QRect(x, 0, 1, image.height()), gray(columns.at(x)));
+    }
+
+    verifySpan(scanned(image, QPoint(70, 20), Qt::Horizontal), 41, 100, true, true);
+    verifySpan(scanned(image, QPoint(120, 20), Qt::Horizontal), 101, 140, true, true);
+    verifySpan(scanned(image, QPoint(10, 20), Qt::Horizontal), 0, 40, false, true);
+    verifySpan(scanned(image, QPoint(170, 20), Qt::Horizontal), 141, 179, true, false);
+    // From a blended pixel, the edge it belongs to.
+    verifySpan(scanned(image, QPoint(100, 20), Qt::Horizontal), 41, 100, true, true);
+    verifySpan(scanned(image, QPoint(101, 20), Qt::Horizontal), 101, 140, true, true);
+
+    // Auto drag snapping uses the same edges.
+    const auto edgeAt = [&](qreal x) {
+        return MeasureEdgeScanner::nearbyEdge(image, QPointF(x, 20.5), Qt::Horizontal, 4);
+    };
+    QCOMPARE(edgeAt(44.5), std::optional<int>(41));
+    QCOMPARE(edgeAt(97.5), std::optional<int>(101));
+    QCOMPARE(edgeAt(103.5), std::optional<int>(101));
+}
+
+// Four blended pixels are a blur, not a resampled hard edge: no edge, from
+// either side.
+void TestMeasureEdgeScanner::widerBlurStaysARamp()
+{
+    const QList<int> columns{215, 215, 215, 215, 215, 215, 191, 167, 143, 119, 95, 95, 95, 95, 95, 95};
+    QImage image = filled(columns.size(), 20, Qt::white);
+    for (int x = 0; x < columns.size(); ++x) {
+        fillRect(image, QRect(x, 0, 1, image.height()), gray(columns.at(x)));
+    }
+    QVERIFY(!scanned(image, QPoint(2, 10), Qt::Horizontal).isReliable());
+    QCOMPARE(scanned(image, QPoint(2, 10), Qt::Horizontal).lastIsEdge, false);
+    QCOMPARE(scanned(image, QPoint(13, 10), Qt::Horizontal).firstIsEdge, false);
 }
 
 void TestMeasureEdgeScanner::originOutsideIsClampedAndOtherFormatsRefused()
