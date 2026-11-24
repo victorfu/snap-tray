@@ -19,6 +19,10 @@
 #include <QWidget>
 #include <QWindow>
 
+#ifdef Q_OS_WIN
+#include <Windows.h>
+#endif
+
 #include <cmath>
 #include <memory>
 #include <optional>
@@ -153,6 +157,7 @@ private slots:
     void lateExportAfterDismissalKeepsCardHidden_data();
     void lateExportAfterDismissalKeepsCardHidden();
     void nativeCardFocusEscapeAndCaptureExclusion();
+    void nativeCardDragTracksCursor();
     void offscreenScreensMatchConfiguration();
     void copy_outputsNativePixelsPerScreen_data();
     void copy_outputsNativePixelsPerScreen();
@@ -1168,6 +1173,67 @@ void tst_FullScreenCapture::nativeCardFocusEscapeAndCaptureExclusion()
     QCOMPARE(captured, background);
     manager.cancelCapture();
     QVERIFY(!second || !second->isVisible());
+}
+
+void tst_FullScreenCapture::nativeCardDragTracksCursor()
+{
+#ifdef Q_OS_WIN
+    if (QGuiApplication::platformName() != QStringLiteral("windows"))
+        QSKIP("This check uses the native Windows desktop");
+
+    POINT previousCursor;
+    QVERIFY(GetCursorPos(&previousCursor));
+    const auto restoreCursor = qScopeGuard([previousCursor] {
+        SetCursorPos(previousCursor.x, previousCursor.y);
+    });
+    QScreen* primary = QGuiApplication::primaryScreen();
+    QScreen* secondary = primary;
+    for (auto* screen : QGuiApplication::screens()) {
+        if (screen->devicePixelRatio() != primary->devicePixelRatio()) {
+            secondary = screen;
+            break;
+        }
+    }
+
+    const QList<QPair<QScreen*, QScreen*>> directions = secondary == primary
+        ? QList<QPair<QScreen*, QScreen*>>{{primary, primary}}
+        : QList<QPair<QScreen*, QScreen*>>{{secondary, primary}, {primary, secondary}};
+    for (const auto& [source, target] : directions) {
+        QPixmap sample(80, 60);
+        sample.fill(Qt::red);
+        PostCaptureCard card(sample, source);
+        QVERIFY(QTest::qWaitForWindowExposed(&card));
+        const QPoint grab = card.rect().center();
+        const QPoint initialGlobal = card.mapToGlobal(grab);
+        QMouseEvent press(QEvent::MouseButtonPress, grab, initialGlobal,
+                          Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(&card, &press);
+
+        QCursor::setPos(target, target->availableGeometry().center());
+        POINT cursor;
+        QVERIFY(GetCursorPos(&cursor));
+        // Deliver a move with the old logical position to exercise the case
+        // where Qt's global coordinates no longer describe the pointer.
+        QMouseEvent move(QEvent::MouseMove, grab, initialGlobal,
+                         Qt::NoButton, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(&card, &move);
+        QMouseEvent release(QEvent::MouseButtonRelease, grab, initialGlobal,
+                            Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+        QApplication::sendEvent(&card, &release);
+
+        QTRY_COMPARE(card.screen(), target);
+        RECT frame;
+        QVERIFY(GetWindowRect(reinterpret_cast<HWND>(card.winId()), &frame));
+        const QPoint actualOffset(cursor.x - frame.left, cursor.y - frame.top);
+        const QPoint expectedOffset = (grab * card.devicePixelRatioF());
+        QVERIFY2((actualOffset - expectedOffset).manhattanLength() <= 2,
+                 qPrintable(QStringLiteral("Expected grab offset (%1, %2), got (%3, %4)")
+                                .arg(expectedOffset.x()).arg(expectedOffset.y())
+                                .arg(actualOffset.x()).arg(actualOffset.y())));
+    }
+#else
+    QSKIP("This check uses the native Windows desktop");
+#endif
 }
 
 int main(int argc, char** argv)

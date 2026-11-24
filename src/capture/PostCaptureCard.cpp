@@ -1,6 +1,7 @@
 #include "capture/PostCaptureCard.h"
 
 #include "GlassRenderer.h"
+#include "platform/WindowInput.h"
 #include "platform/WindowLevel.h"
 
 #include <QApplication>
@@ -170,6 +171,7 @@ void PostCaptureCard::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         m_dragOffset = event->globalPosition().toPoint() - pos();
+        m_dragGrabPosition = event->position();
         m_dragging = true;
         updateCountdown();
     }
@@ -177,12 +179,15 @@ void PostCaptureCard::mousePressEvent(QMouseEvent* event)
 
 void PostCaptureCard::mouseMoveEvent(QMouseEvent* event)
 {
-    if (m_dragging)
+    if (m_dragging && !SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition))
         move(event->globalPosition().toPoint() - m_dragOffset);
 }
 
-void PostCaptureCard::mouseReleaseEvent(QMouseEvent*)
+void PostCaptureCard::mouseReleaseEvent(QMouseEvent* event)
 {
+    if (!m_dragging || event->button() != Qt::LeftButton)
+        return;
+    SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition);
     m_dragging = false;
     updateCountdown();
 }

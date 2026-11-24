@@ -46,6 +46,7 @@ private:
     bool m_keyboardFocus = false;
     bool m_menuOpen = false;
     QPoint m_dragOffset;
+    QPointF m_dragGrabPosition;
     QLabel* m_status;
     QPushButton* m_copy;
     QPushButton* m_save;

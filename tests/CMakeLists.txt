@@ -779,6 +779,11 @@ target_link_libraries(App_FullScreenCapture PRIVATE
     Qt6::Test
 )
 add_test(NAME App_FullScreenCapture COMMAND App_FullScreenCapture)
+if(WIN32)
+    add_test(NAME App_PostCaptureCardWindows
+        COMMAND App_FullScreenCapture -platform windows nativeCardDragTracksCursor)
+    set_tests_properties(App_PostCaptureCardWindows PROPERTIES LABELS "integration" RUN_SERIAL TRUE TIMEOUT 30)
+endif()
 if(UNIX AND NOT APPLE)
     find_program(XVFB_RUN xvfb-run)
     if(XVFB_RUN)
