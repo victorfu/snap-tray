@@ -132,6 +132,11 @@ bool PlatformFeatures::clipboardIsDefinitelyEmpty()
     return empty;
 }
 
+bool PlatformFeatures::clipboardImageIsFileIcon()
+{
+    return false;   // Explorer and X11 file managers put no icon next to copied files.
+}
+
 quint64 PlatformFeatures::nativeClipboardRevision()
 {
     return GetClipboardSequenceNumber();

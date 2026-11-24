@@ -797,6 +797,7 @@ if(APPLE)
             "-framework AVFoundation"
             "-framework CoreAudio"
             "-framework AudioToolbox"
+            "-framework UniformTypeIdentifiers"
             "-weak_framework ScreenCaptureKit"
     )
 elseif(WIN32)

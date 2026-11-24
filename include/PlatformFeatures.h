@@ -70,6 +70,11 @@ public:
     // Prune expired snapshots at startup and before file-mode copies.
     static void cleanClipboardImageFiles();
 
+    // True when the only picture on the clipboard is a file type icon that a
+    // file manager put next to copied files (Finder's com.apple.icns), not
+    // pixels of the files. Pasting then loads the files instead (#414).
+    static bool clipboardImageIsFileIcon();
+
     // CLI installation
     bool isCLIInstalled() const;
     bool installCLI() const;

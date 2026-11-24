@@ -748,6 +748,12 @@ target_link_libraries(App_MainApplicationTrayMenu PRIVATE
     Qt6::Network
     Qt6::Test
 )
+if(APPLE)
+    target_sources(App_MainApplicationTrayMenu PRIVATE App/FinderClipboard_mac.mm)
+    set_source_files_properties(App/FinderClipboard_mac.mm PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
+    target_link_libraries(App_MainApplicationTrayMenu PRIVATE "-framework AppKit" "-framework ImageIO"
+        "-framework UniformTypeIdentifiers")
+endif()
 add_dependencies(App_MainApplicationTrayMenu SnapTray_lrelease)
 add_test(NAME App_MainApplicationTrayMenu COMMAND App_MainApplicationTrayMenu)
 set_tests_properties(App_MainApplicationTrayMenu PROPERTIES TIMEOUT 60 LABELS "unit")

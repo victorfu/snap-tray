@@ -18,6 +18,7 @@
 #include <QProcess>
 
 #import <AppKit/AppKit.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #import <ApplicationServices/ApplicationServices.h>
 
 // ScreenCaptureKit availability check
@@ -152,6 +153,27 @@ bool PlatformFeatures::clipboardIsDefinitelyEmpty()
 {
     NSArray* types = [NSPasteboard generalPasteboard].types;
     return types != nil && types.count == 0;
+}
+
+bool PlatformFeatures::clipboardImageIsFileIcon()
+{
+    @autoreleasepool {
+        NSString* icon = UTTypeICNS.identifier;
+        bool hasIcon = false;
+        for (NSPasteboardItem* item in [NSPasteboard generalPasteboard].pasteboardItems) {
+            for (NSPasteboardType type in item.types) {
+                if ([type isEqualToString:icon]) {
+                    hasIcon = true;
+                    continue;
+                }
+                UTType* contentType = [UTType typeWithIdentifier:type];
+                if (contentType && [contentType conformsToType:UTTypeImage]) {
+                    return false;   // Other picture data: an image copy, not just an icon.
+                }
+            }
+        }
+        return hasIcon;
+    }
 }
 
 quint64 PlatformFeatures::nativeClipboardRevision()

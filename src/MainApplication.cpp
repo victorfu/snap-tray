@@ -1338,31 +1338,38 @@ void MainApplication::pinFromClipboard(std::optional<QPoint> requestedPosition)
 
     const QPointer<QScreen> pasteScreen(QGuiApplication::screenAt(QCursor::pos()));
     QClipboard *clipboard = QGuiApplication::clipboard();
-    QPixmap pixmap = clipboard->pixmap();
+    const QMimeData *mimeData = clipboard->mimeData();
+
+    QStringList filePaths;
+    if (mimeData) {
+        for (QUrl url : mimeData->urls()) {
+            if (url.scheme() != QStringLiteral("file")) {
+                continue;
+            }
+            if (url.host() == QStringLiteral("localhost")) {
+                url.setAuthority(QString());
+            }
+            if (!url.host().isEmpty()) {
+                continue;
+            }
+            const QString path = QDir::fromNativeSeparators(url.toLocalFile());
+            if (QDir::isAbsolutePath(path) && !path.startsWith(QLatin1Char(':'))
+                && !path.startsWith(QStringLiteral("//"))) {
+                filePaths.append(path);
+            }
+        }
+    }
+
+    // Pixels win over file URLs, except a file type icon Finder adds to
+    // copied files: that is not the picture the user copied (#414).
+    const bool imageIsFileIcon = !filePaths.isEmpty() && PlatformFeatures::clipboardImageIsFileIcon();
+    QPixmap pixmap = imageIsFileIcon ? QPixmap() : clipboard->pixmap();
 
     if (pixmap.isNull()) {
-        const QMimeData *mimeData = clipboard->mimeData();
-        if (mimeData && mimeData->hasImage()) {
+        if (!imageIsFileIcon && mimeData && mimeData->hasImage()) {
             pixmap = qvariant_cast<QPixmap>(mimeData->imageData());
         }
         if (pixmap.isNull() && mimeData) {
-            QStringList filePaths;
-            for (QUrl url : mimeData->urls()) {
-                if (url.scheme() != QStringLiteral("file")) {
-                    continue;
-                }
-                if (url.host() == QStringLiteral("localhost")) {
-                    url.setAuthority(QString());
-                }
-                if (!url.host().isEmpty()) {
-                    continue;
-                }
-                const QString path = QDir::fromNativeSeparators(url.toLocalFile());
-                if (QDir::isAbsolutePath(path) && !path.startsWith(QLatin1Char(':'))
-                    && !path.startsWith(QStringLiteral("//"))) {
-                    filePaths.append(path);
-                }
-            }
             if (!filePaths.isEmpty()) {
                 loadImageForPin(filePaths, requestedPosition, pasteScreen);
                 return;

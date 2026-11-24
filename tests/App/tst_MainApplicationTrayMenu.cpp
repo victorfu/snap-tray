@@ -54,6 +54,10 @@
 #include <QSystemTrayIcon>
 #include <QtTest>
 
+#ifdef Q_OS_MACOS
+#include "FinderClipboard_mac.h"
+#endif
+
 namespace {
 
 QString translationFilePath()
@@ -1384,12 +1388,15 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile_data()
     QTest::addColumn<bool>("fileRemoved");
     QTest::addColumn<bool>("quitDuringLoad");
     QTest::addColumn<bool>("secondaryScreen");
-    QTest::newRow("transparent-png") << false << false << false << false;
-    QTest::newRow("pixels-url-and-text") << true << false << false << false;
-    QTest::newRow("removed-file-and-text") << false << true << false << false;
-    QTest::newRow("quit-during-load") << false << false << true << false;
-    QTest::newRow("secondary-screen-pixels") << true << false << false << true;
-    QTest::newRow("secondary-screen-file") << false << false << false << true;
+    QTest::addColumn<bool>("finderCopy");
+    QTest::newRow("transparent-png") << false << false << false << false << false;
+    QTest::newRow("pixels-url-and-text") << true << false << false << false << false;
+    QTest::newRow("removed-file-and-text") << false << true << false << false << false;
+    QTest::newRow("quit-during-load") << false << false << true << false << false;
+    QTest::newRow("secondary-screen-pixels") << true << false << false << true << false;
+    QTest::newRow("secondary-screen-file") << false << false << false << true << false;
+    // Finder adds the file type icon (com.apple.icns): the file is pinned, not its icon (#414).
+    QTest::newRow("finder-file-icon") << false << false << false << false << true;
 }
 
 void tst_MainApplicationTrayMenu::pasteClipboardFile()
@@ -1398,6 +1405,12 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
     QFETCH(bool, fileRemoved);
     QFETCH(bool, quitDuringLoad);
     QFETCH(bool, secondaryScreen);
+    QFETCH(bool, finderCopy);
+#ifndef Q_OS_MACOS
+    if (finderCopy) {
+        QSKIP("Finder pasteboard contents are macOS only");
+    }
+#endif
     QScreen* targetScreen = nullptr;
     const QPoint originalCursorPosition = QCursor::pos();
     const auto restoreCursor = qScopeGuard([&] {
@@ -1441,7 +1454,16 @@ void tst_MainApplicationTrayMenu::pasteClipboardFile()
         mime->setImageData(clipboardPixels);
     }
     auto* clipboard = QGuiApplication::clipboard();
-    clipboard->setMimeData(mime);
+    if (finderCopy) {
+        delete mime;
+#ifdef Q_OS_MACOS
+        writeFinderFileCopyToPasteboard(path);
+#endif
+        QVERIFY(clipboard->mimeData()->hasImage());
+        QVERIFY(clipboard->mimeData()->hasUrls());
+    } else {
+        clipboard->setMimeData(mime);
+    }
     if (fileRemoved) {
         QVERIFY(QFile::remove(path));
     }
