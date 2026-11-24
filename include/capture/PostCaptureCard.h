@@ -1,10 +1,14 @@
 #pragma once
 
 #include "ToolbarStyle.h"
+#include "platform/WindowInput.h"
 
 #include <QMap>
+#include <QQueue>
 #include <QTimer>
 #include <QWidget>
+
+#include <optional>
 
 class QLabel;
 class QMenu;
@@ -26,6 +30,8 @@ signals:
     void actionRequested(Action action);
 
 protected:
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void paintEvent(QPaintEvent*) override;
     void enterEvent(QEnterEvent*) override;
     void leaveEvent(QEvent*) override;
@@ -46,6 +52,9 @@ private:
     bool m_keyboardFocus = false;
     bool m_menuOpen = false;
     QPoint m_dragOffset;
+    QPointF m_dragGrabPosition;
+    QQueue<SnapTray::NativeMouseRelease> m_nativeReleases;
+    std::optional<QPoint> m_nativeDropPosition;
     QLabel* m_status;
     QPushButton* m_copy;
     QPushButton* m_save;
