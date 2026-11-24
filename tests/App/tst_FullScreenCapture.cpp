@@ -158,6 +158,7 @@ private slots:
     void lateExportAfterDismissalKeepsCardHidden();
     void nativeCardFocusEscapeAndCaptureExclusion();
     void nativeCardDragTracksCursor();
+    void nativeCardDropUsesButtonUpMessage();
     void offscreenScreensMatchConfiguration();
     void copy_outputsNativePixelsPerScreen_data();
     void copy_outputsNativePixelsPerScreen();
@@ -1220,28 +1221,68 @@ void tst_FullScreenCapture::nativeCardDragTracksCursor()
         QApplication::sendEvent(&card, &move);
         QVERIFY(card.m_dragging);
         QTRY_COMPARE(card.screen(), target);
-        const auto hwnd = reinterpret_cast<HWND>(card.winId());
         RECT frame;
-        QVERIFY(GetWindowRect(hwnd, &frame));
+        QVERIFY(GetWindowRect(reinterpret_cast<HWND>(card.winId()), &frame));
         const QPoint actualOffset(cursor.x - frame.left, cursor.y - frame.top);
-        const qreal scale = card.devicePixelRatioF();
-        const QPoint expectedOffset = grab * scale;
+        const QPoint expectedOffset = grab * card.devicePixelRatioF();
         QVERIFY2((actualOffset - expectedOffset).manhattanLength() <= 2,
                  qPrintable(QStringLiteral("Expected grab offset (%1, %2), got (%3, %4)")
                                 .arg(expectedOffset.x()).arg(expectedOffset.y())
                                 .arg(actualOffset.x()).arg(actualOffset.y())));
 
-        // The queued button-up position differs from the live cursor, which
-        // remains at the point used for the held-button move above.
-        const QPoint releasePosition = grab + QPoint(16, 12);
-        const QPoint releaseOffset = releasePosition * scale;
-        const QPoint expectedDrop = QPoint(frame.left, frame.top) + releaseOffset - expectedOffset;
-        QMouseEvent release(QEvent::MouseButtonRelease, releasePosition, initialGlobal,
+        QMouseEvent release(QEvent::MouseButtonRelease, grab, initialGlobal,
                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
         QApplication::sendEvent(&card, &release);
         QVERIFY(!card.m_dragging);
-        QVERIFY(GetWindowRect(hwnd, &frame));
-        QCOMPARE(QPoint(frame.left, frame.top), expectedDrop);
+    }
+#else
+    QSKIP("This check uses the native Windows desktop");
+#endif
+}
+
+void tst_FullScreenCapture::nativeCardDropUsesButtonUpMessage()
+{
+#ifdef Q_OS_WIN
+    if (QGuiApplication::platformName() != QStringLiteral("windows"))
+        QSKIP("This check uses the native Windows desktop");
+
+    POINT previousCursor;
+    if (!GetCursorPos(&previousCursor))
+        QSKIP("The Windows input desktop is unavailable");
+    const auto restoreCursor = qScopeGuard([previousCursor] {
+        SetCursorPos(previousCursor.x, previousCursor.y);
+    });
+
+    for (const QPoint& cursorDrift : {QPoint(), QPoint(64, 48)}) {
+        QPixmap sample(80, 60);
+        sample.fill(Qt::red);
+        PostCaptureCard card(sample, QGuiApplication::primaryScreen());
+        QVERIFY(QTest::qWaitForWindowExposed(&card));
+        const auto hwnd = reinterpret_cast<HWND>(card.winId());
+        const qreal scale = card.devicePixelRatioF();
+        const QPoint grab = QPoint(4, 4) * scale;
+        const QPoint displacement = QPoint(16, 12) * scale;
+        const QPoint buttonUp = grab + displacement;
+        POINT grabScreen{grab.x(), grab.y()};
+        QVERIFY(ClientToScreen(hwnd, &grabScreen));
+        QVERIFY(SetCursorPos(grabScreen.x, grabScreen.y));
+        QTest::qWait(100);
+        SendMessageW(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(grab.x(), grab.y()));
+        QCoreApplication::processEvents();
+        QVERIFY(card.m_dragging);
+
+        RECT before;
+        QVERIFY(GetWindowRect(hwnd, &before));
+        QVERIFY(SetCursorPos(grabScreen.x + displacement.x() + cursorDrift.x(),
+                             grabScreen.y + displacement.y() + cursorDrift.y()));
+        // Dispatch button-up without a preceding move to its position.
+        // Qt can deliver a mouse move while translating this native message.
+        SendMessageW(hwnd, WM_LBUTTONUP, 0, MAKELPARAM(buttonUp.x(), buttonUp.y()));
+        QCoreApplication::processEvents();
+        QVERIFY(!card.m_dragging);
+        RECT after;
+        QVERIFY(GetWindowRect(hwnd, &after));
+        QCOMPARE(QPoint(after.left - before.left, after.top - before.top), displacement);
     }
 #else
     QSKIP("This check uses the native Windows desktop");

@@ -13,9 +13,26 @@
 #ifdef Q_OS_WIN
 #include <Windows.h>
 #include <dwmapi.h>
+#include <windowsx.h>
+
+std::optional<QPoint> SnapTray::nativeLeftButtonReleasePosition(const QByteArray& eventType, void* message)
+{
+    if (eventType != "windows_generic_MSG")
+        return std::nullopt;
+
+    const auto* msg = static_cast<const MSG*>(message);
+    if (msg->message != WM_LBUTTONUP)
+        return std::nullopt;
+
+    // Qt can dispatch a move before the release handler, changing the origin.
+    POINT position{GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
+    if (!ClientToScreen(msg->hwnd, &position))
+        return std::nullopt;
+    return QPoint(position.x, position.y);
+}
 
 bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPointF& grabOffset,
-                                                  std::optional<QPointF> eventPosition)
+                                                  std::optional<QPoint> nativePosition)
 {
     if (!widget->windowHandle())
         return false;
@@ -23,12 +40,8 @@ bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPoint
     const auto hwnd = reinterpret_cast<HWND>(widget->winId());
     const qreal scale = widget->devicePixelRatioF();
     POINT cursor;
-    if (eventPosition) {
-        // Button-up can be delivered after the hardware pointer has moved on.
-        const QPoint clientPosition = (*eventPosition * scale).toPoint();
-        cursor = {clientPosition.x(), clientPosition.y()};
-        if (!ClientToScreen(hwnd, &cursor))
-            return false;
+    if (nativePosition) {
+        cursor = {nativePosition->x(), nativePosition->y()};
     } else if (!GetCursorPos(&cursor)) {
         return false;
     }

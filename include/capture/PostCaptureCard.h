@@ -6,6 +6,8 @@
 #include <QTimer>
 #include <QWidget>
 
+#include <optional>
+
 class QLabel;
 class QMenu;
 class QPushButton;
@@ -26,6 +28,7 @@ signals:
     void actionRequested(Action action);
 
 protected:
+    bool nativeEvent(const QByteArray& eventType, void* message, qintptr* result) override;
     void paintEvent(QPaintEvent*) override;
     void enterEvent(QEnterEvent*) override;
     void leaveEvent(QEvent*) override;
@@ -47,6 +50,7 @@ private:
     bool m_menuOpen = false;
     QPoint m_dragOffset;
     QPointF m_dragGrabPosition;
+    std::optional<QPoint> m_nativeDropPosition;
     QLabel* m_status;
     QPushButton* m_copy;
     QPushButton* m_save;

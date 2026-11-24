@@ -149,6 +149,15 @@ void PostCaptureCard::updateCountdown()
     }
 }
 
+bool PostCaptureCard::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
+{
+    if (m_dragging) {
+        if (const auto position = SnapTray::nativeLeftButtonReleasePosition(eventType, message))
+            m_nativeDropPosition = position;
+    }
+    return QWidget::nativeEvent(eventType, message, result);
+}
+
 void PostCaptureCard::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
@@ -172,6 +181,7 @@ void PostCaptureCard::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         m_dragOffset = event->globalPosition().toPoint() - pos();
         m_dragGrabPosition = event->position();
+        m_nativeDropPosition.reset();
         m_dragging = true;
         updateCountdown();
     }
@@ -187,8 +197,10 @@ void PostCaptureCard::mouseReleaseEvent(QMouseEvent* event)
 {
     if (!m_dragging || event->button() != Qt::LeftButton)
         return;
-    SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition, event->position());
     m_dragging = false;
+    if (m_nativeDropPosition)
+        SnapTray::moveFramelessWindowWithNativeCursor(this, m_dragGrabPosition, m_nativeDropPosition);
+    m_nativeDropPosition.reset();
     updateCountdown();
 }
 
