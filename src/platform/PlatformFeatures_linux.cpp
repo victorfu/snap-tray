@@ -129,6 +129,11 @@ bool PlatformFeatures::clipboardIsDefinitelyEmpty()
     return SnapTray::linuxClipboardOwnerWindow() == 0u;
 }
 
+bool PlatformFeatures::clipboardImageIsFileIcon()
+{
+    return false;   // Explorer and X11 file managers put no icon next to copied files.
+}
+
 quint64 PlatformFeatures::nativeClipboardRevision()
 {
     return 0;
