@@ -8,6 +8,11 @@ class QWindow;
 class QWidget;
 
 namespace SnapTray {
+struct NativeMouseRelease {
+    QPoint position;
+    quint32 timestamp;
+};
+
 // Includes native click-through state, which need not appear in Qt window flags.
 // GUI thread only; used when deciding which UI rectangles receive clicks.
 bool windowAcceptsPointerInput(QWindow* window);
@@ -16,12 +21,17 @@ QRegion windowPointerInputRegion(QWindow* window);
 
 // Reads the native screen position of a left-button release before Qt dispatch.
 #ifdef Q_OS_WIN
-std::optional<QPoint> nativeLeftButtonReleasePosition(const QByteArray& eventType, void* message);
+std::optional<NativeMouseRelease> nativeLeftButtonRelease(const QByteArray& eventType, void* message);
+bool handleNativeDragDpiChange(QWidget* widget, const QByteArray& eventType, void* message,
+                              qintptr* result);
+void clearNativeDragAnchor(QWidget* widget);
 #else
-inline std::optional<QPoint> nativeLeftButtonReleasePosition(const QByteArray&, void*)
+inline std::optional<NativeMouseRelease> nativeLeftButtonRelease(const QByteArray&, void*)
 {
     return std::nullopt;
 }
+inline bool handleNativeDragDpiChange(QWidget*, const QByteArray&, void*, qintptr*) { return false; }
+inline void clearNativeDragAnchor(QWidget*) {}
 #endif
 
 // Keeps a frameless window's logical grab point under the native cursor, or

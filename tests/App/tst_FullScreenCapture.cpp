@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <utility>
 #include "capture/PostCaptureCard.h"
+#include "platform/WindowInput.h"
 #include <QPainter>
 #include <QPixmap>
 #include <QPointer>
@@ -1204,7 +1205,11 @@ void tst_FullScreenCapture::nativeCardDragTracksCursor()
         QPixmap sample(80, 60);
         sample.fill(Qt::red);
         PostCaptureCard card(sample, source);
+        card.setAttribute(Qt::WA_DeleteOnClose, false);
         QVERIFY(QTest::qWaitForWindowExposed(&card));
+        const QSize logicalSize = card.size();
+        const auto hwnd = reinterpret_cast<HWND>(card.winId());
+        const auto sourceMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONULL);
         const QPoint grab = card.rect().center();
         const QPoint initialGlobal = card.mapToGlobal(grab);
         QMouseEvent press(QEvent::MouseButtonPress, grab, initialGlobal,
@@ -1222,7 +1227,7 @@ void tst_FullScreenCapture::nativeCardDragTracksCursor()
         QVERIFY(card.m_dragging);
         QTRY_COMPARE(card.screen(), target);
         RECT frame;
-        QVERIFY(GetWindowRect(reinterpret_cast<HWND>(card.winId()), &frame));
+        QVERIFY(GetWindowRect(hwnd, &frame));
         const QPoint actualOffset(cursor.x - frame.left, cursor.y - frame.top);
         const QPoint expectedOffset = grab * card.devicePixelRatioF();
         QVERIFY2((actualOffset - expectedOffset).manhattanLength() <= 2,
@@ -1234,6 +1239,48 @@ void tst_FullScreenCapture::nativeCardDragTracksCursor()
                             Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
         QApplication::sendEvent(&card, &release);
         QVERIFY(!card.m_dragging);
+
+        if (source == target)
+            continue;
+        MONITORINFO sourceInfo{sizeof(MONITORINFO)};
+        MONITORINFO targetInfo{sizeof(MONITORINFO)};
+        QVERIFY(GetMonitorInfoW(sourceMonitor, &sourceInfo));
+        QVERIFY(GetMonitorInfoW(MonitorFromPoint(cursor, MONITOR_DEFAULTTONULL), &targetInfo));
+        const RECT& from = sourceInfo.rcMonitor;
+        const RECT& to = targetInfo.rcMonitor;
+        const LONG overlapTop = qMax(from.top, to.top);
+        const LONG overlapBottom = qMin(from.bottom, to.bottom);
+        if (overlapTop >= overlapBottom || (from.right != to.left && from.left != to.right))
+            continue; // The center-to-center test above also covers nonadjacent displays.
+
+        const int direction = from.right == to.left ? 1 : -1;
+        const LONG seam = direction == 1 ? to.left : from.left;
+        const int y = overlapTop + (overlapBottom - overlapTop) / 2;
+        const int distance = qCeil(card.width() * qMax(source->devicePixelRatio(), target->devicePixelRatio())) + 16;
+        for (int grabX : {4, card.width() / 2, card.width() - 4}) {
+            const QPoint edgeGrab(grabX, 4);
+            for (int step = -distance; step <= distance; ++step) {
+                const QPoint point(seam + step * direction, y);
+                QVERIFY(SnapTray::moveFramelessWindowWithNativeCursor(&card, edgeGrab, point));
+                QCoreApplication::processEvents();
+                QVERIFY(GetWindowRect(hwnd, &frame));
+                const QSize nativeSize(frame.right - frame.left, frame.bottom - frame.top);
+                const QSize expectedSize = logicalSize * card.devicePixelRatioF();
+                QVERIFY2(qAbs(nativeSize.width() - expectedSize.width()) <= 1
+                             && qAbs(nativeSize.height() - expectedSize.height()) <= 1,
+                         qPrintable(QStringLiteral("Drag at (%1, %2), grab x %3, DPR %4: "
+                                                   "expected %5 × %6, got %7 × %8")
+                                        .arg(point.x()).arg(point.y()).arg(grabX)
+                                        .arg(card.devicePixelRatioF())
+                                        .arg(expectedSize.width()).arg(expectedSize.height())
+                                        .arg(nativeSize.width()).arg(nativeSize.height())));
+                const QPoint error = point - QPoint(frame.left, frame.top)
+                    - edgeGrab * card.devicePixelRatioF();
+                QVERIFY2(error.manhattanLength() <= 2,
+                         qPrintable(QStringLiteral("Drag at (%1, %2) was off by (%3, %4)")
+                                        .arg(point.x()).arg(point.y()).arg(error.x()).arg(error.y())));
+            }
+        }
     }
 #else
     QSKIP("This check uses the native Windows desktop");
@@ -1253,10 +1300,16 @@ void tst_FullScreenCapture::nativeCardDropUsesButtonUpMessage()
         SetCursorPos(previousCursor.x, previousCursor.y);
     });
 
-    for (const QPoint& cursorDrift : {QPoint(), QPoint(64, 48)}) {
+    struct DropScenario {
+        QPoint cursorDrift;
+        bool queuePress;
+    };
+    const DropScenario scenarios[] = {{{}, false}, {{64, 48}, false}, {{64, 48}, true}};
+    for (const auto& [cursorDrift, queuePress] : scenarios) {
         QPixmap sample(80, 60);
         sample.fill(Qt::red);
         PostCaptureCard card(sample, QGuiApplication::primaryScreen());
+        card.setAttribute(Qt::WA_DeleteOnClose, false);
         QVERIFY(QTest::qWaitForWindowExposed(&card));
         const auto hwnd = reinterpret_cast<HWND>(card.winId());
         const qreal scale = card.devicePixelRatioF();
@@ -1268,8 +1321,10 @@ void tst_FullScreenCapture::nativeCardDropUsesButtonUpMessage()
         QVERIFY(SetCursorPos(grabScreen.x, grabScreen.y));
         QTest::qWait(100);
         SendMessageW(hwnd, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(grab.x(), grab.y()));
-        QCoreApplication::processEvents();
-        QVERIFY(card.m_dragging);
+        if (!queuePress) {
+            QCoreApplication::processEvents();
+            QVERIFY(card.m_dragging);
+        }
 
         RECT before;
         QVERIFY(GetWindowRect(hwnd, &before));

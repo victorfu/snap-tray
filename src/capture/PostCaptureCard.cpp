@@ -94,6 +94,7 @@ PostCaptureCard::PostCaptureCard(const QPixmap& pixmap, QScreen* sourceScreen)
         updateCountdown();
     });
     show();
+    windowHandle()->installEventFilter(this);
     // Some window systems negotiate the initial geometry during show().
     move(area.right() - width() - margin + 1, area.bottom() - height() - margin + 1);
     raise();
@@ -129,6 +130,7 @@ void PostCaptureCard::setError(Action action, const QString& message)
     else
         m_errors.insert(action, message);
     const int bottom = geometry().bottom();
+    SnapTray::clearNativeDragAnchor(this);
     m_status->setText(m_errors.values().join(QLatin1Char('\n')));
     m_status->setVisible(!m_errors.isEmpty());
     layout()->activate();
@@ -151,11 +153,34 @@ void PostCaptureCard::updateCountdown()
 
 bool PostCaptureCard::nativeEvent(const QByteArray& eventType, void* message, qintptr* result)
 {
-    if (m_dragging) {
-        if (const auto position = SnapTray::nativeLeftButtonReleasePosition(eventType, message))
-            m_nativeDropPosition = position;
-    }
+    if (SnapTray::handleNativeDragDpiChange(this, eventType, message, result))
+        return true;
+    if (const auto release = SnapTray::nativeLeftButtonRelease(eventType, message))
+        m_nativeReleases.enqueue(*release);
     return QWidget::nativeEvent(eventType, message, result);
+}
+
+bool PostCaptureCard::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event->type() == QEvent::MouseButtonRelease) {
+        const auto* mouseEvent = static_cast<QMouseEvent*>(event);
+        if (mouseEvent->button() == Qt::LeftButton) {
+            m_nativeDropPosition.reset();
+            const auto timestamp = quint32(mouseEvent->timestamp());
+            // Match before QWidget routes the release to the card or a button.
+            while (!m_nativeReleases.isEmpty()) {
+                const auto& release = m_nativeReleases.head();
+                if (release.timestamp == timestamp) {
+                    m_nativeDropPosition = m_nativeReleases.dequeue().position;
+                    break;
+                }
+                if (qint32(timestamp - release.timestamp) < 0)
+                    break;
+                m_nativeReleases.dequeue();
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void PostCaptureCard::paintEvent(QPaintEvent*)
@@ -206,6 +231,10 @@ void PostCaptureCard::mouseReleaseEvent(QMouseEvent* event)
 
 void PostCaptureCard::hideEvent(QHideEvent*)
 {
+    SnapTray::clearNativeDragAnchor(this);
+    m_nativeReleases.clear();
+    m_nativeDropPosition.reset();
+    m_dragging = false;
     m_timer.stop();
     m_menu->hide();
 }

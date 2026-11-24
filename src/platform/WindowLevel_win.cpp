@@ -8,14 +8,56 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QGuiApplication>
+#include <QScreen>
 #include <QSet>
+#include <QTimer>
+#include <QVariant>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
 #include <dwmapi.h>
 #include <windowsx.h>
 
-std::optional<QPoint> SnapTray::nativeLeftButtonReleasePosition(const QByteArray& eventType, void* message)
+namespace {
+constexpr auto kNativeDragAnchorProperty = "_snapTray_nativeDragAnchor";
+constexpr int kDpiSettleMs = 100;
+
+struct NativeWindowDrag : QObject {
+    explicit NativeWindowDrag(QWidget* widget) : QObject(widget)
+    {
+        settleTimer.setSingleShot(true);
+    }
+
+    QSize logicalSize;
+    QSize nativeSize;
+    QTimer settleTimer;
+};
+
+NativeWindowDrag* nativeDragAnchor(QWidget* widget)
+{
+    return static_cast<NativeWindowDrag*>(widget->property(kNativeDragAnchorProperty).value<QObject*>());
+}
+
+QScreen* screenAtNativePosition(const POINT& position)
+{
+    const HMONITOR monitor = MonitorFromPoint(position, MONITOR_DEFAULTTONULL);
+    MONITORINFO info{sizeof(MONITORINFO)};
+    if (!monitor || !GetMonitorInfoW(monitor, &info))
+        return nullptr;
+
+    // Qt's Windows screen geometry scales the size but keeps the origin in
+    // desktop pixels. Monitor names can be either friendly names or device IDs.
+    const QPoint origin(info.rcMonitor.left, info.rcMonitor.top);
+    for (auto* screen : QGuiApplication::screens()) {
+        if (screen->geometry().topLeft() == origin)
+            return screen;
+    }
+    return nullptr;
+}
+}
+
+std::optional<SnapTray::NativeMouseRelease> SnapTray::nativeLeftButtonRelease(
+    const QByteArray& eventType, void* message)
 {
     if (eventType != "windows_generic_MSG")
         return std::nullopt;
@@ -28,17 +70,48 @@ std::optional<QPoint> SnapTray::nativeLeftButtonReleasePosition(const QByteArray
     POINT position{GET_X_LPARAM(msg->lParam), GET_Y_LPARAM(msg->lParam)};
     if (!ClientToScreen(msg->hwnd, &position))
         return std::nullopt;
-    return QPoint(position.x, position.y);
+    return NativeMouseRelease{QPoint(position.x, position.y), quint32(msg->time)};
+}
+
+bool SnapTray::handleNativeDragDpiChange(QWidget* widget, const QByteArray& eventType,
+                                         void* message, qintptr* result)
+{
+    if (eventType != "windows_generic_MSG")
+        return false;
+
+    const auto* msg = static_cast<const MSG*>(message);
+    if (msg->message != WM_DPICHANGED && msg->message != WM_GETDPISCALEDSIZE)
+        return false;
+    const auto* drag = nativeDragAnchor(widget);
+    if (!drag || !drag->settleTimer.isActive())
+        return false;
+
+    if (msg->message == WM_GETDPISCALEDSIZE) {
+        auto* size = reinterpret_cast<SIZE*>(msg->lParam);
+        *size = {drag->nativeSize.width(), drag->nativeSize.height()};
+        *result = TRUE;
+        return true;
+    }
+
+    // Dragging sets the screen and the native bounds together. A suggested
+    // rectangle based on window overlap can undo that placement at the seam.
+    *result = 0;
+    return true;
+}
+
+void SnapTray::clearNativeDragAnchor(QWidget* widget)
+{
+    if (auto* drag = nativeDragAnchor(widget))
+        drag->settleTimer.stop();
 }
 
 bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPointF& grabOffset,
                                                   std::optional<QPoint> nativePosition)
 {
-    if (!widget->windowHandle())
+    auto* window = widget->windowHandle();
+    if (!window)
         return false;
 
-    const auto hwnd = reinterpret_cast<HWND>(widget->winId());
-    const qreal scale = widget->devicePixelRatioF();
     POINT cursor;
     if (nativePosition) {
         cursor = {nativePosition->x(), nativePosition->y()};
@@ -46,23 +119,32 @@ bool SnapTray::moveFramelessWindowWithNativeCursor(QWidget* widget, const QPoint
         return false;
     }
 
-    const auto moveAtScale = [&](qreal windowScale) {
-        const QPoint position = QPoint(cursor.x, cursor.y) - (grabOffset * windowScale).toPoint();
-        return SetWindowPos(hwnd, nullptr, position.x(), position.y(), 0, 0,
-                            SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOZORDER);
-    };
-
     // Keep both positions in the continuous native desktop coordinate space.
     // Qt's logical screen geometries can have gaps with mixed Windows scaling.
-    if (!moveAtScale(scale))
-        return false;
-
-    // Moving can synchronously change the window's DPI and resize the card.
-    // Re-anchor the same logical point under the cursor at the destination DPI.
-    const qreal newScale = widget->devicePixelRatioF();
-    if (newScale != scale)
-        moveAtScale(newScale);
-    return true;
+    auto* drag = nativeDragAnchor(widget);
+    if (!drag) {
+        drag = new NativeWindowDrag(widget);
+        widget->setProperty(kNativeDragAnchorProperty, QVariant::fromValue<QObject*>(drag));
+    }
+    if (!drag->settleTimer.isActive())
+        drag->logicalSize = widget->size();
+    QScreen* target = screenAtNativePosition(cursor);
+    if (!target)
+        target = window->screen();
+    const qreal scale = target ? target->devicePixelRatio() : widget->devicePixelRatioF();
+    drag->nativeSize = drag->logicalSize * scale;
+    // Windows can dispatch a second DPI change after SetWindowPos returns.
+    drag->settleTimer.start(kDpiSettleMs);
+    window->setScreen(target);
+    const QPoint position = QPoint(cursor.x, cursor.y) - (grabOffset * scale).toPoint();
+    const auto hwnd = reinterpret_cast<HWND>(widget->winId());
+    if (SetWindowPos(hwnd, nullptr, position.x(), position.y(), drag->nativeSize.width(),
+                     drag->nativeSize.height(), SWP_NOACTIVATE | SWP_NOZORDER)) {
+        window->setScreen(target);
+        return true;
+    }
+    drag->settleTimer.stop();
+    return false;
 }
 
 namespace {
