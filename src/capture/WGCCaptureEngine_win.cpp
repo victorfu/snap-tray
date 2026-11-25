@@ -2,6 +2,7 @@
 #include "capture/CaptureFrameTiming.h"
 #include "capture/WGCFrameTiming.h"
 #include "capture/D3D11Frame.h"
+#include "capture/D3D11FrameComparer.h"
 #include "encoding/D3D11Nv12Converter_win.h"
 #include "utils/CoordinateHelper.h"
 
@@ -144,6 +145,7 @@ public:
     void onItemClosed(quint64 generationAtStart);
     void repeatLoop(quint64 generationAtStart);
     SnapTray::CapturedFrame copyFrame(ID3D11Texture2D *surface, const QSize &contentSize, qint64 sourceTimeNs);
+    bool sameContent(const SnapTray::CapturedFrame &a, const SnapTray::CapturedFrame &b);  // mutex held
     void emitFrame(const SnapTray::CapturedFrame &frame, quint64 generationAtStart);
     void emitFrameLocked(const SnapTray::CapturedFrame &frame, quint64 generationAtStart);  // emitMutex held
     void emitError(const QString &message, quint64 generationAtStart);
@@ -172,6 +174,8 @@ public:
     winrt::event_token closedToken{};
     winrt::Windows::Graphics::SizeInt32 poolSize{};
     std::shared_ptr<SnapTray::D3D11TexturePool> texturePool;
+    std::unique_ptr<SnapTray::D3D11FrameComparer> comparer;
+    bool comparerUnavailable = false;
     ComPtr<ID3D11Texture2D> staging;
     QSize stagingSize;
     SnapTray::CapturedFrame latest;
@@ -307,6 +311,8 @@ void WGCCaptureEngine::Private::stop()
         closingDevice = std::exchange(d3dDevice, nullptr);
         closingMta = std::move(mta);
         texturePool.reset();
+        comparer.reset();
+        comparerUnavailable = false;
         staging.Reset();
         stagingSize = QSize();
         latest = {};
@@ -396,6 +402,36 @@ SnapTray::CapturedFrame WGCCaptureEngine::Private::copyFrame(ID3D11Texture2D *su
     return frame;
 }
 
+bool WGCCaptureEngine::Private::sameContent(const SnapTray::CapturedFrame &a, const SnapTray::CapturedFrame &b)
+{
+    if (a.pixelSize != b.pixelSize) {
+        return false;
+    }
+    if (a.nativeBuffer && b.nativeBuffer) {
+        const auto first = SnapTray::d3d11FrameFrom(a.nativeBuffer);
+        const auto second = SnapTray::d3d11FrameFrom(b.nativeBuffer);
+        if (!first || !second || !frameDevice) {
+            return false;
+        }
+        if (!comparer && !comparerUnavailable) {
+            comparer = SnapTray::D3D11FrameComparer::create(frameDevice->device.Get(), frameDevice->context.Get());
+            if (!comparer) {
+                comparerUnavailable = true;
+                qWarning() << "WGCCaptureEngine: cannot compare frames on the GPU; every frame is kept";
+            }
+        }
+        if (!comparer) {
+            return false;
+        }
+        const auto differing = comparer->differingPixels(first->texture.Get(), second->texture.Get());
+        return differing && *differing == 0;
+    }
+    if (!a.image.isNull() && !b.image.isNull()) {
+        return a.image == b.image;
+    }
+    return false;
+}
+
 void WGCCaptureEngine::Private::onFrameArrived(quint64 generationAtStart)
 {
     SnapTray::CapturedFrame captured;
@@ -434,6 +470,13 @@ void WGCCaptureEngine::Private::onFrameArrived(quint64 generationAtStart)
                           .arg(quint32(frameDevice->device->GetDeviceRemovedReason()), 8, 16, QChar('0'));
         }
         if (failure.isEmpty() && captured.isValid()) {
+            // Windows 10 delivers a frame on every refresh, changed or not:
+            // only a changed picture is a new frame. The repeat loop keeps a
+            // still screen alive with the latest one (#417).
+            if (latest.isValid() && sameContent(captured, latest)) {
+                return;
+            }
+            captured.captureCopies = 1;
             latest = captured;
         }
     }
@@ -498,6 +541,7 @@ void WGCCaptureEngine::Private::repeatLoop(quint64 generationAtStart)
             if (repeat.image.isNull()) continue;
         }
         repeat.sourceTimeNs = nowNs;
+        repeat.captureCopies = 0;  // a keep-alive, not a new picture
         emitFrameLocked(repeat, generationAtStart);
         settledPicture = seenPicture;
     }
