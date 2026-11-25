@@ -1,6 +1,7 @@
 #include "capture/D3D11FrameComparer.h"
 
 #include <QDebug>
+#include <QScopeGuard>
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -9,6 +10,7 @@
 #include <wrl/client.h>
 
 #include <chrono>
+#include <cstring>
 #include <thread>
 
 #pragma comment(lib, "d3dcompiler")
@@ -52,6 +54,17 @@ void main(uint3 id : SV_DispatchThreadID, uint index : SV_GroupIndex)
 // caller treats the frame as changed rather than wait on the GPU.
 constexpr auto kResultTimeout = std::chrono::milliseconds(50);
 
+bool mapForRead(ID3D11DeviceContext *context, ID3D11Resource *resource, D3D11_MAPPED_SUBRESOURCE &mapped,
+                std::chrono::steady_clock::time_point deadline)
+{
+    for (;;) {
+        const HRESULT hr = context->Map(resource, 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+        if (SUCCEEDED(hr)) return true;
+        if (hr != DXGI_ERROR_WAS_STILL_DRAWING || std::chrono::steady_clock::now() >= deadline) return false;
+        std::this_thread::yield();
+    }
+}
+
 ComPtr<ID3DBlob> compile(const char *source, size_t size, const char *profile)
 {
     ComPtr<ID3DBlob> code;
@@ -76,6 +89,43 @@ struct D3D11FrameComparer::Private
     ComPtr<ID3D11Buffer> counter;
     ComPtr<ID3D11UnorderedAccessView> counterView;
     ComPtr<ID3D11Buffer> readback;
+    ComPtr<ID3D11Texture2D> staging[2];
+
+    // Feature level 10.x has no shader model 5 atomics. Use two reusable
+    // staging textures to compare the BGRA capture pixels on the CPU.
+    std::optional<quint64> compareBgra(ID3D11Texture2D *a, ID3D11Texture2D *b, const D3D11_TEXTURE2D_DESC &desc) {
+        if (desc.Format != DXGI_FORMAT_B8G8R8A8_UNORM || desc.SampleDesc.Count != 1) return std::nullopt;
+        D3D11_TEXTURE2D_DESC current{};
+        if (staging[0]) staging[0]->GetDesc(&current);
+        if (!staging[1] || current.Width != desc.Width || current.Height != desc.Height) {
+            D3D11_TEXTURE2D_DESC target{};
+            target.Width = desc.Width;
+            target.Height = desc.Height;
+            target.Format = desc.Format;
+            target.MipLevels = target.ArraySize = target.SampleDesc.Count = 1;
+            target.Usage = D3D11_USAGE_STAGING;
+            target.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            for (auto &texture : staging) {
+                if (FAILED(device->CreateTexture2D(&target, nullptr, texture.ReleaseAndGetAddressOf()))) return std::nullopt;
+            }
+        }
+        context->CopySubresourceRegion(staging[0].Get(), 0, 0, 0, 0, a, 0, nullptr);
+        context->CopySubresourceRegion(staging[1].Get(), 0, 0, 0, 0, b, 0, nullptr);
+        const auto deadline = std::chrono::steady_clock::now() + kResultTimeout;
+        D3D11_MAPPED_SUBRESOURCE first{}, second{};
+        if (!mapForRead(context.Get(), staging[0].Get(), first, deadline)) return std::nullopt;
+        const auto unmapFirst = qScopeGuard([&] { context->Unmap(staging[0].Get(), 0); });
+        if (!mapForRead(context.Get(), staging[1].Get(), second, deadline)) return std::nullopt;
+        const auto unmapSecond = qScopeGuard([&] { context->Unmap(staging[1].Get(), 0); });
+        quint64 count = 0;
+        for (UINT y = 0; y < desc.Height; ++y) {
+            const auto *left = reinterpret_cast<const quint32 *>(static_cast<const uchar *>(first.pData) + y * first.RowPitch);
+            const auto *right = reinterpret_cast<const quint32 *>(static_cast<const uchar *>(second.pData) + y * second.RowPitch);
+            if (std::memcmp(left, right, desc.Width * sizeof(*left)) == 0) continue;
+            for (UINT x = 0; x < desc.Width; ++x) count += left[x] != right[x];
+        }
+        return count;
+    }
 };
 
 D3D11FrameComparer::D3D11FrameComparer(std::unique_ptr<Private> p) : d(std::move(p)) {}
@@ -84,14 +134,12 @@ D3D11FrameComparer::~D3D11FrameComparer() = default;
 std::unique_ptr<D3D11FrameComparer> D3D11FrameComparer::create(ID3D11Device *device, ID3D11DeviceContext *context)
 {
     if (!device || !context) return nullptr;
-    // Shared-memory atomics and raw buffer atomics need compute shader 5.0.
-    if (device->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
-        qWarning() << "D3D11FrameComparer: needs Direct3D feature level 11.0";
-        return nullptr;
-    }
     auto p = std::make_unique<Private>();
     p->device = device;
     p->context = context;
+    if (device->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
+        return std::unique_ptr<D3D11FrameComparer>(new D3D11FrameComparer(std::move(p)));
+    }
     const auto cs = compile(kComputeShader, sizeof(kComputeShader) - 1, "cs_5_0");
     if (!cs || FAILED(device->CreateComputeShader(cs->GetBufferPointer(), cs->GetBufferSize(), nullptr, &p->shader))) {
         return nullptr;
@@ -129,6 +177,10 @@ std::optional<quint64> D3D11FrameComparer::differingPixels(ID3D11Texture2D *a, I
     if (descA.Width != descB.Width || descA.Height != descB.Height || descA.Format != descB.Format
         || !(descA.BindFlags & D3D11_BIND_SHADER_RESOURCE) || !(descB.BindFlags & D3D11_BIND_SHADER_RESOURCE)) {
         return std::nullopt;
+    }
+    if (!d->shader) {
+        if (descB.SampleDesc.Count != 1) return std::nullopt;
+        return d->compareBgra(a, b, descA);
     }
     ComPtr<ID3D11ShaderResourceView> views[2];
     if (FAILED(d->device->CreateShaderResourceView(a, nullptr, &views[0]))
@@ -169,19 +221,11 @@ std::optional<quint64> D3D11FrameComparer::differingPixels(ID3D11Texture2D *a, I
     if (multithread) multithread->Leave();
 
     const auto deadline = std::chrono::steady_clock::now() + kResultTimeout;
-    for (;;) {
-        D3D11_MAPPED_SUBRESOURCE mapped{};
-        const HRESULT hr = ctx->Map(d->readback.Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
-        if (SUCCEEDED(hr)) {
-            const quint64 count = *static_cast<const UINT *>(mapped.pData);
-            ctx->Unmap(d->readback.Get(), 0);
-            return count;
-        }
-        if (hr != DXGI_ERROR_WAS_STILL_DRAWING || std::chrono::steady_clock::now() >= deadline) {
-            return std::nullopt;
-        }
-        std::this_thread::yield();
-    }
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    if (!mapForRead(ctx, d->readback.Get(), mapped, deadline)) return std::nullopt;
+    const quint64 count = *static_cast<const UINT *>(mapped.pData);
+    ctx->Unmap(d->readback.Get(), 0);
+    return count;
 }
 
 } // namespace SnapTray

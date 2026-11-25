@@ -158,6 +158,7 @@ public:
     std::atomic<int> frameRate{30};
     std::atomic<bool> nativeOutput{false};
     std::atomic<bool> running{false};
+    std::atomic<bool> captureFailed{false};
     std::atomic<quint64> generation{0};
     bool cursorInFrames = true;
     bool borderRequired = true;
@@ -458,7 +459,7 @@ void WGCCaptureEngine::Private::onFrameArrived(quint64 generationAtStart)
     QString failure;
     {
         std::lock_guard<std::mutex> lock(mutex);
-        if (!running || generation != generationAtStart || !framePool) {
+        if (!running || captureFailed || generation != generationAtStart || !framePool) {
             return;
         }
         try {
@@ -485,21 +486,19 @@ void WGCCaptureEngine::Private::onFrameArrived(quint64 generationAtStart)
         } catch (const winrt::hresult_error &frameError) {
             failure = winrtErrorText(frameError);
         }
+        // The device can be lost by either the copy or the comparison.
+        const bool duplicate = failure.isEmpty() && captured.isValid() && latest.isValid()
+            && sameContent(captured, latest);
         if (failure.isEmpty() && frameDevice->isLost()) {
             failure = QStringLiteral("the capture device was lost (0x%1)")
                           .arg(quint32(frameDevice->device->GetDeviceRemovedReason()), 8, 16, QChar('0'));
         }
-        if (failure.isEmpty() && captured.isValid()) {
-            // Windows 10 delivers a frame on every refresh, changed or not:
-            // only a changed picture is a new frame. The repeat loop keeps a
-            // still screen alive with the latest one (#417).
-            if (latest.isValid() && sameContent(captured, latest)) {
-                return;
-            }
-            if (frameDevice->isLost()) {
-                failure = QStringLiteral("the capture device was lost (0x%1)")
-                              .arg(quint32(frameDevice->device->GetDeviceRemovedReason()), 8, 16, QChar('0'));
-            }
+        if (!failure.isEmpty()) {
+            captureFailed = true;
+            latest = {};
+        } else if (duplicate) {
+            return;
+        } else if (captured.isValid()) {
             captured.captureCopies = 1;
             latest = captured;
         }
@@ -586,7 +585,7 @@ void WGCCaptureEngine::Private::emitFrame(const SnapTray::CapturedFrame &frame, 
 
 void WGCCaptureEngine::Private::emitFrameLocked(const SnapTray::CapturedFrame &frame, quint64 generationAtStart)
 {
-    if (!running || generation != generationAtStart) {
+    if (!running || captureFailed || generation != generationAtStart) {
         return;
     }
     // A real frame carries the time it was composed and can arrive after a
@@ -605,6 +604,7 @@ void WGCCaptureEngine::Private::emitError(const QString &message, quint64 genera
         return;
     }
     reportedFailure = true;
+    captureFailed = true;
     qWarning() << "WGCCaptureEngine:" << message;
     emit q->error(message);
 }
@@ -702,6 +702,7 @@ bool WGCCaptureEngine::start()
     }
 
     d->reportedFailure = false;
+    d->captureFailed = false;
     d->sequence = 0;
     QString startError;
     if (!d->start(&startError)) {

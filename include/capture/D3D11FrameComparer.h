@@ -11,10 +11,9 @@ struct ID3D11Texture2D;
 
 namespace SnapTray {
 
-// Counts the pixels that differ between two textures of one device, on the
-// GPU: a compute pass compares every pixel and counts the differing ones.
-// Exact (a single changed pixel counts) and nothing is read back but the
-// count. Needs Direct3D feature level 11.0.
+// Counts the pixels that differ between two textures of one device.
+// Feature level 11 uses a compute pass and reads back only the count.
+// Feature level 10.x compares single-sample BGRA capture textures in staging memory.
 //
 // The textures must have the same size and format and be bindable as shader
 // resources. Calls use the device's immediate context; the caller serializes

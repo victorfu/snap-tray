@@ -106,6 +106,7 @@ private slots:
     void testGraphicsCaptureKeepsAStaticScreenAlive();
     void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
     void testGraphicsCaptureSendsOnlyChangedPictures();
+    void testFrameComparerCountsChangedPixels_data();
     void testFrameComparerCountsChangedPixels();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
@@ -312,10 +313,26 @@ void TestWindowsGpuCapture::testGraphicsCaptureSendsOnlyChangedPictures()
     QTRY_VERIFY_WITH_TIMEOUT((changedPictures += countNewPictures(sink.take())) > 0, 1000);
 }
 
+void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels_data()
+{
+    QTest::addColumn<bool>("useLevel10");
+    QTest::newRow("hardware") << false;
+    QTest::newRow("warp-level-10") << true;
+}
+
 void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels()
 {
-    const auto device = SnapTray::D3D11FrameDevice::create();
-    if (!device) QSKIP("No D3D11 device");
+    QFETCH(bool, useLevel10);
+    std::shared_ptr<SnapTray::D3D11FrameDevice> device;
+    if (useLevel10) {
+        device = std::make_shared<SnapTray::D3D11FrameDevice>();
+        const D3D_FEATURE_LEVEL level = D3D_FEATURE_LEVEL_10_0;
+        QVERIFY(SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                                            &level, 1, D3D11_SDK_VERSION, &device->device, nullptr, &device->context)));
+    } else {
+        device = SnapTray::D3D11FrameDevice::create();
+        if (!device) QSKIP("No D3D11 device");
+    }
     auto comparer = SnapTray::D3D11FrameComparer::create(device->device.Get(), device->context.Get());
     QVERIFY(comparer);
 
