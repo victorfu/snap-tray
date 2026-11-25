@@ -26,6 +26,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <exception>
 #include <mutex>
 #include <thread>
 
@@ -92,6 +93,36 @@ private:
     CO_MTA_USAGE_COOKIE m_cookie = nullptr;
     bool m_ok = false;
 };
+
+bool currentThreadIsMta()
+{
+    APTTYPE type{};
+    APTTYPEQUALIFIER qualifier{};
+    return SUCCEEDED(CoGetApartmentType(&type, &qualifier)) && type == APTTYPE_MTA;
+}
+
+// The capture's WinRT objects belong to the MTA (#416). Called from an STA
+// thread (the GUI thread), they fail with RPC_E_WRONG_THREAD; such a call
+// then runs on a short-lived thread, which joins the MTA kept alive by
+// MtaUsage, and is waited for.
+template <typename Fn>
+void runInMta(Fn &&fn)
+{
+    if (currentThreadIsMta()) {
+        fn();
+        return;
+    }
+    std::exception_ptr failure;
+    std::thread worker([&fn, &failure] {
+        try {
+            fn();
+        } catch (...) {
+            failure = std::current_exception();
+        }
+    });
+    worker.join();
+    if (failure) std::rethrow_exception(failure);
+}
 
 QString winrtErrorText(const winrt::hresult_error &error)
 {
@@ -184,57 +215,63 @@ bool WGCCaptureEngine::Private::start(QString *error)
         return false;
     }
 
-    try {
-        ComPtr<IDXGIDevice> dxgiDevice;
-        winrt::check_hresult(frameDevice->device.As(&dxgiDevice));
-        winrt::com_ptr<::IInspectable> inspectable;
-        winrt::check_hresult(CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.Get(), inspectable.put()));
-        d3dDevice = inspectable.as<wdx::Direct3D11::IDirect3DDevice>();
+    bool started = false;
+    runInMta([&] {
+        try {
+            ComPtr<IDXGIDevice> dxgiDevice;
+            winrt::check_hresult(frameDevice->device.As(&dxgiDevice));
+            winrt::com_ptr<::IInspectable> inspectable;
+            winrt::check_hresult(CreateDirect3D11DeviceFromDXGIDevice(dxgiDevice.Get(), inspectable.put()));
+            d3dDevice = inspectable.as<wdx::Direct3D11::IDirect3DDevice>();
 
-        auto interop = winrt::get_activation_factory<wgc::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
-        winrt::check_hresult(interop->CreateForMonitor(
-            lookup.monitor, winrt::guid_of<wgc::GraphicsCaptureItem>(), winrt::put_abi(item)));
+            auto interop = winrt::get_activation_factory<wgc::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
+            winrt::check_hresult(interop->CreateForMonitor(
+                lookup.monitor, winrt::guid_of<wgc::GraphicsCaptureItem>(), winrt::put_abi(item)));
 
-        poolSize = item.Size();
-        framePool = wgc::Direct3D11CaptureFramePool::CreateFreeThreaded(
-            d3dDevice, wdx::DirectXPixelFormat::B8G8R8A8UIntNormalized, kFramePoolBuffers, poolSize);
-        session = framePool.CreateCaptureSession(item);
+            poolSize = item.Size();
+            framePool = wgc::Direct3D11CaptureFramePool::CreateFreeThreaded(
+                d3dDevice, wdx::DirectXPixelFormat::B8G8R8A8UIntNormalized, kFramePoolBuffers, poolSize);
+            session = framePool.CreateCaptureSession(item);
 
-        using winrt::Windows::Foundation::Metadata::ApiInformation;
-        cursorInFrames = true;
-        if (ApiInformation::IsPropertyPresent(kSessionClass, L"IsCursorCaptureEnabled")) {
-            session.IsCursorCaptureEnabled(false);
-            cursorInFrames = session.IsCursorCaptureEnabled();
-        }
-        borderRequired = true;
-        if (ApiInformation::IsPropertyPresent(kSessionClass, L"IsBorderRequired")) {
-            try {
-                session.IsBorderRequired(false);
-                borderRequired = session.IsBorderRequired();
-            } catch (const winrt::hresult_error &borderError) {
-                // Not allowed for this process: the border stays, recording does not depend on it.
-                qDebug() << "WGCCaptureEngine: capture border stays:" << winrtErrorText(borderError);
+            using winrt::Windows::Foundation::Metadata::ApiInformation;
+            cursorInFrames = true;
+            if (ApiInformation::IsPropertyPresent(kSessionClass, L"IsCursorCaptureEnabled")) {
+                session.IsCursorCaptureEnabled(false);
+                cursorInFrames = session.IsCursorCaptureEnabled();
             }
-        }
-        if (ApiInformation::IsPropertyPresent(kSessionClass, L"MinUpdateInterval")) {
-            const auto interval = SnapTray::captureFrameInterval(frameRate.load());
-            session.MinUpdateInterval(std::chrono::duration_cast<winrt::Windows::Foundation::TimeSpan>(interval));
-        }
+            borderRequired = true;
+            if (ApiInformation::IsPropertyPresent(kSessionClass, L"IsBorderRequired")) {
+                try {
+                    session.IsBorderRequired(false);
+                    borderRequired = session.IsBorderRequired();
+                } catch (const winrt::hresult_error &borderError) {
+                    // Not allowed for this process: the border stays, recording does not depend on it.
+                    qDebug() << "WGCCaptureEngine: capture border stays:" << winrtErrorText(borderError);
+                }
+            }
+            if (ApiInformation::IsPropertyPresent(kSessionClass, L"MinUpdateInterval")) {
+                const auto interval = SnapTray::captureFrameInterval(frameRate.load());
+                session.MinUpdateInterval(std::chrono::duration_cast<winrt::Windows::Foundation::TimeSpan>(interval));
+            }
 
-        const quint64 startGeneration = generation.load();
-        std::weak_ptr<Private> weak = shared_from_this();
-        frameArrivedToken = framePool.FrameArrived([weak, startGeneration](auto &&, auto &&) {
-            if (auto self = weak.lock()) self->onFrameArrived(startGeneration);
-        });
-        closedToken = item.Closed([weak, startGeneration](auto &&, auto &&) {
-            if (auto self = weak.lock()) self->onItemClosed(startGeneration);
-        });
+            const quint64 startGeneration = generation.load();
+            std::weak_ptr<Private> weak = shared_from_this();
+            frameArrivedToken = framePool.FrameArrived([weak, startGeneration](auto &&, auto &&) {
+                if (auto self = weak.lock()) self->onFrameArrived(startGeneration);
+            });
+            closedToken = item.Closed([weak, startGeneration](auto &&, auto &&) {
+                if (auto self = weak.lock()) self->onItemClosed(startGeneration);
+            });
 
-        running = true;
-        session.StartCapture();
-    } catch (const winrt::hresult_error &startError) {
-        running = false;
-        *error = winrtErrorText(startError);
+            running = true;
+            session.StartCapture();
+            started = true;
+        } catch (const winrt::hresult_error &startError) {
+            running = false;
+            *error = winrtErrorText(startError);
+        }
+    });
+    if (!started) {
         return false;
     }
 
@@ -260,31 +297,40 @@ void WGCCaptureEngine::Private::stop()
     wgc::Direct3D11CaptureFramePool closingPool{nullptr};
     wgc::GraphicsCaptureSession closingSession{nullptr};
     wgc::GraphicsCaptureItem closingItem{nullptr};
+    wdx::Direct3D11::IDirect3DDevice closingDevice{nullptr};
     std::unique_ptr<MtaUsage> closingMta;
     {
         std::lock_guard<std::mutex> lock(mutex);
         closingPool = std::exchange(framePool, nullptr);
         closingSession = std::exchange(session, nullptr);
         closingItem = std::exchange(item, nullptr);
+        closingDevice = std::exchange(d3dDevice, nullptr);
         closingMta = std::move(mta);
-        d3dDevice = nullptr;
         texturePool.reset();
         staging.Reset();
         stagingSize = QSize();
         latest = {};
         frameDevice.reset();
     }
-    try {
-        if (closingPool) closingPool.FrameArrived(frameArrivedToken);
-        if (closingItem) closingItem.Closed(closedToken);
-        if (closingSession) closingSession.Close();
-        if (closingPool) closingPool.Close();
-    } catch (const winrt::hresult_error &stopError) {
-        qWarning() << "WGCCaptureEngine: cleanup failed:" << winrtErrorText(stopError);
-    }
-    closingSession = nullptr;
-    closingPool = nullptr;
-    closingItem = nullptr;
+    // Each step on its own: one that fails must not leave the session and
+    // frame pool open, which keeps their present thread and D3D device (#416).
+    const auto attempt = [](const char *step, auto &&call) {
+        try {
+            call();
+        } catch (const winrt::hresult_error &stopError) {
+            qWarning() << "WGCCaptureEngine: cleanup failed:" << step << winrtErrorText(stopError);
+        }
+    };
+    runInMta([&] {
+        if (closingPool) attempt("FrameArrived", [&] { closingPool.FrameArrived(frameArrivedToken); });
+        if (closingItem) attempt("Closed", [&] { closingItem.Closed(closedToken); });
+        if (closingSession) attempt("session Close", [&] { closingSession.Close(); });
+        if (closingPool) attempt("frame pool Close", [&] { closingPool.Close(); });
+        closingSession = nullptr;
+        closingPool = nullptr;
+        closingItem = nullptr;
+        closingDevice = nullptr;
+    });
     closingMta.reset();
     // Wait out a frame or error being delivered right now.
     std::lock_guard<std::mutex> emitLock(emitMutex);
@@ -553,14 +599,17 @@ void WGCCaptureEngine::setFrameRate(int fps)
     d->frameRate = fps;
     std::lock_guard<std::mutex> lock(d->mutex);
     if (d->session) {
-        try {
-            using winrt::Windows::Foundation::Metadata::ApiInformation;
-            if (ApiInformation::IsPropertyPresent(kSessionClass, L"MinUpdateInterval")) {
-                d->session.MinUpdateInterval(std::chrono::duration_cast<winrt::Windows::Foundation::TimeSpan>(interval));
+        runInMta([&] {
+            try {
+                using winrt::Windows::Foundation::Metadata::ApiInformation;
+                if (ApiInformation::IsPropertyPresent(kSessionClass, L"MinUpdateInterval")) {
+                    d->session.MinUpdateInterval(
+                        std::chrono::duration_cast<winrt::Windows::Foundation::TimeSpan>(interval));
+                }
+            } catch (const winrt::hresult_error &rateError) {
+                qWarning() << "WGCCaptureEngine: cannot change the update interval:" << winrtErrorText(rateError);
             }
-        } catch (const winrt::hresult_error &rateError) {
-            qWarning() << "WGCCaptureEngine: cannot change the update interval:" << winrtErrorText(rateError);
-        }
+        });
     }
 }
 
