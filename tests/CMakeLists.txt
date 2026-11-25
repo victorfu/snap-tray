@@ -164,6 +164,12 @@ target_link_libraries(Qml_RegionToolbarViewModel PRIVATE snaptray_ui Qt6::Test)
 add_test(NAME Qml_RegionToolbarViewModel COMMAND Qml_RegionToolbarViewModel)
 set_tests_properties(Qml_RegionToolbarViewModel PROPERTIES TIMEOUT 60 LABELS "unit")
 
+add_executable(Qml_RecordingControlBarIndicator Qml/tst_RecordingControlBarIndicator.cpp)
+target_link_libraries(Qml_RecordingControlBarIndicator PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
+target_sources(Qml_RecordingControlBarIndicator PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)
+add_test(NAME Qml_RecordingControlBarIndicator COMMAND Qml_RecordingControlBarIndicator)
+set_tests_properties(Qml_RecordingControlBarIndicator PROPERTIES TIMEOUT 60 LABELS "unit")
+
 add_executable(Qml_CursorTokens Qml/tst_CursorTokens.cpp)
 target_link_libraries(Qml_CursorTokens PRIVATE snaptray_ui snaptray_qmlplugin Qt6::Test)
 target_sources(Qml_CursorTokens PRIVATE ${CMAKE_SOURCE_DIR}/resources/resources.qrc)

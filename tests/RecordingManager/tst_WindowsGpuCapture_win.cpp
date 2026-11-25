@@ -1,6 +1,7 @@
 #include <QtTest/QtTest>
 
 #include "capture/D3D11Frame.h"
+#include "capture/D3D11FrameComparer.h"
 #include "capture/CaptureFrameTiming.h"
 #include "capture/DXGICaptureEngine.h"
 #include "capture/WGCCaptureEngine.h"
@@ -16,6 +17,9 @@
 #include <QWidget>
 
 #include <atomic>
+
+#include <d3d11.h>
+#include <windows.h>
 
 namespace {
 
@@ -38,6 +42,14 @@ protected:
         painter.fillRect(QRect(x, height() / 2, kPatternSquarePixels, kPatternSquarePixels), Qt::white);
     }
 };
+
+// CTest starts the test hidden, and Windows applies that to the process's
+// first ShowWindow: the pattern would never reach the screen, and a capture
+// test would only pass while every refresh counted as a new picture (#417).
+void putOnScreen(QWidget &widget)
+{
+    ShowWindow(reinterpret_cast<HWND>(widget.winId()), SW_SHOW);
+}
 
 // Collects frames delivered on the capture thread.
 struct FrameSink
@@ -75,6 +87,8 @@ private slots:
     void testGraphicsCaptureDeliversFramesOfTheRegion();
     void testGraphicsCaptureKeepsAStaticScreenAlive();
     void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
+    void testGraphicsCaptureSendsOnlyChangedPictures();
+    void testFrameComparerCountsChangedPixels();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
     void testGraphicsCaptureUnknownDisplayFailsToStart();
@@ -137,8 +151,10 @@ void TestWindowsGpuCapture::testGraphicsCaptureKeepsAStaticScreenAlive()
     auto* screen = QGuiApplication::primaryScreen();
     QVERIFY(screen);
     CapturePattern pattern;
+    pattern.setWindowFlag(Qt::WindowStaysOnTopHint);
     pattern.setGeometry(screen->geometry());
     pattern.showFullScreen();
+    putOnScreen(pattern);
     QVERIFY(QTest::qWaitForWindowExposed(&pattern));
     WGCCaptureEngine engine;
     QVERIFY(configure(engine));
@@ -179,8 +195,10 @@ void TestWindowsGpuCapture::testGraphicsCaptureChangingAndStaticFramesHaveNoDupl
     auto* screen = QGuiApplication::primaryScreen();
     QVERIFY(screen);
     CapturePattern pattern;
+    pattern.setWindowFlag(Qt::WindowStaysOnTopHint);
     pattern.setGeometry(screen->geometry());
     pattern.showFullScreen();
+    putOnScreen(pattern);
     QVERIFY(QTest::qWaitForWindowExposed(&pattern));
 
     WGCCaptureEngine engine;
@@ -218,6 +236,104 @@ void TestWindowsGpuCapture::testGraphicsCaptureChangingAndStaticFramesHaveNoDupl
     QVERIFY(stats.accepted >= kPatternFrameRate);
     QCOMPARE(stats.duplicates, qint64(0));
     QCOMPARE(stats.backwards, qint64(0));
+}
+
+void TestWindowsGpuCapture::testGraphicsCaptureSendsOnlyChangedPictures()
+{
+    // Windows 10 delivers a WGC frame on every refresh even when nothing on
+    // the screen changed. Those must not reach the encoder as new pictures:
+    // a still screen is kept alive by the sparse repeats alone (#417).
+    if (!WGCCaptureEngine::isAvailable()) QSKIP("Windows Graphics Capture is not supported here");
+    auto* screen = QGuiApplication::primaryScreen();
+    QVERIFY(screen);
+    // On top of everything, so that nothing else on the desktop (a terminal
+    // printing test output) changes the captured picture.
+    CapturePattern pattern;
+    pattern.setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+    pattern.setGeometry(screen->geometry());
+    pattern.show();
+    putOnScreen(pattern);
+    QVERIFY(QTest::qWaitForWindowExposed(&pattern));
+    QVERIFY(QTest::qWaitForWindowExposed(&pattern));
+
+    WGCCaptureEngine engine;
+    constexpr int kRate = 60;
+    engine.setFrameRate(kRate);
+    engine.setNativeFrameOutput(true);
+    QVERIFY(engine.setRegion(screen->geometry(), CaptureScreenInfo::fromScreen(screen)));
+    FrameSink sink;
+    sink.connectTo(engine);
+    QVERIFY2(engine.start(), qPrintable(engine.lastStartError()));
+    const auto stopCapture = qScopeGuard([&] { engine.stop(); });
+    QTRY_VERIFY_WITH_TIMEOUT(sink.count() >= 1, kFrameTimeoutMs);
+    QTest::qWait(500);
+    auto lastSequence = sink.take().back().sequence;
+    // A repeat carries the sequence of the picture it repeats.
+    const auto countNewPictures = [&lastSequence](const QList<SnapTray::CapturedFrame>& frames) {
+        int pictures = 0;
+        for (const auto& frame : frames) {
+            if (frame.sequence != lastSequence) ++pictures;
+            lastSequence = frame.sequence;
+        }
+        return pictures;
+    };
+
+    constexpr int kStillMs = 3000;
+    QTest::qWait(kStillMs);
+    const int stillPictures = countNewPictures(sink.take());
+    // At 60 fps three still seconds were 180 pictures; allow a few for
+    // whatever else the desktop draws (the 80% target of #337 is 36).
+    QVERIFY2(stillPictures <= 6, qPrintable(QStringLiteral("%1 new pictures of a still screen").arg(stillPictures)));
+
+    // The first change after the still span is sent at once.
+    ++pattern.step;
+    pattern.update();
+    // QTRY re-evaluates its expression: keep the taking out of it.
+    int changedPictures = 0;
+    QTRY_VERIFY_WITH_TIMEOUT((changedPictures += countNewPictures(sink.take())) > 0, 1000);
+}
+
+void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels()
+{
+    const auto device = SnapTray::D3D11FrameDevice::create();
+    if (!device) QSKIP("No D3D11 device");
+    auto comparer = SnapTray::D3D11FrameComparer::create(device->device.Get(), device->context.Get());
+    QVERIFY(comparer);
+
+    constexpr UINT kWidth = 257;  // odd sizes: no assumption about blocks
+    constexpr UINT kHeight = 131;
+    QImage picture(int(kWidth), int(kHeight), QImage::Format_ARGB32);
+    picture.fill(QColor(30, 60, 90));
+    auto makeTexture = [&](const QImage& image) {
+        D3D11_TEXTURE2D_DESC desc{};
+        desc.Width = UINT(image.width());
+        desc.Height = UINT(image.height());
+        desc.MipLevels = 1;
+        desc.ArraySize = 1;
+        desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+        desc.SampleDesc.Count = 1;
+        desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+        D3D11_SUBRESOURCE_DATA data{image.constBits(), UINT(image.bytesPerLine()), 0};
+        Microsoft::WRL::ComPtr<ID3D11Texture2D> texture;
+        device->device->CreateTexture2D(&desc, &data, &texture);
+        return texture;
+    };
+    const auto first = makeTexture(picture);
+    QVERIFY(first);
+    QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(picture).Get()), std::optional<quint64>(0));
+
+    // One channel of one pixel, one step: a blinking text caret is no larger.
+    QImage onePixel = picture;
+    onePixel.setPixel(kWidth - 1, kHeight - 1, qRgb(30, 60, 91));
+    QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(onePixel).Get()), std::optional<quint64>(1));
+
+    QImage tenPixels = picture;
+    for (int i = 0; i < 10; ++i) tenPixels.setPixel(i * 20, i * 10, qRgb(255, 255, 255));
+    QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(tenPixels).Get()), std::optional<quint64>(10));
+
+    const auto smaller = makeTexture(picture.copy(0, 0, int(kWidth) - 1, int(kHeight)));
+    QVERIFY(!comparer->differingPixels(first.Get(), smaller.Get()).has_value());
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureNativeFramesStayOnItsDevice()

@@ -691,6 +691,7 @@ add_library(snaptray_platform STATIC
         src/OCRManager_win.cpp
         src/AutoLaunchManager_win.cpp
         src/capture/D3D11Frame_win.cpp
+        src/capture/D3D11FrameComparer_win.cpp
         src/capture/DXGICaptureEngine_win.cpp
         src/capture/WGCCaptureEngine_win.cpp
         src/capture/WASAPIAudioCaptureEngine_win.cpp

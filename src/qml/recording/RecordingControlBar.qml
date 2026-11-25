@@ -170,18 +170,35 @@ Item {
         // ── Recording indicator (animated circle) ──
         Canvas {
             id: indicatorCanvas
+            objectName: "recordingIndicator"
             Layout.preferredWidth: ComponentTokens.recordingControlBarIndicatorSize
             Layout.preferredHeight: ComponentTokens.recordingControlBarIndicatorSize
             renderStrategy: Canvas.Threaded
 
             property real gradientAngle: 0.0
+            // One turn every eight seconds while recording.
+            readonly property real recordingStep: 0.125
 
+            // Smooth only while preparing. The bar sits on the recorded screen:
+            // an animation there makes the compositor present every refresh,
+            // so a still screen never looks still to the capture and every
+            // frame is encoded (#417). While recording, the gradient advances
+            // with the duration, once a second.
             NumberAnimation on gradientAngle {
                 from: 0
                 to: 1
                 duration: ComponentTokens.recordingIndicatorDuration
                 loops: Animation.Infinite
-                running: !root.isPaused
+                running: root.isPreparing
+            }
+
+            Connections {
+                target: root
+                function onDurationChanged() {
+                    if (root.isPreparing || root.isPaused) return
+                    indicatorCanvas.gradientAngle =
+                        (indicatorCanvas.gradientAngle + indicatorCanvas.recordingStep) % 1
+                }
             }
 
             onGradientAngleChanged: requestPaint()
