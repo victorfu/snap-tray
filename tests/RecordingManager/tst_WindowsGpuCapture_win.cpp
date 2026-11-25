@@ -16,6 +16,10 @@
 #include <QWidget>
 
 #include <atomic>
+#include <thread>
+
+#include <windows.h>
+#include <tlhelp32.h>
 
 namespace {
 
@@ -65,6 +69,20 @@ struct FrameSink
     }
 };
 
+int processThreadCount()
+{
+    const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return -1;
+    int count = 0;
+    THREADENTRY32 entry{};
+    entry.dwSize = sizeof(entry);
+    for (BOOL more = Thread32First(snapshot, &entry); more; more = Thread32Next(snapshot, &entry)) {
+        if (entry.th32OwnerProcessID == GetCurrentProcessId()) ++count;
+    }
+    CloseHandle(snapshot);
+    return count;
+}
+
 } // namespace
 
 class TestWindowsGpuCapture : public QObject
@@ -77,6 +95,7 @@ private slots:
     void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
+    void testGraphicsCaptureStoppedFromGuiThreadReleasesSession();
     void testGraphicsCaptureUnknownDisplayFailsToStart();
     void testDesktopDuplicationNativeFramesStayOnItsDevice();
 
@@ -261,6 +280,47 @@ void TestWindowsGpuCapture::testGraphicsCaptureDeliversNothingAfterStop()
         QCOMPARE(sink.count(), afterStop);
         sink.take();
     }
+}
+
+void TestWindowsGpuCapture::testGraphicsCaptureStoppedFromGuiThreadReleasesSession()
+{
+    if (!WGCCaptureEngine::isAvailable()) QSKIP("Windows Graphics Capture is not supported here");
+    // A recording starts the engine on its init worker (MTA) and stops it on
+    // the GUI thread (STA). Stopping there failed with RPC_E_WRONG_THREAD and
+    // left every session's frame pool and D3D device behind (#416).
+    const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (com == RPC_E_CHANGED_MODE) QSKIP("The test thread is already in the MTA");
+    const auto uninitialize = qScopeGuard([com] { if (SUCCEEDED(com)) CoUninitialize(); });
+    QTest::failOnWarning(QRegularExpression(QStringLiteral("cleanup failed")));
+
+    WGCCaptureEngine engine;
+    QVERIFY(configure(engine));
+    FrameSink sink;
+    sink.connectTo(engine);
+    constexpr int kRounds = 5;
+    int threadsAfterFirstRound = 0;
+    for (int round = 0; round < kRounds; ++round) {
+        bool started = false;
+        QString startError;
+        std::thread init([&] {
+            started = engine.start();
+            startError = engine.lastStartError();
+        });
+        init.join();
+        QVERIFY2(started, qPrintable(startError));
+        QTRY_VERIFY_WITH_TIMEOUT(sink.count() >= 1, kFrameTimeoutMs);
+        engine.stop();
+        QVERIFY(!engine.isRunning());
+        sink.take();
+        QTest::qWait(300);
+        if (round == 0) threadsAfterFirstRound = processThreadCount();
+    }
+    // A leaked session keeps its frame pool's present thread (and the
+    // driver's threads for its device): the count would grow every round.
+    const int threadsAtEnd = processThreadCount();
+    QVERIFY2(threadsAtEnd <= threadsAfterFirstRound + 2,
+             qPrintable(QStringLiteral("threads after round 1: %1, after round %2: %3")
+                            .arg(threadsAfterFirstRound).arg(kRounds).arg(threadsAtEnd)));
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureUnknownDisplayFailsToStart()
