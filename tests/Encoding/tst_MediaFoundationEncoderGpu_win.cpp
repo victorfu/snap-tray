@@ -1,5 +1,6 @@
 #include "MediaFoundationEncoder.h"
 #include "capture/D3D11Frame.h"
+#include "video/IVideoTranscoder.h"
 
 #include <QtTest>
 #include <QColor>
@@ -191,12 +192,16 @@ void TestMediaFoundationEncoderGpu::testSparseGpuFramesKeepNanoseconds()
     auto pool = D3D11TexturePool::create(device, kFrameSize);
     const auto frame = solidFrame(*pool, Qt::green);
     QVERIFY(frame);
-    const QList<qint64> times{0, 16666667, 33333333, 2000000000, 4000000000};
+    QList<qint64> times{0, 16666667, 33333333, 2000000000, 4000000000};
     for (qint64 time : times) QVERIFY(encoder.writeNativeFrameNs(frame, time));
     QSignalSpy done(&encoder, &IVideoEncoder::finished);
     encoder.finishAtNs(6000000000);
     QVERIFY(!done.isEmpty());
     QVERIFY2(done.first().first().toBool(), qPrintable(encoder.lastError()));
+    // The last frame holds until the finish time, ending in a copy of it one
+    // interval before the end: the length does not depend on the encoder
+    // keeping the last sample's duration (#421).
+    times.append(6000000000 - 10000000LL / kFrameRate * 100);
     const auto decoded = decodeCenters(path);
     QVERIFY2(decoded.error.isEmpty(), qPrintable(decoded.error));
     QCOMPARE(decoded.times100ns.size(), times.size());
@@ -204,6 +209,9 @@ void TestMediaFoundationEncoderGpu::testSparseGpuFramesKeepNanoseconds()
         QVERIFY(qAbs(decoded.times100ns[i] - times[i] / 100) <= 1000);
         QVERIFY(colorNear(decoded.centers[i], Qt::green));
     }
+    const auto probe = IVideoTranscoder::create()->probe(path);
+    QVERIFY(probe.valid);
+    QVERIFY2(qAbs(probe.durationMs - 6000) <= 1000 / kFrameRate, qPrintable(QString::number(probe.durationMs)));
 }
 
 void TestMediaFoundationEncoderGpu::testNativeFramesEncodeOnTheGpu()

@@ -113,6 +113,35 @@ public:
         if (SUCCEEDED(hr)) { pendingVideo = sample; pendingTime = time; }
         return hr;
     }
+    // A sparse recording's last frame holds until the stop. An encoder may
+    // give its last output sample one frame interval whatever the input
+    // duration (seen on Intel UHD 620), so the file would end at the last
+    // change instead (#421). A copy of the last frame one interval before the
+    // end carries the hold. Under two intervals there is no copy: the file is
+    // then at most one frame short, and the last frame keeps a full interval.
+    // Returns true when the copy is the pending sample.
+    bool queueFinalHold(LONGLONG end) {
+        if (FAILED(videoWriteError) || !pendingVideo) return false;
+        const LONGLONG holdTime = end - frameDuration100ns();
+        if (holdTime - pendingTime < frameDuration100ns()) return false;
+        // The copy reads the same picture. Safe only at finish: no frame is
+        // converted after it, so the shared surface is not reused meanwhile.
+        ComPtr<IMFSample> hold;
+        DWORD count = 0;
+        HRESULT hr = MFCreateSample(&hold);
+        if (SUCCEEDED(hr)) hr = pendingVideo->GetBufferCount(&count);
+        for (DWORD i = 0; SUCCEEDED(hr) && i < count; ++i) {
+            ComPtr<IMFMediaBuffer> buffer;
+            hr = pendingVideo->GetBufferByIndex(i, &buffer);
+            if (SUCCEEDED(hr)) hr = hold->AddBuffer(buffer.Get());
+        }
+        if (SUCCEEDED(hr)) hr = queueVideo(hold.Get(), holdTime);
+        if (FAILED(hr)) {
+            qWarning() << "MediaFoundationEncoder: final hold frame not written:" << hrText(hr);
+            return false;
+        }
+        return true;
+    }
     bool running = false;
     int quality = 55;  // 0-100
     SnapTray::VideoRateControl requestedRateControl = SnapTray::VideoRateControl::Bitrate;
@@ -967,7 +996,13 @@ void MediaFoundationEncoder::finish()
 
     const LONGLONG end = d->endTimestampNs >= 0 ? d->endTimestampNs / 100
         : d->pendingTime + d->frameDuration100ns();
+    const bool holdQueued = d->queueFinalHold(end);
     HRESULT hr = d->flushVideo(end);
+    if (FAILED(hr) && holdQueued) {
+        // Only the copy was lost; the recording itself is complete.
+        qWarning() << "MediaFoundationEncoder: final hold frame not written:" << hrText(hr);
+        hr = S_OK;
+    }
     const HRESULT finalized = d->sinkWriter->Finalize();
     if (SUCCEEDED(hr)) hr = finalized;
     d->cleanup();

@@ -190,7 +190,9 @@ private slots:
     void intermediateAverageBitrateConverges();
     void framesKeepTheirTimestamps_data();
     void framesKeepTheirTimestamps();
+    void sparseFramesKeepNanosecondsAndFinalHold_data();
     void sparseFramesKeepNanosecondsAndFinalHold();
+    void denseStopAddsNoHoldFrame();
 };
 
 void tst_MediaFoundationEncoderIntermediate::intermediateHasOneSecondKeyFrames()
@@ -297,12 +299,19 @@ void tst_MediaFoundationEncoderIntermediate::framesKeepTheirTimestamps()
                                           .arg(worstIndex).arg(written[worstIndex]).arg(read[worstIndex])));
 }
 
+void tst_MediaFoundationEncoderIntermediate::sparseFramesKeepNanosecondsAndFinalHold_data()
+{
+    framesKeepTheirTimestamps_data();
+}
+
 void tst_MediaFoundationEncoderIntermediate::sparseFramesKeepNanosecondsAndFinalHold()
 {
+    QFETCH(bool, enableHardwareTransforms);
     QTemporaryDir dir;
     const QString path = dir.filePath(QStringLiteral("sparse.mp4"));
-    MediaFoundationEncoder encoder(false, nullptr);
-    QVERIFY2(encoder.start(path, QSize(320, 180), 60), qPrintable(encoder.lastError()));
+    MediaFoundationEncoder encoder(enableHardwareTransforms, nullptr);
+    constexpr int kSparseFrameRate = 60;
+    QVERIFY2(encoder.start(path, QSize(320, 180), kSparseFrameRate), qPrintable(encoder.lastError()));
     const QList<qint64> times{0, 16666667, 33333333, 2000000000, 4000000000, 6000000000,
         8000000000, 10000000000, 12000000000, 14000000000, 16000000000, 18000000000};
     QImage frame(320, 180, QImage::Format_RGB32); frame.fill(Qt::green);
@@ -312,13 +321,37 @@ void tst_MediaFoundationEncoderIntermediate::sparseFramesKeepNanosecondsAndFinal
     encoder.finishAtNs(20000000000);
     QVERIFY(!finished.isEmpty());
     QVERIFY2(finished.first().first().toBool(), qPrintable(encoder.lastError()));
+    // The hold ends in a copy of the last frame one interval before the end,
+    // so the file ends there even if the encoder shortens the last sample (#421).
+    QList<qint64> expected = times;
+    expected.append(20000000000 - 10000000LL / kSparseFrameRate * 100);
     const auto actual = videoTimestampsMs(path);
-    QCOMPARE(actual.size(), times.size());
-    for (int i = 0; i < times.size(); ++i)
-        QVERIFY2(std::abs(actual[i] - times[i] / 1e6) < 0.1, qPrintable(QString::number(actual[i], 'f', 6)));
+    QCOMPARE(actual.size(), expected.size());
+    for (int i = 0; i < expected.size(); ++i)
+        QVERIFY2(std::abs(actual[i] - expected[i] / 1e6) < 0.1, qPrintable(QString::number(actual[i], 'f', 6)));
     const auto probe = IVideoTranscoder::create()->probe(path);
     QVERIFY(probe.valid);
-    QVERIFY(qAbs(probe.durationMs - 20000) <= 17);
+    QVERIFY2(qAbs(probe.durationMs - 20000) <= 17, qPrintable(QString::number(probe.durationMs)));
+}
+
+// A stop under two intervals after the last frame needs no copy of it: the
+// last frame keeps a full interval instead of shrinking next to a copy (#421).
+void tst_MediaFoundationEncoderIntermediate::denseStopAddsNoHoldFrame()
+{
+    QTemporaryDir dir;
+    const QString path = dir.filePath(QStringLiteral("dense.mp4"));
+    MediaFoundationEncoder encoder(false, nullptr);
+    constexpr int kDenseFrameRate = 60;
+    constexpr int kFrames = 30;
+    constexpr qint64 kIntervalNs = 1000000000LL / kDenseFrameRate;
+    QVERIFY2(encoder.start(path, QSize(320, 180), kDenseFrameRate), qPrintable(encoder.lastError()));
+    QImage frame(320, 180, QImage::Format_RGB32); frame.fill(Qt::green);
+    for (int i = 0; i < kFrames; ++i) encoder.writeFrameNs(frame, i * kIntervalNs);
+    QSignalSpy finished(&encoder, &IVideoEncoder::finished);
+    encoder.finishAtNs((kFrames - 1) * kIntervalNs + kIntervalNs * 3 / 2);
+    QVERIFY(!finished.isEmpty());
+    QVERIFY2(finished.first().first().toBool(), qPrintable(encoder.lastError()));
+    QCOMPARE(videoTimestampsMs(path).size(), kFrames);
 }
 
 QTEST_MAIN(tst_MediaFoundationEncoderIntermediate)
