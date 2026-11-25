@@ -106,6 +106,7 @@ private slots:
     void testGraphicsCaptureKeepsAStaticScreenAlive();
     void testGraphicsCaptureChangingAndStaticFramesHaveNoDuplicates();
     void testGraphicsCaptureSendsOnlyChangedPictures();
+    void testFrameComparerCountsChangedPixels_data();
     void testFrameComparerCountsChangedPixels();
     void testGraphicsCaptureNativeFramesStayOnItsDevice();
     void testGraphicsCaptureDeliversNothingAfterStop();
@@ -312,10 +313,26 @@ void TestWindowsGpuCapture::testGraphicsCaptureSendsOnlyChangedPictures()
     QTRY_VERIFY_WITH_TIMEOUT((changedPictures += countNewPictures(sink.take())) > 0, 1000);
 }
 
+void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels_data()
+{
+    QTest::addColumn<bool>("useLevel10");
+    QTest::newRow("hardware") << false;
+    QTest::newRow("warp-level-10") << true;
+}
+
 void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels()
 {
-    const auto device = SnapTray::D3D11FrameDevice::create();
-    if (!device) QSKIP("No D3D11 device");
+    QFETCH(bool, useLevel10);
+    std::shared_ptr<SnapTray::D3D11FrameDevice> device;
+    if (useLevel10) {
+        device = std::make_shared<SnapTray::D3D11FrameDevice>();
+        const D3D_FEATURE_LEVEL level = D3D_FEATURE_LEVEL_10_0;
+        QVERIFY(SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                                            &level, 1, D3D11_SDK_VERSION, &device->device, nullptr, &device->context)));
+    } else {
+        device = SnapTray::D3D11FrameDevice::create();
+        if (!device) QSKIP("No D3D11 device");
+    }
     auto comparer = SnapTray::D3D11FrameComparer::create(device->device.Get(), device->context.Get());
     QVERIFY(comparer);
 
@@ -351,8 +368,21 @@ void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels()
     for (int i = 0; i < 10; ++i) tenPixels.setPixel(i * 20, i * 10, qRgb(255, 255, 255));
     QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(tenPixels).Get()), std::optional<quint64>(10));
 
+    QImage allPixels = picture;
+    allPixels.fill(QColor(90, 60, 30));
+    QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(allPixels).Get()),
+             std::optional<quint64>(quint64(kWidth) * kHeight));
+
     const auto smaller = makeTexture(picture.copy(0, 0, int(kWidth) - 1, int(kHeight)));
     QVERIFY(!comparer->differingPixels(first.Get(), smaller.Get()).has_value());
+
+    // Comparing pictures that differ, again and again, keeps the device:
+    // the earlier pass hung Intel UHD 620 on the second one (#420).
+    const auto changed = makeTexture(onePixel);
+    for (int i = 0; i < 20; ++i) {
+        QCOMPARE(comparer->differingPixels(first.Get(), changed.Get()), std::optional<quint64>(1));
+    }
+    QVERIFY(!device->isLost());
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureNativeFramesStayOnItsDevice()

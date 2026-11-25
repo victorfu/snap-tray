@@ -11,10 +11,9 @@ struct ID3D11Texture2D;
 
 namespace SnapTray {
 
-// Counts the pixels that differ between two textures of one device, on the
-// GPU: a full-size pass discards every pixel that is equal in both, and an
-// occlusion query counts the rest. Exact (a single changed pixel counts) and
-// nothing is read back but the count.
+// Counts the pixels that differ between two textures of one device.
+// Feature level 11 uses a compute pass and reads back only the count.
+// Feature level 10.x compares single-sample BGRA capture textures in staging memory.
 //
 // The textures must have the same size and format and be bindable as shader
 // resources. Calls use the device's immediate context; the caller serializes
@@ -27,7 +26,8 @@ public:
     ~D3D11FrameComparer();
 
     // The number of differing pixels, or nullopt when the comparison could
-    // not be made (different sizes, no shader view, or no result in time).
+    // not be made (different sizes, no shader view, no result in time, or
+    // the device was lost).
     std::optional<quint64> differingPixels(ID3D11Texture2D *a, ID3D11Texture2D *b);
 
 private:
