@@ -351,8 +351,21 @@ void TestWindowsGpuCapture::testFrameComparerCountsChangedPixels()
     for (int i = 0; i < 10; ++i) tenPixels.setPixel(i * 20, i * 10, qRgb(255, 255, 255));
     QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(tenPixels).Get()), std::optional<quint64>(10));
 
+    QImage allPixels = picture;
+    allPixels.fill(QColor(90, 60, 30));
+    QCOMPARE(comparer->differingPixels(first.Get(), makeTexture(allPixels).Get()),
+             std::optional<quint64>(quint64(kWidth) * kHeight));
+
     const auto smaller = makeTexture(picture.copy(0, 0, int(kWidth) - 1, int(kHeight)));
     QVERIFY(!comparer->differingPixels(first.Get(), smaller.Get()).has_value());
+
+    // Comparing pictures that differ, again and again, keeps the device:
+    // the earlier pass hung Intel UHD 620 on the second one (#420).
+    const auto changed = makeTexture(onePixel);
+    for (int i = 0; i < 20; ++i) {
+        QCOMPARE(comparer->differingPixels(first.Get(), changed.Get()), std::optional<quint64>(1));
+    }
+    QVERIFY(!device->isLost());
 }
 
 void TestWindowsGpuCapture::testGraphicsCaptureNativeFramesStayOnItsDevice()

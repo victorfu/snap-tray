@@ -41,6 +41,8 @@ namespace {
 
 // Two buffers: one being captured into while SnapTray copies the other.
 constexpr int kFramePoolBuffers = 2;
+// Failed GPU comparisons in a row before comparing is given up for the session.
+constexpr int kMaxComparerFailures = 3;
 constexpr wchar_t kSessionClass[] = L"Windows.Graphics.Capture.GraphicsCaptureSession";
 
 struct MonitorLookup
@@ -176,6 +178,7 @@ public:
     std::shared_ptr<SnapTray::D3D11TexturePool> texturePool;
     std::unique_ptr<SnapTray::D3D11FrameComparer> comparer;
     bool comparerUnavailable = false;
+    int comparerFailures = 0;  // in a row
     ComPtr<ID3D11Texture2D> staging;
     QSize stagingSize;
     SnapTray::CapturedFrame latest;
@@ -313,6 +316,7 @@ void WGCCaptureEngine::Private::stop()
         texturePool.reset();
         comparer.reset();
         comparerUnavailable = false;
+        comparerFailures = 0;
         staging.Reset();
         stagingSize = QSize();
         latest = {};
@@ -424,7 +428,23 @@ bool WGCCaptureEngine::Private::sameContent(const SnapTray::CapturedFrame &a, co
             return false;
         }
         const auto differing = comparer->differingPixels(first->texture.Get(), second->texture.Get());
-        return differing && *differing == 0;
+        if (differing) {
+            comparerFailures = 0;
+            return *differing == 0;
+        }
+        // A failed comparison keeps the frame. One that took the device with
+        // it, or keeps failing, is not tried again in this session: the
+        // device is shared with the encoder (#420).
+        const bool lost = frameDevice->isLost();
+        if (lost || ++comparerFailures >= kMaxComparerFailures) {
+            qWarning().noquote() << QStringLiteral("WGCCaptureEngine: GPU frame comparison failed%1; every frame is kept")
+                                        .arg(lost ? QStringLiteral(", device lost (0x%1)")
+                                                        .arg(quint32(frameDevice->device->GetDeviceRemovedReason()), 8, 16, QChar('0'))
+                                                  : QStringLiteral(" %1 times in a row").arg(comparerFailures));
+            comparer.reset();
+            comparerUnavailable = true;
+        }
+        return false;
     }
     if (!a.image.isNull() && !b.image.isNull()) {
         return a.image == b.image;
@@ -475,6 +495,10 @@ void WGCCaptureEngine::Private::onFrameArrived(quint64 generationAtStart)
             // still screen alive with the latest one (#417).
             if (latest.isValid() && sameContent(captured, latest)) {
                 return;
+            }
+            if (frameDevice->isLost()) {
+                failure = QStringLiteral("the capture device was lost (0x%1)")
+                              .arg(quint32(frameDevice->device->GetDeviceRemovedReason()), 8, 16, QChar('0'));
             }
             captured.captureCopies = 1;
             latest = captured;

@@ -19,24 +19,32 @@ namespace SnapTray {
 
 namespace {
 
-// A triangle that covers the viewport, from the vertex index alone.
-constexpr char kVertexShader[] = R"(
-float4 main(uint id : SV_VertexID) : SV_Position
-{
-    float2 uv = float2((id << 1) & 2, id & 2);
-    return float4(uv * float2(2, -2) + float2(-1, 1), 0, 1);
-}
-)";
+// numthreads in the shader below.
+constexpr UINT kGroupSize = 16;
 
-// Equal pixels are discarded; the occlusion query counts the others.
-constexpr char kPixelShader[] = R"(
+// Each group counts its differing pixels in shared memory and adds the
+// total to the result once. Only the two textures are read and only the
+// counter is written: no rasterization, no render target. The earlier pixel
+// shader pass hung Intel UHD 620 as soon as one pixel survived its discard,
+// likely its output written with no render target bound (#420).
+constexpr char kComputeShader[] = R"(
 Texture2D<float4> first : register(t0);
 Texture2D<float4> second : register(t1);
-float4 main(float4 position : SV_Position) : SV_Target
+RWByteAddressBuffer result : register(u0);
+groupshared uint groupCount;
+[numthreads(16, 16, 1)]
+void main(uint3 id : SV_DispatchThreadID, uint index : SV_GroupIndex)
 {
-    int3 texel = int3(position.xy, 0);
-    if (all(first.Load(texel) == second.Load(texel))) discard;
-    return float4(0, 0, 0, 0);
+    if (index == 0) groupCount = 0;
+    GroupMemoryBarrierWithGroupSync();
+    uint width, height;
+    first.GetDimensions(width, height);
+    if (id.x < width && id.y < height) {
+        int3 texel = int3(id.xy, 0);
+        if (any(first.Load(texel) != second.Load(texel))) InterlockedAdd(groupCount, 1);
+    }
+    GroupMemoryBarrierWithGroupSync();
+    if (index == 0 && groupCount != 0) result.InterlockedAdd(0, groupCount);
 }
 )";
 
@@ -64,10 +72,10 @@ struct D3D11FrameComparer::Private
 {
     ComPtr<ID3D11Device> device;
     ComPtr<ID3D11DeviceContext> context;
-    ComPtr<ID3D11VertexShader> vertexShader;
-    ComPtr<ID3D11PixelShader> pixelShader;
-    ComPtr<ID3D11RasterizerState> rasterizer;
-    ComPtr<ID3D11Query> query;
+    ComPtr<ID3D11ComputeShader> shader;
+    ComPtr<ID3D11Buffer> counter;
+    ComPtr<ID3D11UnorderedAccessView> counterView;
+    ComPtr<ID3D11Buffer> readback;
 };
 
 D3D11FrameComparer::D3D11FrameComparer(std::unique_ptr<Private> p) : d(std::move(p)) {}
@@ -76,24 +84,36 @@ D3D11FrameComparer::~D3D11FrameComparer() = default;
 std::unique_ptr<D3D11FrameComparer> D3D11FrameComparer::create(ID3D11Device *device, ID3D11DeviceContext *context)
 {
     if (!device || !context) return nullptr;
+    // Shared-memory atomics and raw buffer atomics need compute shader 5.0.
+    if (device->GetFeatureLevel() < D3D_FEATURE_LEVEL_11_0) {
+        qWarning() << "D3D11FrameComparer: needs Direct3D feature level 11.0";
+        return nullptr;
+    }
     auto p = std::make_unique<Private>();
     p->device = device;
     p->context = context;
-    const auto vs = compile(kVertexShader, sizeof(kVertexShader) - 1, "vs_4_0");
-    const auto ps = compile(kPixelShader, sizeof(kPixelShader) - 1, "ps_4_0");
-    if (!vs || !ps) return nullptr;
-    if (FAILED(device->CreateVertexShader(vs->GetBufferPointer(), vs->GetBufferSize(), nullptr, &p->vertexShader))
-        || FAILED(device->CreatePixelShader(ps->GetBufferPointer(), ps->GetBufferSize(), nullptr, &p->pixelShader))) {
+    const auto cs = compile(kComputeShader, sizeof(kComputeShader) - 1, "cs_5_0");
+    if (!cs || FAILED(device->CreateComputeShader(cs->GetBufferPointer(), cs->GetBufferSize(), nullptr, &p->shader))) {
         return nullptr;
     }
-    D3D11_RASTERIZER_DESC raster{};
-    raster.FillMode = D3D11_FILL_SOLID;
-    raster.CullMode = D3D11_CULL_NONE;
-    raster.DepthClipEnable = TRUE;
-    D3D11_QUERY_DESC queryDesc{};
-    queryDesc.Query = D3D11_QUERY_OCCLUSION;
-    if (FAILED(device->CreateRasterizerState(&raster, &p->rasterizer))
-        || FAILED(device->CreateQuery(&queryDesc, &p->query))) {
+
+    D3D11_BUFFER_DESC counterDesc{};
+    counterDesc.ByteWidth = sizeof(UINT);
+    counterDesc.Usage = D3D11_USAGE_DEFAULT;
+    counterDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+    counterDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+    D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc{};
+    viewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+    viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+    viewDesc.Buffer.NumElements = 1;
+    viewDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+    D3D11_BUFFER_DESC readbackDesc{};
+    readbackDesc.ByteWidth = sizeof(UINT);
+    readbackDesc.Usage = D3D11_USAGE_STAGING;
+    readbackDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    if (FAILED(device->CreateBuffer(&counterDesc, nullptr, &p->counter))
+        || FAILED(device->CreateUnorderedAccessView(p->counter.Get(), &viewDesc, &p->counterView))
+        || FAILED(device->CreateBuffer(&readbackDesc, nullptr, &p->readback))) {
         return nullptr;
     }
     return std::unique_ptr<D3D11FrameComparer>(new D3D11FrameComparer(std::move(p)));
@@ -118,52 +138,48 @@ std::optional<quint64> D3D11FrameComparer::differingPixels(ID3D11Texture2D *a, I
 
     ID3D11DeviceContext *ctx = d->context.Get();
     // The context is shared with the encoder's conversion: run the pass as
-    // one step for other threads, and leave the pipeline state as it was.
+    // one step for other threads, and leave the compute state as it was.
     ComPtr<ID3D10Multithread> multithread;
     ctx->QueryInterface(IID_PPV_ARGS(&multithread));
     if (multithread) multithread->Enter();
-    ID3D11RenderTargetView *savedTargets[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = {};
-    ComPtr<ID3D11DepthStencilView> savedDepth;
-    ctx->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, savedTargets, &savedDepth);
-    UINT savedViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-    D3D11_VIEWPORT savedViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
-    ctx->RSGetViewports(&savedViewportCount, savedViewports);
-    ComPtr<ID3D11RasterizerState> savedRasterizer;
-    ctx->RSGetState(&savedRasterizer);
+    ComPtr<ID3D11ComputeShader> savedShader;
+    ctx->CSGetShader(&savedShader, nullptr, nullptr);
+    ID3D11ShaderResourceView *savedViews[2] = {};
+    ctx->CSGetShaderResources(0, 2, savedViews);
+    ComPtr<ID3D11UnorderedAccessView> savedCounterView;
+    ctx->CSGetUnorderedAccessViews(0, 1, &savedCounterView);
 
-    // No render target: only the query sees the pixels that survive.
-    ctx->OMSetRenderTargets(0, nullptr, nullptr);
-    D3D11_VIEWPORT viewport{0, 0, float(descA.Width), float(descA.Height), 0, 1};
-    ctx->RSSetViewports(1, &viewport);
-    ctx->RSSetState(d->rasterizer.Get());
-    ctx->IASetInputLayout(nullptr);
-    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    ctx->VSSetShader(d->vertexShader.Get(), nullptr, 0);
-    ctx->GSSetShader(nullptr, nullptr, 0);
-    ctx->PSSetShader(d->pixelShader.Get(), nullptr, 0);
+    const UINT zero[4] = {};
+    ctx->ClearUnorderedAccessViewUint(d->counterView.Get(), zero);
+    ctx->CSSetShader(d->shader.Get(), nullptr, 0);
     ID3D11ShaderResourceView *rawViews[2] = {views[0].Get(), views[1].Get()};
-    ctx->PSSetShaderResources(0, 2, rawViews);
+    ctx->CSSetShaderResources(0, 2, rawViews);
+    ID3D11UnorderedAccessView *counterView = d->counterView.Get();
+    ctx->CSSetUnorderedAccessViews(0, 1, &counterView, nullptr);
+    ctx->Dispatch((descA.Width + kGroupSize - 1) / kGroupSize, (descA.Height + kGroupSize - 1) / kGroupSize, 1);
+    ctx->CopyResource(d->readback.Get(), d->counter.Get());
 
-    ctx->Begin(d->query.Get());
-    ctx->Draw(3, 0);
-    ctx->End(d->query.Get());
-
-    ID3D11ShaderResourceView *noViews[2] = {};
-    ctx->PSSetShaderResources(0, 2, noViews);
-    ctx->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, savedTargets, savedDepth.Get());
-    for (ID3D11RenderTargetView *target : savedTargets) {
-        if (target) target->Release();
+    ctx->CSSetShader(savedShader.Get(), nullptr, 0);
+    ctx->CSSetShaderResources(0, 2, savedViews);
+    for (ID3D11ShaderResourceView *view : savedViews) {
+        if (view) view->Release();
     }
-    if (savedViewportCount) ctx->RSSetViewports(savedViewportCount, savedViewports);
-    ctx->RSSetState(savedRasterizer.Get());
+    ID3D11UnorderedAccessView *restoredCounterView = savedCounterView.Get();
+    ctx->CSSetUnorderedAccessViews(0, 1, &restoredCounterView, nullptr);
     if (multithread) multithread->Leave();
 
-    UINT64 samples = 0;
     const auto deadline = std::chrono::steady_clock::now() + kResultTimeout;
     for (;;) {
-        const HRESULT hr = ctx->GetData(d->query.Get(), &samples, sizeof(samples), 0);
-        if (hr == S_OK) return quint64(samples);
-        if (FAILED(hr) || std::chrono::steady_clock::now() >= deadline) return std::nullopt;
+        D3D11_MAPPED_SUBRESOURCE mapped{};
+        const HRESULT hr = ctx->Map(d->readback.Get(), 0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
+        if (SUCCEEDED(hr)) {
+            const quint64 count = *static_cast<const UINT *>(mapped.pData);
+            ctx->Unmap(d->readback.Get(), 0);
+            return count;
+        }
+        if (hr != DXGI_ERROR_WAS_STILL_DRAWING || std::chrono::steady_clock::now() >= deadline) {
+            return std::nullopt;
+        }
         std::this_thread::yield();
     }
 }
