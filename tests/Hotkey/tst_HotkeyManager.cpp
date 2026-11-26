@@ -614,6 +614,7 @@ void tst_HotkeyManager::testUpdateHotkey_SystemReservedShortcut_data()
 
     QTest::newRow("ctrl-alt-f1") << QStringLiteral("Ctrl+Alt+F1") << true;
     QTest::newRow("ctrl-alt-f9") << QStringLiteral("Ctrl+Alt+F9") << true;
+    QTest::newRow("ctrl-alt-super-f9") << QStringLiteral("Ctrl+Alt+Meta+F9") << true;
     QTest::newRow("ctrl-alt-f12") << QStringLiteral("Ctrl+Alt+F12") << true;
     QTest::newRow("ctrl-alt-shift-f9") << QStringLiteral("Ctrl+Alt+Shift+F9") << false;
     QTest::newRow("ctrl-f9") << QStringLiteral("Ctrl+F9") << false;

@@ -2821,10 +2821,8 @@ void RecordingManager::startCursorTimeline()
         }
         return rects;
     });
-    // A new recording starts with the tray menu closed. Starting from the
-    // menu closes it, and the state seen before can be stale: GNOME asks for
-    // the menu (AboutToShow) when the icon appears and never closes it, which
-    // made the first recording skip every click (#423).
+    // Deliberately start with the menu closed. Seeding setMenuOpen from an
+    // earlier GNOME AboutToShow made the first recording skip every click (#423).
     const auto caps = m_cursorRecorder->capabilities();
     m_cursorDiagnostics = QStringLiteral("cursor: %1, shapes %2, clicks %3")
                               .arg(m_cursorRecorder->probeName(),

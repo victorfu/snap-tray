@@ -49,7 +49,7 @@ Settings > Hotkeys 會依功能分類管理：
 2. 立即測試是否生效。
 3. 常用功能優先使用單段組合鍵。
 
-在 Linux 上，Ctrl+Alt+F1～F12 會在任何 App 收到之前就切換虛擬終端機，因此 SnapTray 不會把它們註冊為快捷鍵，設定的快捷鍵頁面會將它標示為衝突。
+在 Linux 上，Ctrl+Alt+F1～F12 會在任何 App 收到之前就切換虛擬終端機，因此 SnapTray 不會把它們註冊為快捷鍵，Settings > Hotkeys 會將它標示為衝突。
 
 ## 團隊建議
 

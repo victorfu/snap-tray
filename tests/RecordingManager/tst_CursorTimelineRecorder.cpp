@@ -81,13 +81,13 @@ struct Rig {
     std::unique_ptr<CursorTimelineRecorder> recorder;
     QString path;
 
-    explicit Rig(WindowFrameMapping mapping = kMapping)
+    explicit Rig(WindowFrameMapping mapping = kMapping, CursorTimelineRecorder::Clock wallClock = {})
     {
         path = dir.filePath(QStringLiteral("rec.mp4.cursor.jsonl"));
         auto owned = std::make_unique<FakeProbe>(&probeState);
         probe = owned.get();
         recorder = std::make_unique<CursorTimelineRecorder>(std::move(owned), [this] { return now; }, mapping,
-                                                            path, false);
+                                                            path, false, nullptr, std::move(wallClock));
     }
     CursorTimeline finish()
     {
@@ -113,6 +113,8 @@ private slots:
     void menuOpeningClickIsDropped();
     void menuOpeningPressStillDown();
     void onlyTheLatestRecentClickOpensTheMenu();
+    void sampledClicksReachSidecarWhileRecording();
+    void menuKeepsExpiredUnsampledClick();
     void excludedTrayIconPressKeepsEarlierClick();
     void logicalClickCoordinatesUseCaptureMapping();
     void delayedLogicalClickBetweenPolls_data();
@@ -890,14 +892,15 @@ void TestCursorTimelineRecorder::menuOpeningClickIsDropped()
 void TestCursorTimelineRecorder::menuOpeningPressStillDown()
 {
     // A menu that opens on press: its release is not recorded either.
-    Rig rig;
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
     QVERIFY(rig.recorder->start());
     rig.now = 100;
     rig.probe->press(Qt::LeftButton, true);
     rig.recorder->setMenuOpen(true);
     rig.probe->press(Qt::LeftButton, false);
     rig.recorder->setMenuOpen(false);
-    QTest::qWait(20); // a press in the same millisecond still counts as the menu's
+    ++wallMs; // a press in the same millisecond still counts as the menu's
     rig.now = 200;
     rig.probe->press(Qt::LeftButton, true);
     rig.probe->press(Qt::LeftButton, false);
@@ -911,12 +914,13 @@ void TestCursorTimelineRecorder::menuOpeningPressStillDown()
 
 void TestCursorTimelineRecorder::onlyTheLatestRecentClickOpensTheMenu()
 {
-    Rig rig;
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
     QVERIFY(rig.recorder->start());
     rig.now = 100; // long before the menu: written
     rig.probe->press(Qt::LeftButton, true);
     rig.probe->press(Qt::LeftButton, false);
-    QTest::qWait(int(CursorTimelineRecorder::kMenuOpenerGraceMs) + 100);
+    wallMs += CursorTimelineRecorder::kMenuOpenerGraceMs;
     rig.recorder->sampleNow();
     rig.now = 200; // just before the click on the icon: kept
     rig.probe->press(Qt::RightButton, true);
@@ -932,6 +936,39 @@ void TestCursorTimelineRecorder::onlyTheLatestRecentClickOpensTheMenu()
     QCOMPARE(result.buttons[2].button, Qt::RightButton);
     QCOMPARE(result.buttons[3].tMs, 200);
     QCOMPARE(result.skippedUiClicks, 1);
+}
+
+void TestCursorTimelineRecorder::sampledClicksReachSidecarWhileRecording()
+{
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
+    QVERIFY(rig.recorder->start());
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    wallMs += CursorTimelineRecorder::kMenuOpenerGraceMs;
+    // Let the regular sampling and flushing timers publish the pair.
+    auto buttonsOnDisk = [&] {
+        QFile file(rig.path);
+        if (!file.open(QIODevice::ReadOnly)) return false;
+        const auto timeline = CursorTimeline::parse(file.readAll());
+        return timeline && !timeline->finished && timeline->buttons.size() == 2
+            && timeline->buttons.front().down && !timeline->buttons.back().down;
+    };
+    QTRY_VERIFY(buttonsOnDisk());
+}
+
+void TestCursorTimelineRecorder::menuKeepsExpiredUnsampledClick()
+{
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
+    QVERIFY(rig.recorder->start());
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    wallMs += CursorTimelineRecorder::kMenuOpenerGraceMs + 1;
+    rig.recorder->setMenuOpen(true); // before the next sample drains pending clicks
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.skippedUiClicks, 0);
 }
 
 void TestCursorTimelineRecorder::excludedTrayIconPressKeepsEarlierClick()

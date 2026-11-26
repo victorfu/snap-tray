@@ -5,7 +5,6 @@
 #include "recording/WindowTimeline.h"
 
 #include <QHash>
-#include <QElapsedTimer>
 #include <QObject>
 #include <QTimer>
 
@@ -29,7 +28,8 @@ public:
     static constexpr int kFlushIntervalMs = 1000;
 
     CursorTimelineRecorder(std::unique_ptr<CursorProbe> probe, Clock clock, WindowFrameMapping mapping,
-                           const QString& sidecarPath, bool cursorInVideo, QObject* parent = nullptr);
+                           const QString& sidecarPath, bool cursorInVideo, QObject* parent = nullptr,
+                           Clock wallClock = {});
     ~CursorTimelineRecorder() override;
 
     // Opens the sidecar and records the initial pointer. False when the file
@@ -49,8 +49,8 @@ public:
     // Opening one also drops the click that opened it: the tray icon is not
     // a SnapTray window either, and the press comes before the menu (#424).
     void setMenuOpen(bool open);
-    // How long a click waits before it is written, so that a menu opening
-    // right after it can still drop it.
+    // A sample writes clicks at least this old. Pause and stop write pending
+    // clicks immediately.
     static constexpr qint64 kMenuOpenerGraceMs = 500;
     int skippedUiClicks() const { return m_skippedUiClicks; }
 
@@ -81,7 +81,7 @@ private:
     std::deque<ExclusionSample> m_exclusionHistory;
     struct MenuInterval { qint64 start; qint64 end; };
     std::deque<MenuInterval> m_menuIntervals;
-    QElapsedTimer m_wallClock;
+    Clock m_wallClock; // monotonic milliseconds, including pauses
     bool m_menuOpen = false;
     Qt::MouseButtons m_ignored;
     int m_skippedUiClicks = 0;

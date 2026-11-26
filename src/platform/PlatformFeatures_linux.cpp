@@ -137,15 +137,15 @@ bool PlatformFeatures::clipboardImageIsFileIcon()
 
 bool PlatformFeatures::isShortcutReservedBySystem(const QKeySequence& sequence)
 {
-    // XKB maps exactly Ctrl+Alt+F<n> to XF86Switch_VT_<n>, which the X server
-    // handles itself. With Shift added the keys stay plain function keys.
+    // The XKB CTRL+ALT key type ignores Super when selecting the VT switch
+    // level. With Shift added the keys stay plain function keys.
     constexpr auto kSwitchVtModifiers = Qt::ControlModifier | Qt::AltModifier;
     if (sequence.count() != 1) {
         return false;
     }
     const QKeyCombination combination = sequence[0];
     const int key = combination.key();
-    return combination.keyboardModifiers() == kSwitchVtModifiers
+    return (combination.keyboardModifiers() & ~Qt::MetaModifier) == kSwitchVtModifiers
         && key >= Qt::Key_F1 && key <= Qt::Key_F12;
 }
 

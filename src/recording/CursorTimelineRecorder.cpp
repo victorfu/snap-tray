@@ -1,5 +1,7 @@
 #include "recording/CursorTimelineRecorder.h"
 
+#include <QElapsedTimer>
+
 #include <QCryptographicHash>
 #include <QDebug>
 
@@ -30,15 +32,20 @@ bool isFullyTransparent(const QImage& image)
 
 CursorTimelineRecorder::CursorTimelineRecorder(std::unique_ptr<CursorProbe> probe, Clock clock,
                                                WindowFrameMapping mapping, const QString& sidecarPath,
-                                               bool cursorInVideo, QObject* parent)
+                                               bool cursorInVideo, QObject* parent, Clock wallClock)
     : QObject(parent)
+    , m_wallClock(std::move(wallClock))
     , m_probe(std::move(probe))
     , m_clock(std::move(clock))
     , m_mapping(mapping)
     , m_writer(sidecarPath)
     , m_cursorInVideo(cursorInVideo)
 {
-    m_wallClock.start();
+    if (!m_wallClock) {
+        QElapsedTimer timer;
+        timer.start();
+        m_wallClock = [timer] { return timer.elapsed(); };
+    }
     if (m_probe) {
         m_capabilities = m_probe->capabilities();
         connect(m_probe.get(), &CursorProbe::buttonChanged, this, &CursorTimelineRecorder::onButtonChanged);
@@ -124,7 +131,7 @@ void CursorTimelineRecorder::stop()
 void CursorTimelineRecorder::sampleNow()
 {
     if (!m_running || m_paused || !m_probe) return;
-    writePendingButtons(m_wallClock.elapsed() - kMenuOpenerGraceMs);
+    writePendingButtons(m_wallClock() - kMenuOpenerGraceMs);
     rememberExcludedRects();
     const auto state = m_probe->poll();
     if (!state) return;
@@ -192,7 +199,7 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     if (down && !m_held.testFlag(button) && excludedAt(position, ageMs)) {
         m_ignored.setFlag(button);
         ++m_skippedUiClicks;
-        m_lastSkippedPressWallMs = m_wallClock.elapsed() - qMax<qint64>(0, ageMs);
+        m_lastSkippedPressWallMs = m_wallClock() - qMax<qint64>(0, ageMs);
         return;
     }
     if (m_paused || happenedMs < m_activeSinceMs) return;
@@ -208,7 +215,7 @@ void CursorTimelineRecorder::onButtonChanged(Qt::MouseButton button, bool down, 
     // polls, or arrive after the pointer has moved during a GUI stall.
     // Sources without event coordinates still use the recorded history.
     event.position = position;
-    m_pendingButtons.push_back({event, m_wallClock.elapsed() - qMax<qint64>(0, ageMs)});
+    m_pendingButtons.push_back({event, m_wallClock() - qMax<qint64>(0, ageMs)});
 }
 
 void CursorTimelineRecorder::onButtonEventsLost()
@@ -229,7 +236,7 @@ void CursorTimelineRecorder::setMenuOpen(bool open)
     if (m_menuOpen == open) return;
     // Drain queued clicks while the previous menu state still applies.
     if (m_probe && m_running) m_probe->poll();
-    const qint64 now = m_wallClock.elapsed();
+    const qint64 now = m_wallClock();
     if (open) {
         m_menuIntervals.push_back({now, -1});
         dropMenuOpeningClick(now);
@@ -243,7 +250,7 @@ void CursorTimelineRecorder::setMenuOpen(bool open)
 void CursorTimelineRecorder::rememberExcludedRects()
 {
     if (!m_excludedRects) return;
-    const qint64 now = m_wallClock.elapsed();
+    const qint64 now = m_wallClock();
     const auto rects = m_excludedRects();
     if (m_exclusionHistory.empty() || m_exclusionHistory.back().rects != rects)
         m_exclusionHistory.push_back({now, rects});
@@ -253,7 +260,7 @@ void CursorTimelineRecorder::rememberExcludedRects()
 
 bool CursorTimelineRecorder::excludedAt(const QPoint& videoPosition, qint64 ageMs) const
 {
-    const qint64 wallMs = m_wallClock.elapsed() - qMax<qint64>(0, ageMs);
+    const qint64 wallMs = m_wallClock() - qMax<qint64>(0, ageMs);
     for (const auto& interval : m_menuIntervals) {
         if (wallMs >= interval.start && (interval.end < 0 || wallMs <= interval.end)) return true;
     }
