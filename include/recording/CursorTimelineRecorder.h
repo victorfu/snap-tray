@@ -46,7 +46,12 @@ public:
     void setExcludedRectsProvider(ExcludedRects provider) { m_excludedRects = std::move(provider); }
     // Native tray menus have no QWindow; remember their wall-clock intervals,
     // including while paused and when an event arrives after the menu closes.
+    // Opening one also drops the click that opened it: the tray icon is not
+    // a SnapTray window either, and the press comes before the menu (#424).
     void setMenuOpen(bool open);
+    // How long a click waits before it is written, so that a menu opening
+    // right after it can still drop it.
+    static constexpr qint64 kMenuOpenerGraceMs = 500;
     int skippedUiClicks() const { return m_skippedUiClicks; }
 
     bool isRunning() const { return m_running && !m_paused; }
@@ -63,6 +68,9 @@ private:
     void onButtonEventsLost();
     quint32 currentShapeId();
     void releaseHeldButtons();
+    // Writes the held-back button events that happened at or before wallMs.
+    void writePendingButtons(qint64 wallMs);
+    void dropMenuOpeningClick(qint64 openedWallMs);
     void rememberSample(const CursorSample& sample);
     QPoint positionAt(qint64 tMs) const;
 
@@ -98,6 +106,9 @@ private:
     QHash<QByteArray, quint32> m_shapeIds; // image + hotspot digest -> id
     quint32 m_nextShapeId = 1;
     Qt::MouseButtons m_held;
+    struct PendingButton { CursorButtonEvent event; qint64 wallMs; };
+    std::deque<PendingButton> m_pendingButtons; // in order, not yet written
+    qint64 m_lastSkippedPressWallMs = -1; // the latest press on SnapTray UI
     int m_buttonEventLosses = 0;
     qint64 m_buttonFloorMs = 0; // button events stay in order and after start/resume
     qint64 m_activeSinceMs = 0; // last start/resume: earlier button events are dropped

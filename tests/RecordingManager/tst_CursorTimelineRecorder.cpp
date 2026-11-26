@@ -110,6 +110,10 @@ private slots:
     void excludesOwnPressAndRelease();
     void externalDragReleasesOverControls();
     void menuClicksAfterCloseAndDuringPause();
+    void menuOpeningClickIsDropped();
+    void menuOpeningPressStillDown();
+    void onlyTheLatestRecentClickOpensTheMenu();
+    void excludedTrayIconPressKeepsEarlierClick();
     void logicalClickCoordinatesUseCaptureMapping();
     void delayedLogicalClickBetweenPolls_data();
     void delayedLogicalClickBetweenPolls();
@@ -865,6 +869,90 @@ void TestCursorTimelineRecorder::menuClicksAfterCloseAndDuringPause()
     const auto result = rig.finish();
     QVERIFY(result.buttons.empty());
     QCOMPARE(result.skippedUiClicks, 4);
+}
+
+void TestCursorTimelineRecorder::menuOpeningClickIsDropped()
+{
+    // The tray icon has no window, and its press comes before the menu (#424).
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    rig.recorder->sampleNow();
+    rig.recorder->setMenuOpen(true);
+    rig.recorder->setMenuOpen(false);
+    const auto result = rig.finish();
+    QVERIFY(result.buttons.empty());
+    QCOMPARE(result.skippedUiClicks, 1);
+}
+
+void TestCursorTimelineRecorder::menuOpeningPressStillDown()
+{
+    // A menu that opens on press: its release is not recorded either.
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.recorder->setMenuOpen(true);
+    rig.probe->press(Qt::LeftButton, false);
+    rig.recorder->setMenuOpen(false);
+    QTest::qWait(20); // a press in the same millisecond still counts as the menu's
+    rig.now = 200;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.buttons.front().tMs, 200);
+    QVERIFY(result.buttons.front().down);
+    QVERIFY(!result.buttons.back().synthetic);
+    QCOMPARE(result.skippedUiClicks, 1);
+}
+
+void TestCursorTimelineRecorder::onlyTheLatestRecentClickOpensTheMenu()
+{
+    Rig rig;
+    QVERIFY(rig.recorder->start());
+    rig.now = 100; // long before the menu: written
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    QTest::qWait(int(CursorTimelineRecorder::kMenuOpenerGraceMs) + 100);
+    rig.recorder->sampleNow();
+    rig.now = 200; // just before the click on the icon: kept
+    rig.probe->press(Qt::RightButton, true);
+    rig.probe->press(Qt::RightButton, false);
+    rig.now = 300; // the click that opens the menu
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    rig.recorder->setMenuOpen(true);
+    rig.recorder->setMenuOpen(false);
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(4));
+    QCOMPARE(result.buttons[0].tMs, 100);
+    QCOMPARE(result.buttons[2].button, Qt::RightButton);
+    QCOMPARE(result.buttons[3].tMs, 200);
+    QCOMPARE(result.skippedUiClicks, 1);
+}
+
+void TestCursorTimelineRecorder::excludedTrayIconPressKeepsEarlierClick()
+{
+    // Windows and macOS know the icon's geometry: its press is skipped there,
+    // and the user's click just before it stays recorded.
+    Rig rig;
+    rig.recorder->setExcludedRectsProvider([] { return QList<QRect>{QRect(500, 0, 20, 20)}; });
+    QVERIFY(rig.recorder->start());
+    rig.now = 100;
+    rig.probe->press(Qt::LeftButton, true);
+    rig.probe->press(Qt::LeftButton, false);
+    rig.now = 200;
+    rig.probe->press(Qt::RightButton, true, 0, QPoint(510, 10));
+    rig.probe->press(Qt::RightButton, false, 0, QPoint(510, 10));
+    rig.recorder->setMenuOpen(true);
+    rig.recorder->setMenuOpen(false);
+    const auto result = rig.finish();
+    QCOMPARE(result.buttons.size(), size_t(2));
+    QCOMPARE(result.buttons.front().tMs, 100);
+    QCOMPARE(result.skippedUiClicks, 1);
 }
 
 void TestCursorTimelineRecorder::logicalClickCoordinatesUseCaptureMapping()
