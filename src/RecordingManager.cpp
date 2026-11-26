@@ -2788,7 +2788,6 @@ qint64 RecordingManager::mediaTimeMs()
 
 void RecordingManager::setTrayMenuOpen(bool open)
 {
-    m_trayMenuOpen = open;
     if (m_cursorRecorder) m_cursorRecorder->setMenuOpen(open);
 }
 
@@ -2822,7 +2821,10 @@ void RecordingManager::startCursorTimeline()
         }
         return rects;
     });
-    m_cursorRecorder->setMenuOpen(m_trayMenuOpen);
+    // A new recording starts with the tray menu closed. Starting from the
+    // menu closes it, and the state seen before can be stale: GNOME asks for
+    // the menu (AboutToShow) when the icon appears and never closes it, which
+    // made the first recording skip every click (#423).
     const auto caps = m_cursorRecorder->capabilities();
     m_cursorDiagnostics = QStringLiteral("cursor: %1, shapes %2, clicks %3")
                               .arg(m_cursorRecorder->probeName(),
