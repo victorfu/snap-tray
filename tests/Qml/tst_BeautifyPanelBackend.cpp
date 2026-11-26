@@ -514,10 +514,12 @@ void tst_BeautifyPanelBackend::testChangingAndReplacingBackground()
     backend.setSettings(settings);
     QTRY_VERIFY(backend.imageReady());
     QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::blue));
-    QVERIFY(replace(settings.backgroundImagePath, Qt::green));
+    // A Windows reader can briefly prevent an atomic rename. Stop retrying
+    // as soon as the replacement succeeds so the watcher sees one change.
+    QVERIFY(QTest::qWaitFor([&] { return replace(settings.backgroundImagePath, Qt::green); }));
     QTRY_COMPARE(backend.backgroundPreview().isNull() ? QColor() : backend.backgroundPreview().pixelColor(0, 0),
                  QColor(Qt::green));
-    QVERIFY(QFile::remove(settings.backgroundImagePath));
+    QVERIFY(QTest::qWaitFor([&] { return QFile::remove(settings.backgroundImagePath); }));
     QTRY_VERIFY(!backend.imageReady());
     QFile corrupt(settings.backgroundImagePath);
     QVERIFY(corrupt.open(QIODevice::WriteOnly));
@@ -526,7 +528,7 @@ void tst_BeautifyPanelBackend::testChangingAndReplacingBackground()
     backend.setSettings(settings);
     QTRY_VERIFY(backend.imageStatus().contains("unavailable"));
     QVERIFY(backend.settings().backgroundImageData.isEmpty());
-    QVERIFY(replace(settings.backgroundImagePath, Qt::red));
+    QVERIFY(QTest::qWaitFor([&] { return replace(settings.backgroundImagePath, Qt::red); }));
     QTRY_VERIFY(backend.imageReady());
     QCOMPARE(backend.backgroundPreview().pixelColor(0, 0), QColor(Qt::red));
 }
