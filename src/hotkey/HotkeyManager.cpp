@@ -4,6 +4,7 @@
  */
 
 #include "hotkey/HotkeyManager.h"
+#include "PlatformFeatures.h"
 #include "settings/Settings.h"
 
 #include <QCoreApplication>
@@ -664,6 +665,10 @@ std::optional<HotkeyAction> HotkeyManager::hasConflict(const QString& keySequenc
 QString HotkeyManager::getConflictDescription(const QString& keySequence,
                                                std::optional<HotkeyAction> excludeAction) const
 {
+    if (PlatformFeatures::isShortcutReservedBySystem(QKeySequence(keySequence))) {
+        return tr("Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.");
+    }
+
     auto conflict = hasConflict(keySequence, excludeAction);
     if (!conflict) {
         return QString();
@@ -686,6 +691,12 @@ bool HotkeyManager::registerHotkey(HotkeyAction action)
 
     HotkeyConfig& config = configIt.value();
     if (config.keySequence.isEmpty()) {
+        return false;
+    }
+
+    // The desktop handles these itself; the hotkey would never fire (#425).
+    if (PlatformFeatures::isShortcutReservedBySystem(QKeySequence(config.keySequence))) {
+        unregisterHotkey(action);
         return false;
     }
 

@@ -7749,6 +7749,10 @@ Tokeny data: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} nebo {date}</translation>
         <translation>Konflikt s: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Ctrl+Alt+F1 až F12 v Linuxu přepínají virtuální terminál a nelze je použít jako klávesové zkratky.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Zachycení celé obrazovky</translation>
     </message>

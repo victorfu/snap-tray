@@ -18,6 +18,7 @@
 #include "hotkey/HotkeyManager.h"
 #include "hotkey/HotkeyTypes.h"
 #include "settings/Settings.h"
+#include "PlatformFeatures.h"
 
 class tst_HotkeyManager : public QObject
 {
@@ -56,6 +57,11 @@ private slots:
     void testHasConflict_DetectsConflict();
     void testHasConflict_ExcludesSelf();
     void testHasConflict_TreatsWindowsNativePrintAndPrintAsSameShortcut();
+
+    // System-reserved shortcuts (#425)
+    void testUpdateHotkey_SystemReservedShortcut();
+    void testUpdateHotkey_SystemReservedShortcut_data();
+    void testInitialize_PersistedSystemReservedShortcutFails();
 
     // Reset tests
     void testResetToDefault_RestoresOriginal();
@@ -584,6 +590,87 @@ void tst_HotkeyManager::testPrintSequence_UsesWindowsSnapshotVirtualKey()
     QVERIFY(hotkey != nullptr);
     QCOMPARE(hotkey->currentNativeShortcut().key, quint32(0x2C));
 #endif
+}
+
+// ============================================================================
+// System-Reserved Shortcut Tests (#425)
+// ============================================================================
+
+namespace {
+bool switchesVirtualTerminalHere()
+{
+#ifdef Q_OS_LINUX
+    return true;
+#else
+    return false;
+#endif
+}
+}  // namespace
+
+void tst_HotkeyManager::testUpdateHotkey_SystemReservedShortcut_data()
+{
+    QTest::addColumn<QString>("sequence");
+    QTest::addColumn<bool>("switchesTerminal");
+
+    QTest::newRow("ctrl-alt-f1") << QStringLiteral("Ctrl+Alt+F1") << true;
+    QTest::newRow("ctrl-alt-f9") << QStringLiteral("Ctrl+Alt+F9") << true;
+    QTest::newRow("ctrl-alt-f12") << QStringLiteral("Ctrl+Alt+F12") << true;
+    QTest::newRow("ctrl-alt-shift-f9") << QStringLiteral("Ctrl+Alt+Shift+F9") << false;
+    QTest::newRow("ctrl-f9") << QStringLiteral("Ctrl+F9") << false;
+    QTest::newRow("alt-f9") << QStringLiteral("Alt+F9") << false;
+    QTest::newRow("ctrl-alt-f13") << QStringLiteral("Ctrl+Alt+F13") << false;
+    QTest::newRow("ctrl-alt-9") << QStringLiteral("Ctrl+Alt+9") << false;
+}
+
+void tst_HotkeyManager::testUpdateHotkey_SystemReservedShortcut()
+{
+    using namespace SnapTray;
+    QFETCH(QString, sequence);
+    QFETCH(bool, switchesTerminal);
+
+    const bool reserved = switchesTerminal && switchesVirtualTerminalHere();
+    QCOMPARE(PlatformFeatures::isShortcutReservedBySystem(QKeySequence(sequence)), reserved);
+
+    QStringList attempted;
+    manager().m_registerHotkeyOverride = [&attempted](HotkeyAction, const QString& keySequence) {
+        attempted.append(keySequence);
+        return true;
+    };
+
+    constexpr HotkeyAction action = HotkeyAction::PinFromImage;
+    QCOMPARE(manager().updateHotkey(action, sequence), !reserved);
+
+    const HotkeyConfig config = manager().getConfig(action);
+    QCOMPARE(config.keySequence, sequence);
+    QCOMPARE(config.status, reserved ? HotkeyStatus::Failed : HotkeyStatus::Registered);
+    // A reserved shortcut is never handed to the OS.
+    QCOMPARE(attempted.contains(sequence), !reserved);
+    QCOMPARE(manager().getConflictDescription(sequence, action).isEmpty(), !reserved);
+}
+
+void tst_HotkeyManager::testInitialize_PersistedSystemReservedShortcutFails()
+{
+    using namespace SnapTray;
+
+    if (!switchesVirtualTerminalHere()) {
+        QSKIP("Ctrl+Alt+F1 to F12 are only reserved on Linux.");
+    }
+
+    manager().shutdown();
+    clearAllTestSettings();
+    manager().m_registerHotkeyOverride = [](HotkeyAction, const QString&) {
+        return true;
+    };
+
+    auto settings = getSettings();
+    settings.setValue(kSettingsKeyRecordFullScreenHotkey, "Ctrl+Alt+F9");
+
+    manager().initialize();
+
+    const HotkeyConfig config = manager().getConfig(HotkeyAction::RecordFullScreen);
+    QCOMPARE(config.keySequence, QStringLiteral("Ctrl+Alt+F9"));
+    QCOMPARE(config.status, HotkeyStatus::Failed);
+    QVERIFY(!manager().m_hotkeys.contains(HotkeyAction::RecordFullScreen));
 }
 
 QTEST_MAIN(tst_HotkeyManager)

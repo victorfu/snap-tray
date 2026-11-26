@@ -169,7 +169,8 @@ public:
                                              std::optional<HotkeyAction> excludeAction = std::nullopt) const;
 
     /**
-     * @brief Get the display name of the conflicting hotkey, if any.
+     * @brief Describe why a hotkey cannot be used: a conflicting hotkey, or
+     *        a shortcut the desktop reserves. Empty when there is neither.
      */
     QString getConflictDescription(const QString& keySequence,
                                     std::optional<HotkeyAction> excludeAction = std::nullopt) const;

@@ -17,6 +17,7 @@
 namespace SnapTray { struct ClipboardImageFile; }
 
 class OCRManager;
+class QKeySequence;
 class QObject;
 class WindowDetector;
 
@@ -74,6 +75,11 @@ public:
     // file manager put next to copied files (Finder's com.apple.icns), not
     // pixels of the files. Pasting then loads the files instead (#414).
     static bool clipboardImageIsFileIcon();
+
+    // True when the desktop acts on this shortcut before any application can,
+    // so it never works as a global hotkey: X11 switches the virtual
+    // terminal on Ctrl+Alt+F1 to F12 (#425).
+    static bool isShortcutReservedBySystem(const QKeySequence& sequence);
 
     // CLI installation
     bool isCLIInstalled() const;

@@ -7741,6 +7741,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>与 %1 冲突</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>在 Linux 上，Ctrl+Alt+F1～F12 用于切换虚拟终端，不能用作快捷键。</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>全屏截图</translation>
     </message>

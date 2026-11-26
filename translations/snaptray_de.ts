@@ -7745,6 +7745,10 @@ Datums-Tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} oder {date}</translation
         <translation>Konflikt mit: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Strg+Alt+F1 bis F12 wechseln unter Linux das virtuelle Terminal und können nicht als Tastenkürzel verwendet werden.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Vollbildaufnahme</translation>
     </message>

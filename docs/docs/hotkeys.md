@@ -70,6 +70,8 @@ If your keybinding conflicts with another app:
 2. Test trigger immediately.
 3. Keep frequently used actions on single key combos.
 
+On Linux, Ctrl+Alt+F1 to F12 switch the virtual terminal before any app sees them, so SnapTray does not register them as hotkeys; Settings > Hotkeys marks the hotkey as Conflict.
+
 ## Team recommendation
 
 For shared environments, define a standard hotkey profile and document it internally.

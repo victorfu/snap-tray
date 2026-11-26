@@ -7749,6 +7749,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>У сукобу са: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Ctrl+Alt+F1 до F12 на Linuxu мењају виртуелни терминал и не могу се користити као пречице.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Снимање целог екрана</translation>
     </message>

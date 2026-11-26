@@ -176,6 +176,11 @@ bool PlatformFeatures::clipboardImageIsFileIcon()
     }
 }
 
+bool PlatformFeatures::isShortcutReservedBySystem(const QKeySequence&)
+{
+    return false;
+}
+
 quint64 PlatformFeatures::nativeClipboardRevision()
 {
     return [NSPasteboard generalPasteboard].changeCount;

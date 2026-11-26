@@ -7741,6 +7741,10 @@ Tarih belirteçleri: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} veya {date}</trans
         <translation>Şununla çakışıyor: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Linux&apos;ta Ctrl+Alt+F1–F12 sanal terminali değiştirir ve kısayol olarak kullanılamaz.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Tam Ekran Yakalama</translation>
     </message>

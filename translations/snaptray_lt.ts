@@ -7749,6 +7749,10 @@ Datos žetonai: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} arba {date}</translatio
         <translation>Konfliktuoja su: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Linux sistemoje Ctrl+Alt+F1–F12 perjungia virtualųjį terminalą, todėl jų negalima naudoti kaip sparčiųjų klavišų.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Viso ekrano fiksavimas</translation>
     </message>
