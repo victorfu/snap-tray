@@ -844,7 +844,8 @@ void TestCursorTimelineRecorder::externalDragReleasesOverControls()
 
 void TestCursorTimelineRecorder::menuClicksAfterCloseAndDuringPause()
 {
-    Rig rig;
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
     QVERIFY(rig.recorder->start());
     rig.now = 100;
     rig.recorder->setMenuOpen(true);
@@ -854,19 +855,18 @@ void TestCursorTimelineRecorder::menuClicksAfterCloseAndDuringPause()
     rig.probe->press(Qt::LeftButton, true); // resume, still paused
     rig.recorder->resume();
     rig.probe->press(Qt::LeftButton, false);
-    QTest::qWait(10);
-    QElapsedTimer lateEventAge;
-    lateEventAge.start();
-    QTest::qWait(10);
+    wallMs = 10;
+    const qint64 lateEventTime = wallMs;
+    wallMs = 20;
     // A queued press is drained before the menu closes (native menu timing).
     rig.probeState.onPoll = [&] { rig.probe->press(Qt::LeftButton, true); };
     rig.recorder->setMenuOpen(false);
     rig.probe->press(Qt::LeftButton, false);
     QCOMPARE(rig.recorder->skippedUiClicks(), 3);
     // A late event's original time was while the native menu was open.
-    QTest::qWait(20);
+    wallMs = 40;
     rig.now = 1000;
-    rig.probe->press(Qt::RightButton, true, lateEventAge.elapsed());
+    rig.probe->press(Qt::RightButton, true, wallMs - lateEventTime);
     rig.probe->press(Qt::RightButton, false);
     const auto result = rig.finish();
     QVERIFY(result.buttons.empty());
@@ -876,7 +876,7 @@ void TestCursorTimelineRecorder::menuClicksAfterCloseAndDuringPause()
 void TestCursorTimelineRecorder::menuOpeningClickIsDropped()
 {
     // The tray icon has no window, and its press comes before the menu (#424).
-    Rig rig;
+    Rig rig(kMapping, [] { return 0; });
     QVERIFY(rig.recorder->start());
     rig.now = 100;
     rig.probe->press(Qt::LeftButton, true);
@@ -975,13 +975,15 @@ void TestCursorTimelineRecorder::excludedTrayIconPressKeepsEarlierClick()
 {
     // Windows and macOS know the icon's geometry: its press is skipped there,
     // and the user's click just before it stays recorded.
-    Rig rig;
+    qint64 wallMs = 0;
+    Rig rig(kMapping, [&] { return wallMs; });
     rig.recorder->setExcludedRectsProvider([] { return QList<QRect>{QRect(500, 0, 20, 20)}; });
     QVERIFY(rig.recorder->start());
     rig.now = 100;
     rig.probe->press(Qt::LeftButton, true);
     rig.probe->press(Qt::LeftButton, false);
     rig.now = 200;
+    ++wallMs;
     rig.probe->press(Qt::RightButton, true, 0, QPoint(510, 10));
     rig.probe->press(Qt::RightButton, false, 0, QPoint(510, 10));
     rig.recorder->setMenuOpen(true);
