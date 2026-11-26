@@ -60,6 +60,8 @@ private slots:
     void testFinishSkipsSidecarWithoutWindows();
     void testStaleSidecarsAreCleanedUp();
     void testCursorTimelineFollowsTheRecording();
+    void testTrayMenuClickFiltering_data();
+    void testTrayMenuClickFiltering();
     void testCursorPauseIsStampedAtTheBoundary();
     void testKeyTimelineOnlyWhenSwitchedOn();
     void testKeyPermissionFailureLeavesRecordingActive();
@@ -461,6 +463,41 @@ void TestRecordingManagerLifecycle::testCursorTimelineFollowsTheRecording()
     QCOMPARE(m_manager->state(), RecordingManager::State::Idle);
     QVERIFY(!QFile::exists(SnapTray::CursorTimelineSidecar::pathFor(video)));
     m_manager->m_session = {};
+}
+
+void TestRecordingManagerLifecycle::testTrayMenuClickFiltering_data()
+{
+    QTest::addColumn<bool>("openDuringRecording");
+    QTest::newRow("stale-before-start") << false;
+    QTest::newRow("open-during-recording") << true;
+}
+
+void TestRecordingManagerLifecycle::testTrayMenuClickFiltering()
+{
+    QFETCH(bool, openDuringRecording);
+    QTemporaryDir dir;
+    const QString video = dir.filePath(QStringLiteral("tray.mp4"));
+    LifecycleCursorProbe* probe = nullptr;
+    m_manager->m_createCursorProbe = [&probe] {
+        auto owned = std::make_unique<LifecycleCursorProbe>();
+        probe = owned.get();
+        return owned;
+    };
+    m_manager->m_windowFrameMapping = {QRect(0, 0, 100, 100), QRect(), 1.0, QRect(0, 0, 100, 100)};
+    m_manager->m_session.videoPath = video;
+    m_manager->m_elapsedTimer.start();
+    m_manager->m_startSettings.showPreview = true;
+    m_manager->setTrayMenuOpen(true);
+    m_manager->startCursorTimeline();
+    QVERIFY(probe);
+    if (openDuringRecording) m_manager->setTrayMenuOpen(true);
+    probe->click(true);
+    probe->click(false);
+    m_manager->stopFrameCapture();
+    const auto timeline = SnapTray::CursorTimelineSidecar::read(video);
+    QVERIFY(timeline && timeline->finished);
+    QCOMPARE(timeline->buttons.size(), openDuringRecording ? size_t(0) : size_t(2));
+    QCOMPARE(timeline->skippedUiClicks, openDuringRecording ? 1 : 0);
 }
 
 namespace {

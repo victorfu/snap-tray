@@ -7741,6 +7741,10 @@ Token ngày: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, hoặc {date}</translatio
         <translation>Xung đột với: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Trên Linux, Ctrl+Alt+F1 đến F12 dùng để chuyển terminal ảo nên không thể dùng làm phím tắt.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Chụp toàn màn hình</translation>
     </message>

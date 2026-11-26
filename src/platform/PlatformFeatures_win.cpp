@@ -137,6 +137,11 @@ bool PlatformFeatures::clipboardImageIsFileIcon()
     return false;   // Explorer and X11 file managers put no icon next to copied files.
 }
 
+bool PlatformFeatures::isShortcutReservedBySystem(const QKeySequence&)
+{
+    return false;
+}
+
 quint64 PlatformFeatures::nativeClipboardRevision()
 {
     return GetClipboardSequenceNumber();

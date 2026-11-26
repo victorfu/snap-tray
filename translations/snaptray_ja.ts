@@ -7741,6 +7741,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>競合: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Linux では Ctrl+Alt+F1～F12 で仮想端末が切り替わるため、ショートカットキーには使用できません。</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>全画面キャプチャ</translation>
     </message>

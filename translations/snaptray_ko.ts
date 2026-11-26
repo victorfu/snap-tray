@@ -7741,6 +7741,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>충돌: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Linux에서 Ctrl+Alt+F1~F12는 가상 터미널을 전환하므로 단축키로 사용할 수 없습니다.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>전체 화면 캡처</translation>
     </message>

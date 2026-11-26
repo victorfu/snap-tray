@@ -2788,7 +2788,6 @@ qint64 RecordingManager::mediaTimeMs()
 
 void RecordingManager::setTrayMenuOpen(bool open)
 {
-    m_trayMenuOpen = open;
     if (m_cursorRecorder) m_cursorRecorder->setMenuOpen(open);
 }
 
@@ -2822,7 +2821,8 @@ void RecordingManager::startCursorTimeline()
         }
         return rects;
     });
-    m_cursorRecorder->setMenuOpen(m_trayMenuOpen);
+    // Deliberately start with the menu closed. Seeding setMenuOpen from an
+    // earlier GNOME AboutToShow made the first recording skip every click (#423).
     const auto caps = m_cursorRecorder->capabilities();
     m_cursorDiagnostics = QStringLiteral("cursor: %1, shapes %2, clicks %3")
                               .arg(m_cursorRecorder->probeName(),

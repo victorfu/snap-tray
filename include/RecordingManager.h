@@ -407,7 +407,6 @@ private:
     WatermarkRenderer::Settings m_watermarkSettings;
     std::unique_ptr<SnapTray::WindowTimelineRecorder> m_windowTimelineRecorder;
     std::function<QRect()> m_trayIconGeometry;
-    bool m_trayMenuOpen = false;
     std::unique_ptr<SnapTray::CursorTimelineRecorder> m_cursorRecorder;
     // Keys for shortcut hints (#187), only when switched on before recording.
     std::unique_ptr<SnapTray::KeyTimelineRecorder> m_keyRecorder;

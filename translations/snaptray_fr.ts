@@ -7745,6 +7745,10 @@ Jetons de date : {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} ou {date}</translation
         <translation>Conflit avec : %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Ctrl+Alt+F1 à F12 changent de terminal virtuel sous Linux et ne peuvent pas servir de raccourcis.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Capture plein écran</translation>
     </message>

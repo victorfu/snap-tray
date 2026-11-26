@@ -7745,6 +7745,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>Σύγκρουση με: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Τα Ctrl+Alt+F1 έως F12 αλλάζουν το εικονικό τερματικό στο Linux και δεν μπορούν να χρησιμοποιηθούν ως συντομεύσεις.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Καταγραφή πλήρους οθόνης</translation>
     </message>

@@ -7455,6 +7455,10 @@ Date tokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss}, or {date}</source>
         <translation>ขัดแย้งกับ: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>บน Linux ปุ่ม Ctrl+Alt+F1 ถึง F12 ใช้สลับเทอร์มินัลเสมือน จึงใช้เป็นปุ่มลัดไม่ได้</translation>
+    </message>
+    <message>
         <source>Region Capture</source>
         <translation>จับภาพแบบเลือกพื้นที่</translation>
     </message>

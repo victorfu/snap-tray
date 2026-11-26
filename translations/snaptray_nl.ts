@@ -7745,6 +7745,10 @@ Datumtokens: {yyyyMMdd_HHmmss}, {yyyy-MM-dd_HH-mm-ss} of {date}</translation>
         <translation>Conflict met: %1</translation>
     </message>
     <message>
+        <source>Ctrl+Alt+F1 to F12 switch the virtual terminal on Linux and cannot be used as hotkeys.</source>
+        <translation>Ctrl+Alt+F1 tot en met F12 wisselen onder Linux van virtuele terminal en kunnen niet als sneltoets worden gebruikt.</translation>
+    </message>
+    <message>
         <source>Full Screen Capture</source>
         <translation>Volledig scherm opnemen</translation>
     </message>
