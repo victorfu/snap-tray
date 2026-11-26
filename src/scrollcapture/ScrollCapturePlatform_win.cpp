@@ -3,6 +3,7 @@
 #include "scrollcapture/ScrollAreaLocator.h"
 #include "scrollcapture/ScrollInjector.h"
 #include "scrollcapture/ScrollTargetPoints.h"
+#include "scrollcapture/WinScrollGeometry.h"
 
 #include <QFileInfo>
 #include <QGuiApplication>
@@ -110,37 +111,20 @@ QString hresultText(HRESULT hr)
 
 // Qt keeps each screen's top-left corner in native pixels and scales from
 // there, so logical and physical points map through the screen they are on.
-QPoint logicalToPhysical(const QPoint& point)
+QScreen* screenForLogicalPoint(const QPoint& point)
 {
     QScreen* screen = QGuiApplication::screenAt(point);
-    if (!screen) {
-        screen = QGuiApplication::primaryScreen();
-    }
+    return screen ? screen : QGuiApplication::primaryScreen();
+}
+
+QPoint logicalToPhysical(const QPoint& point)
+{
+    const QScreen* screen = screenForLogicalPoint(point);
     if (!screen) {
         return point;
     }
     const QPoint origin = screen->geometry().topLeft();
     return origin + (point - origin) * screen->devicePixelRatio();
-}
-
-QPointF physicalToLogical(const QPointF& point)
-{
-    for (QScreen* screen : QGuiApplication::screens()) {
-        const qreal ratio = screen->devicePixelRatio();
-        const QRect geometry = screen->geometry();
-        const QRectF native(QPointF(geometry.topLeft()), QSizeF(geometry.size()) * ratio);
-        if (native.contains(point)) {
-            return QPointF(geometry.topLeft()) + (point - QPointF(geometry.topLeft())) / ratio;
-        }
-    }
-    return point;
-}
-
-QRect physicalToLogical(const RECT& rect)
-{
-    const QPointF topLeft = physicalToLogical(QPointF(rect.left, rect.top));
-    const QPointF bottomRight = physicalToLogical(QPointF(rect.right, rect.bottom));
-    return QRectF(topLeft, bottomRight).toAlignedRect();
 }
 
 QJsonObject rectToJson(const RECT& rect)
@@ -233,7 +217,7 @@ public:
     WinScrollArea(ComPtr<IUIAutomation> automation, ComPtr<IUIAutomationTreeWalker> walker,
                   ComPtr<IUIAutomationElement> element, ComPtr<IUIAutomationScrollPattern> pattern,
                   HWND rootWindow, DWORD processId, int level, int availableLevels, ProcessInfo process,
-                  QJsonObject hitDiagnostics)
+                  const QPoint& logicalHitPoint, QJsonObject hitDiagnostics)
         : m_automation(std::move(automation))
         , m_walker(std::move(walker))
         , m_element(std::move(element))
@@ -243,6 +227,7 @@ public:
         , m_level(level)
         , m_availableLevels(availableLevels)
         , m_process(std::move(process))
+        , m_logicalHitPoint(logicalHitPoint)
         , m_hitDiagnostics(std::move(hitDiagnostics))
     {
     }
@@ -303,7 +288,15 @@ public:
             snapshot.diagnostics.insert(QStringLiteral("boundsReadable"), false);
             return snapshot;
         }
-        snapshot.bounds = physicalToLogical(rect);
+        const QRectF physicalBounds(QPointF(rect.left, rect.top), QPointF(rect.right, rect.bottom));
+        if (const QScreen* screen = screenForLogicalPoint(m_logicalHitPoint)) {
+            // Keep the full UIA rectangle in the hit screen's coordinate space.
+            // A corner can overhang the screen or land on a different-DPI monitor.
+            snapshot.bounds = logicalScrollBounds(physicalBounds, screen->geometry().topLeft(),
+                                                  screen->devicePixelRatio());
+        } else {
+            snapshot.bounds = physicalBounds.toAlignedRect();
+        }
         snapshot.diagnostics.insert(QStringLiteral("physicalBounds"), rectToJson(rect));
         readPosition(snapshot);
         return snapshot;
@@ -360,6 +353,7 @@ private:
     int m_level = 0;
     int m_availableLevels = 0;
     ProcessInfo m_process;
+    QPoint m_logicalHitPoint;
     QJsonObject m_hitDiagnostics;
 };
 
@@ -533,7 +527,7 @@ private:
         result.status = LocateStatus::Found;
         result.area = std::make_unique<WinScrollArea>(
             m_automation, m_walker, chosen.element, chosen.pattern, root, processId, level, available, std::move(process),
-            std::move(hitDiagnostics));
+            globalPos, std::move(hitDiagnostics));
         return result;
     }
 
