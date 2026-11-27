@@ -8,6 +8,7 @@ class tst_MacScrollPosition : public QObject
 {
     Q_OBJECT
 private slots:
+    void scrollAreaMustCoverHitPoint();
     void webViewportDoesNotProveEndpoints();
     void webScrollBarStillReportsEndpoints_data();
     void webScrollBarStillReportsEndpoints();
@@ -17,6 +18,15 @@ private slots:
     void viewportGeometryWithScrollBar();
     void viewportGeometryWithOnlyThumbRatio();
 };
+
+void tst_MacScrollPosition::scrollAreaMustCoverHitPoint()
+{
+    const QPoint hit(736, 450);
+    QVERIFY(!macScrollAreaContainsPoint(QRect(0, 956, 234, 72), hit)); // Safari, #428
+    QVERIFY(!macScrollAreaContainsPoint(QRect(), QPoint()));
+    QVERIFY(macScrollAreaContainsPoint(QRect(123, 123, 1324, 833), hit));
+    QVERIFY(macScrollAreaContainsPoint(QRect(-800, 0, 800, 600), QPoint(-1, 599)));
+}
 
 void tst_MacScrollPosition::webViewportDoesNotProveEndpoints()
 {
