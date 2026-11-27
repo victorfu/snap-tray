@@ -7,7 +7,19 @@
 #include <QSaveFile>
 #include <QTemporaryFile>
 
+#include <cmath>
+
 namespace snaptray::scrollcapture::probe {
+
+bool positionSupportsShift(double offsetDeltaPx, int measuredShiftPx, int tolerancePx)
+{
+    if (!std::isfinite(offsetDeltaPx)) return false;
+    if (measuredShiftPx == 0) return std::abs(offsetDeltaPx) < 0.5;
+    // A provider that has not advanced cannot confirm observed motion, even
+    // when its reported offset falls inside the pixel search window.
+    return (measuredShiftPx > 0 ? offsetDeltaPx >= 0.5 : offsetDeltaPx <= -0.5)
+        && std::abs(offsetDeltaPx - measuredShiftPx) <= tolerancePx;
+}
 
 QString positionSyncUnavailableReason(bool settled, bool hasOffsetBefore, bool hasOffsetAfter,
                                       const ShiftEstimate& visual)

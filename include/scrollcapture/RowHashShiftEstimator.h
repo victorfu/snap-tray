@@ -115,4 +115,8 @@ BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImag
                                               const ShiftEstimatorOptions& options = {},
                                               int horizontalInset = 0);
 
+// Content can move in a narrow portion of the viewport. A candidate still
+// needs independent row evidence and must subsequently pass exact assembly.
+ShiftEstimate estimateContentShift(const BandShiftEstimate& observed);
+
 } // namespace snaptray::scrollcapture

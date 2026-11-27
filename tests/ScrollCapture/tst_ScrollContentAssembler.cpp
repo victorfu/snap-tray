@@ -43,6 +43,8 @@ private slots:
     void exportsExactContentAcrossStickyTransition();
     void variableShiftsPreserveEveryRow();
     void rejectsDiscontinuousSession();
+    void excludesScrollbarThatChangesBetweenPairs();
+    void rejectsCroppingScrollingTextAroundAnOcclusion();
     void rejectsInvalidOrBlankInput();
     void rejectsRepeatingContentWithoutUniqueEvidence();
     void rejectsMinorityContent();
@@ -100,6 +102,47 @@ void tst_ScrollContentAssembler::rejectsDiscontinuousSession()
     const auto result = assembleScrollContent({{viewport(doc, 0), viewport(doc, 30), 30},
                                               {viewport(doc, 31), viewport(doc, 61), 30}});
     QCOMPARE(result.error, QStringLiteral("discontinuous_capture"));
+    QVERIFY(result.image.isNull());
+}
+
+void tst_ScrollContentAssembler::excludesScrollbarThatChangesBetweenPairs()
+{
+    const auto doc = document();
+    auto first = doc.copy(0, 0, kWidth, kHeight);
+    auto settled = doc.copy(0, 30, kWidth, kHeight);
+    auto next = settled;
+    auto last = doc.copy(0, 60, kWidth, kHeight);
+    constexpr int scrollbar = kWidth - 1;
+    for (int y = 0; y < kHeight; ++y) {
+        // A changing strip happens to overlap within each pair, but not
+        // between the two captures at the same scroll position.
+        first.setPixel(scrollbar, y, qRgb(24, 24, 24));
+        settled.setPixel(scrollbar, y, qRgb(24, 24, 24));
+        next.setPixel(scrollbar, y, qRgb(200, 200, 200));
+        last.setPixel(scrollbar, y, qRgb(200, 200, 200));
+    }
+    const auto result = assembleScrollContent({{first, settled, 30}, {next, last, 30}});
+    QVERIFY2(result.ok(), qPrintable(result.error));
+    QCOMPARE(result.contentRect, QRect(0, 0, scrollbar, kHeight));
+    QCOMPARE(result.image.copy(0, 0, scrollbar, kHeight + 60), doc.copy(0, 0, scrollbar, kHeight + 60));
+}
+
+void tst_ScrollContentAssembler::rejectsCroppingScrollingTextAroundAnOcclusion()
+{
+    const auto doc = document();
+    auto frame0 = doc.copy(0, 0, kWidth, kHeight);
+    auto frame1 = doc.copy(0, 30, kWidth, kHeight);
+    auto frame2 = doc.copy(0, 60, kWidth, kHeight);
+    auto frame3 = doc.copy(0, 90, kWidth, kHeight);
+    // A temporary overlay crosses the right-hand portion of the document.
+    // A rectangle that drops this column can still have perfect overlaps.
+    for (int y = 40; y < 115; ++y) {
+        for (int x = kContentWidth; x < kWidth; ++x) {
+            frame0.setPixel(x, y, qRgb(255, 255, 255));
+        }
+    }
+    const auto result = assembleScrollContent({{frame0, frame1, 30}, {frame1, frame2, 30}, {frame2, frame3, 30}});
+    QCOMPARE(result.error, QStringLiteral("moving_content_outside_crop"));
     QVERIFY(result.image.isNull());
 }
 

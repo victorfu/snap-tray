@@ -377,6 +377,15 @@ void tst_RowHashShiftEstimator::bandsDoNotPromoteBlankOrMinorityEvidence()
     QCOMPARE(minority.alignmentEstimate.status, ShiftEstimate::Status::NotFound);
     QVERIFY(minority.estimate.candidates.isEmpty());
     QVERIFY(!minority.nonUniformMotion);
+    const auto content = estimateContentShift(minority);
+    QCOMPARE(content.status, ShiftEstimate::Status::Found);
+    QCOMPARE(content.shift, 37);
+    auto conflicting = minority;
+    conflicting.observedBands[4] = content;
+    conflicting.observedBands[4].shift = 21;
+    QCOMPARE(estimateContentShift(conflicting).shift, 37);
+    conflicting.observedBands[0].shift = 21;
+    QCOMPARE(estimateContentShift(conflicting).status, ShiftEstimate::Status::NotFound);
     const auto unchanged = estimateVerticalShiftByBands(before, before);
     QCOMPARE(unchanged.estimate.status, ShiftEstimate::Status::Found);
     QCOMPARE(unchanged.estimate.shift, 0);

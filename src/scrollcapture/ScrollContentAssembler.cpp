@@ -18,6 +18,65 @@ ScrollContentResult fail(const char* reason)
     return result;
 }
 
+QRect largestCommonRegion(const QVector<int>& requiredTop, const QSize& size)
+{
+    const int width = size.width();
+    const int height = size.height();
+    // Largest valid rectangle via histogram stacks, O(width * height).
+    // Require a majority of BOTH viewport dimensions, not a lucky tiny patch.
+    QRect region;
+    qint64 bestArea = 0;
+    QVector<int> heights(width + 1, 0);
+    QVector<int> tops(width, 0);
+    QVector<int> stack;
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            tops[x] = std::max(tops[x], requiredTop[y * width + x]);
+            heights[x] = y - tops[x] + 1;
+        }
+        stack.clear();
+        for (int x = 0; x <= width; ++x) {
+            while (!stack.isEmpty() && heights[stack.last()] > heights[x]) {
+                const int h = heights[stack.takeLast()];
+                const int left = stack.isEmpty() ? 0 : stack.last() + 1;
+                const int w = x - left;
+                const qint64 area = qint64(w) * h;
+                if (w > width / 2 && h > height / 2 && area > bestArea) {
+                    region = QRect(left, y - h + 1, w, h);
+                    bestArea = area;
+                }
+            }
+            stack.append(x);
+        }
+    }
+    return region;
+}
+
+bool omitsMovingColumns(const QVector<ScrollContentPair>& pairs, const QRect& region, int width)
+{
+    constexpr int kStripWidth = 32;
+    // Compare discarded columns in narrow strips. Blank margins and chrome
+    // that stays put (or initially moves with the page before becoming fixed)
+    // are expected. Repeated evidence of the same motion outside the crop
+    // means an exact crop would still discard part of the scrolling content.
+    for (const QRect& side : {QRect(0, region.top(), region.left(), region.height()),
+                              QRect(region.right() + 1, region.top(), width - region.right() - 1, region.height())}) {
+        for (int x = side.left(); x <= side.right(); x += kStripWidth) {
+            const QRect strip(x, side.top(), std::min(kStripWidth, side.right() - x + 1), side.height());
+            qsizetype matchingPairs = 0;
+            for (const auto& pair : pairs) {
+                const auto before = computeRowHashes(pair.before.copy(strip));
+                const auto after = computeRowHashes(pair.after.copy(strip));
+                const auto motion = estimateVerticalShift(before, after);
+                if (motion.status == ShiftEstimate::Status::Found && motion.shift == pair.shift) {
+                    if (++matchingPairs > pairs.size() / 2) return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 ScrollContentResult assemble(const QVector<ScrollContentPair>& pairs, qint64 maxOutputPixels)
 {
     if (pairs.isEmpty() || pairs.first().before.isNull() || maxOutputPixels <= 0) {
@@ -58,34 +117,36 @@ ScrollContentResult assemble(const QVector<ScrollContentPair>& pairs, qint64 max
             }
         }
     }
-    // Largest valid rectangle via histogram stacks, O(width * height).
-    // Require a majority of BOTH viewport dimensions, not a lucky tiny patch.
-    QRect region;
-    qint64 bestArea = 0;
-    QVector<int> heights(width + 1, 0);
-    QVector<int> tops(width, 0);
-    QVector<int> stack;
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            tops[x] = std::max(tops[x], requiredTop[y * width + x]);
-            heights[x] = y - tops[x] + 1;
-        }
-        stack.clear();
-        for (int x = 0; x <= width; ++x) {
-            while (!stack.isEmpty() && heights[stack.last()] > heights[x]) {
-                const int h = heights[stack.takeLast()];
-                const int left = stack.isEmpty() ? 0 : stack.last() + 1;
-                const int w = x - left;
-                const qint64 area = qint64(w) * h;
-                if (w > width / 2 && h > height / 2 && area > bestArea) {
-                    region = QRect(left, y - h + 1, w, h);
-                    bestArea = area;
+    QRect region = largestCommonRegion(requiredTop, size);
+    if (region.isEmpty()) return fail("no_common_content_region");
+
+    // Include inter-pair constraints when choosing the crop. A scrollbar or
+    // caret may change between captures while the exact body stays continuous.
+    bool seamChanged = false;
+    for (qsizetype i = 1; i < pairs.size(); ++i) {
+        const auto previous = pairs[i - 1].after.convertToFormat(QImage::Format_ARGB32);
+        const auto next = pairs[i].before.convertToFormat(QImage::Format_ARGB32);
+        if (previous.isNull() || next.isNull()) return fail("allocation_failed");
+        for (int y = 0; y < height; ++y) {
+            const auto* a = reinterpret_cast<const QRgb*>(previous.constScanLine(y));
+            const auto* b = reinterpret_cast<const QRgb*>(next.constScanLine(y));
+            if (std::memcmp(a, b, size_t(width) * kBytesPerPixel) == 0) continue;
+            for (int x = 0; x < width; ++x) {
+                if (a[x] != b[x]) {
+                    auto& top = requiredTop[y * width + x];
+                    top = std::max(top, y + 1);
+                    seamChanged = seamChanged || region.contains(x, y);
                 }
             }
-            stack.append(x);
         }
     }
-    if (region.isEmpty()) return fail("no_common_content_region");
+    if (seamChanged) {
+        region = largestCommonRegion(requiredTop, size);
+        if (region.isEmpty()) return fail("discontinuous_capture");
+    }
+    if (omitsMovingColumns(pairs, region, width)) {
+        return fail("moving_content_outside_crop");
+    }
     // Keep the initial page header/title at its full width. Cropping that to
     // the later body column can cut text spanning above the sidebar. Only the
     // newly revealed content is appended; excluded columns remain transparent.
