@@ -187,13 +187,16 @@ std::optional<WindowHit> windowUnderPoint(const QPoint& point)
     return std::nullopt;
 }
 
-bool isScrollAreaCandidate(AXUIElementRef element, const QString& role)
+bool isScrollAreaCandidate(AXUIElementRef element, const QString& role, const QPoint& point)
 {
-    if (role == kScrollAreaRole) {
-        return true;
+    if (role != kScrollAreaRole) {
+        ScopedCF<AXUIElementRef> scrollBar(copyAXElementAttribute(element, kAXVerticalScrollBarAttribute));
+        if (!scrollBar) {
+            return false;
+        }
     }
-    ScopedCF<AXUIElementRef> scrollBar(copyAXElementAttribute(element, kAXVerticalScrollBarAttribute));
-    return static_cast<bool>(scrollBar);
+    CGRect frame = CGRectZero;
+    return getAXElementFrame(element, frame) && macScrollAreaContainsPoint(frameToRect(frame), point);
 }
 
 // Innermost scroll area of an application at a point, retained, or null.
@@ -213,7 +216,7 @@ AXUIElementRef copyInnermostScrollAreaAt(pid_t processId, const QPoint& point)
         if (kWalkStopRoles.contains(role)) {
             break;
         }
-        if (isScrollAreaCandidate(current.get(), role)) {
+        if (isScrollAreaCandidate(current.get(), role, point)) {
             return current.release();
         }
         current.reset(copyAXElementAttribute(current.get(), kAXParentAttribute));
@@ -517,7 +520,7 @@ private:
             if (kWalkStopRoles.contains(role)) {
                 break;
             }
-            if (isScrollAreaCandidate(current.get(), role)) {
+            if (isScrollAreaCandidate(current.get(), role, globalPos)) {
                 CFRetain(current.get());
                 candidates.push_back(current.get());
             }
@@ -537,7 +540,7 @@ private:
         if (!chosen) {
             result.status = LocateStatus::NoScrollArea;
             result.detail = available == 0
-                ? QStringLiteral("no AXScrollArea or vertical scroll bar between the point and its window")
+                ? QStringLiteral("no scroll area with readable bounds containing the hit point")
                 : QStringLiteral("only %1 nested scroll area(s) under the point").arg(available);
             return result;
         }

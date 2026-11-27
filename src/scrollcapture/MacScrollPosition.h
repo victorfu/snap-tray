@@ -7,6 +7,12 @@
 
 namespace snaptray::scrollcapture {
 
+// AX hit-test ancestry can include a stale viewport outside the visible window.
+inline bool macScrollAreaContainsPoint(const QRect& bounds, const QPoint& point)
+{
+    return bounds.isValid() && bounds.contains(point);
+}
+
 // AXContents can describe a viewport rather than document geometry, including
 // native AXOutline providers. Do not let a zero-range frame override a scrollbar.
 // Pure geometry policy so platform AX observations can be regression-tested.
