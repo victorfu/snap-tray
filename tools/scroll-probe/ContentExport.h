@@ -15,6 +15,8 @@ struct ContentRepeat {
     bool noMotion = false;
 };
 
+bool positionSupportsShift(double offsetDeltaPx, int measuredShiftPx, int tolerancePx);
+
 QString positionSyncUnavailableReason(bool settled, bool hasOffsetBefore, bool hasOffsetAfter,
                                       const ShiftEstimate& visual);
 

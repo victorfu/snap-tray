@@ -243,6 +243,32 @@ BandShiftEstimate estimateVerticalShiftByBands(const QImage& before, const QImag
     return result;
 }
 
+ShiftEstimate estimateContentShift(const BandShiftEstimate& observed)
+{
+    if (observed.estimate.status == ShiftEstimate::Status::Found) {
+        return observed.estimate;
+    }
+
+    QHash<int, int> support;
+    int movingBands = 0;
+    for (const auto& observation : observed.observedBands) {
+        if (observation.status == ShiftEstimate::Status::Found && observation.shift != 0) {
+            ++support[observation.shift];
+            ++movingBands;
+        }
+    }
+
+    const ShiftEstimate* candidate = nullptr;
+    for (const auto& observation : observed.observedBands) {
+        if (observation.status == ShiftEstimate::Status::Found && observation.shift != 0
+            && support.value(observation.shift) > movingBands / 2
+            && (!candidate || observation.distinctMatches > candidate->distinctMatches)) {
+            candidate = &observation;
+        }
+    }
+    return candidate ? *candidate : observed.estimate;
+}
+
 const char* shiftEstimateStatusName(ShiftEstimate::Status status)
 {
     struct Entry {

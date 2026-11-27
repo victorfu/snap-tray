@@ -97,11 +97,34 @@ QString controlTypeName(CONTROLTYPEID id)
     return QStringLiteral("ControlType%1").arg(id);
 }
 
+bool containsPhysicalPoint(const RECT& bounds, const POINT& point)
+{
+    return point.x >= bounds.left && point.x < bounds.right
+        && point.y >= bounds.top && point.y < bounds.bottom;
+}
+
 QString takeBstr(BSTR value)
 {
     QString text = value ? QString::fromWCharArray(value, static_cast<int>(SysStringLen(value))) : QString();
     SysFreeString(value);
     return text;
+}
+
+// Chromium exposes Monaco's composite split view as a scrollable Group
+// even when neither its editor nor its file tree exposes its own pattern.
+// The split view's offset describes the layout, not either child pane.
+bool isScrollTarget(IUIAutomationElement* element, const POINT& point)
+{
+    RECT bounds{};
+    if (FAILED(element->get_CurrentBoundingRectangle(&bounds))
+        || !containsPhysicalPoint(bounds, point)) {
+        return false;
+    }
+    BSTR className = nullptr;
+    if (FAILED(element->get_CurrentClassName(&className))) {
+        return true;
+    }
+    return !takeBstr(className).split(QLatin1Char(' ')).contains(QLatin1String("split-view-container"));
 }
 
 QString hresultText(HRESULT hr)
@@ -234,20 +257,25 @@ public:
 
     IUIAutomationScrollPattern* pattern() const { return m_pattern.Get(); }
     HWND rootWindow() const { return m_rootWindow; }
+    QPoint hitPoint() const { return m_logicalHitPoint; }
+    int level() const { return m_level; }
 
     // Whether this area is the innermost vertically scrollable element at a
     // physical point, i.e. the one wheel input there would scroll.
     bool isInnermostScrollAreaAt(const POINT& point) const
     {
         ComPtr<IUIAutomationElement> current;
-        if (FAILED(m_automation->ElementFromPoint(point, &current))) {
+        const HWND hitWindow = WindowFromPoint(point);
+        if (!hitWindow || GetAncestor(hitWindow, GA_ROOT) != m_rootWindow
+            || FAILED(m_automation->ElementFromPoint(point, &current))) {
             return false;
         }
         for (int depth = 0; depth < kMaxAncestorWalk && current; ++depth) {
             ComPtr<IUIAutomationScrollPattern> pattern;
             BOOL vertical = FALSE;
             if (SUCCEEDED(current->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pattern))) && pattern &&
-                SUCCEEDED(pattern->get_CurrentVerticallyScrollable(&vertical)) && vertical) {
+                SUCCEEDED(pattern->get_CurrentVerticallyScrollable(&vertical)) && vertical
+                && isScrollTarget(current.Get(), point)) {
                 BOOL same = FALSE;
                 return SUCCEEDED(m_automation->CompareElements(current.Get(), m_element.Get(), &same)) && same;
             }
@@ -485,6 +513,7 @@ private:
         std::vector<Candidate> candidates;
         QJsonArray rolePath;
         int horizontalOnly = 0;
+        int excluded = 0;
         for (int depth = 0; depth < kMaxAncestorWalk && current; ++depth) {
             CONTROLTYPEID controlType = 0;
             current->get_CurrentControlType(&controlType);
@@ -494,7 +523,11 @@ private:
             if (SUCCEEDED(current->GetCurrentPatternAs(UIA_ScrollPatternId, IID_PPV_ARGS(&pattern))) && pattern) {
                 BOOL vertical = FALSE;
                 if (SUCCEEDED(pattern->get_CurrentVerticallyScrollable(&vertical)) && vertical) {
-                    candidates.push_back({current, pattern});
+                    if (isScrollTarget(current.Get(), point)) {
+                        candidates.push_back({current, pattern});
+                    } else {
+                        ++excluded;
+                    }
                 } else {
                     ++horizontalOnly;
                 }
@@ -513,12 +546,15 @@ private:
         }
         hitDiagnostics.insert(QStringLiteral("rolePath"), rolePath);
         hitDiagnostics.insert(QStringLiteral("nonVerticalScrollPatterns"), horizontalOnly);
+        hitDiagnostics.insert(QStringLiteral("excludedScrollPatterns"), excluded);
 
         const int available = static_cast<int>(candidates.size());
         if (level < 0 || level >= available) {
             result.status = LocateStatus::NoScrollArea;
             result.detail = available == 0
-                ? QStringLiteral("no vertically scrollable ScrollPattern between the point and its window")
+                ? (excluded > 0
+                    ? QStringLiteral("no eligible scroll target; UIA reported only composite or out-of-point scroll areas")
+                    : QStringLiteral("no vertically scrollable ScrollPattern between the point and its window"))
                 : QStringLiteral("only %1 nested scroll area(s) under the point").arg(available);
             return result;
         }
@@ -582,13 +618,15 @@ private:
                     .arg(*routing));
         }
         const QRect bounds = area.snapshot().bounds;
-        if (bounds.isEmpty()) {
-            return InjectResult::failed(QStringLiteral("scroll area bounds are not readable"));
+        if (!bounds.contains(area.hitPoint())) {
+            return InjectResult::failed(QStringLiteral("scroll target no longer contains the original point"));
         }
-        // Wheel input goes to the innermost scroll area under the cursor, so
-        // use a point where that is the selected area itself.
+        // Preserve the selected pane for the innermost area. Only an explicit
+        // outer selection can relocate the wheel to bypass a nested area.
+        const QList<QPoint> points = area.level() == 0
+            ? QList<QPoint>{area.hitPoint()} : scrollTargetPoints(bounds);
         std::optional<QPoint> chosen;
-        for (const QPoint& point : scrollTargetPoints(bounds)) {
+        for (const QPoint& point : points) {
             const QPoint physical = logicalToPhysical(point);
             if (area.isInnermostScrollAreaAt(POINT{physical.x(), physical.y()})) {
                 chosen = physical;
@@ -596,8 +634,9 @@ private:
             }
         }
         if (!chosen) {
-            return InjectResult::failed(QStringLiteral("no point inside the selected scroll area reaches it: "
-                                                       "nested scroll areas or other windows cover every probe point"));
+            return InjectResult::failed(area.level() == 0
+                ? QStringLiteral("the original point no longer reaches the selected scroll area")
+                : QStringLiteral("nested scroll areas or other windows cover every wheel probe point"));
         }
         const QPoint centre = *chosen;
         if (!SetCursorPos(centre.x(), centre.y())) {

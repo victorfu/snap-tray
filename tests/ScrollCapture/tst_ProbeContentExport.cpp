@@ -47,6 +47,7 @@ class tst_ProbeContentExport : public QObject
 {
     Q_OBJECT
 private slots:
+    void synchronizationRequiresIndependentPositionProgress();
     void syncCauseUsesUnconstrainedEstimateAndOffsetPresence();
     void activeSettleDeliversQueuedCancellation();
     void inspectLevelChangesAndReentrantMeasurement();
@@ -62,6 +63,17 @@ private slots:
     void noMotionWithoutContentRejects();
     void rejectsInvalidCommandLine();
 };
+
+void tst_ProbeContentExport::synchronizationRequiresIndependentPositionProgress()
+{
+    QVERIFY(positionSupportsShift(139.0, 84, 64));
+    QVERIFY(!positionSupportsShift(0.0, 48, 64));
+    QVERIFY(!positionSupportsShift(-1.0, 48, 64));
+    QVERIFY(!positionSupportsShift(20.0, 0, 64));
+    QVERIFY(positionSupportsShift(0.1, 0, 64));
+    QVERIFY(!positionSupportsShift(150.0, 84, 64));
+    QVERIFY(positionSupportsShift(-50.0, -48, 64));
+}
 
 void tst_ProbeContentExport::syncCauseUsesUnconstrainedEstimateAndOffsetPresence()
 {

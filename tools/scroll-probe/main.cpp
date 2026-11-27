@@ -53,7 +53,7 @@ using namespace snaptray::scrollcapture::probe;
 
 namespace {
 
-constexpr int kSchemaVersion = 8;
+constexpr int kSchemaVersion = 9;
 // `measure --content-output` ran and wrote its record, but exported no image.
 constexpr int kContentExportRejectedExitCode = 3;
 constexpr int kInspectIntervalMs = 150;
@@ -243,6 +243,42 @@ Frame captureArea(const QRect& bounds)
     return {shot.copy(device).toImage(), scale};
 }
 
+std::optional<QPoint> captureParkingPoint(const QRect& bounds)
+{
+#ifdef Q_OS_WIN
+    QScreen* screen = QGuiApplication::screenAt(bounds.center());
+    if (!screen) screen = QGuiApplication::primaryScreen();
+    if (!screen) return std::nullopt;
+
+    // Keep hover effects and external pointer highlights outside the viewport
+    // when there is room. A full-screen area may have no safe parking point.
+    constexpr int kPointerClearance = 48;
+    const QRect screenBounds = screen->geometry().adjusted(2, 2, -2, -2);
+    int bestClearance = kPointerClearance - 1;
+    std::optional<QPoint> best;
+    for (const auto& point : {screenBounds.topLeft(), screenBounds.topRight(),
+                              screenBounds.bottomLeft(), screenBounds.bottomRight()}) {
+        const int clearance = std::max({bounds.left() - point.x(), point.x() - bounds.right(),
+                                        bounds.top() - point.y(), point.y() - bounds.bottom()});
+        if (clearance > bestClearance) {
+            best = point;
+            bestClearance = clearance;
+        }
+    }
+    return best;
+#else
+    Q_UNUSED(bounds);
+    return std::nullopt;
+#endif
+}
+
+bool parkCursor(const std::optional<QPoint>& point)
+{
+    if (!point || QCursor::pos() == *point) return false;
+    QCursor::setPos(*point);
+    return QCursor::pos() == *point;
+}
+
 QJsonObject locateToJson(const LocateResult& result)
 {
     QJsonObject object{
@@ -306,13 +342,20 @@ struct RepeatOutcome {
 };
 
 RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injector,
-                        const ProbeOptions& options, const ScrollAreaSnapshot& before)
+                        const ProbeOptions& options, const ScrollAreaSnapshot& before,
+                        const std::optional<QPoint>& parkingPoint)
 {
     RepeatOutcome outcome;
     QJsonObject& json = outcome.json;
     json.insert(QStringLiteral("index"), index);
     json.insert(QStringLiteral("before"), toJson(before.position));
 
+    constexpr int kPointerSettleMs = 50;
+    if (parkCursor(parkingPoint)) waitWithCancellation(kPointerSettleMs, stopRequested);
+    if (stopRequested()) {
+        outcome.content.error = QStringLiteral("cancelled");
+        return outcome;
+    }
     const Frame start = captureArea(before.bounds);
     if (processCancellation(stopRequested)) {
         outcome.content.error = QStringLiteral("cancelled");
@@ -359,6 +402,13 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         return outcome;
     }
 
+    if (parkingPoint && QCursor::pos() != *parkingPoint) {
+        // Let the native wheel dispatch reach the selected point before
+        // moving the pointer out of the captured region again.
+        waitWithCancellation(kPointerSettleMs, stopRequested);
+        if (!stopRequested()) parkCursor(parkingPoint);
+    }
+
     qint64 captureMs = 0;
     const auto loopResult = settleFrames(detector, [&] {
         QElapsedTimer captureClock;
@@ -391,34 +441,51 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     });
 
     const int hashInset = static_cast<int>(std::ceil(kHashHorizontalInsetLogicalPx * start.scale));
-    const auto visual = estimateVerticalShiftByBands(start.image, detector.lastFrame(), {}, hashInset);
+    QImage settledFrame = detector.lastFrame();
+    auto visual = estimateVerticalShiftByBands(start.image, settledFrame, {}, hashInset);
+    auto contentShift = estimateContentShift(visual);
     ScrollAreaSnapshot after = area.snapshot();
     json.insert(QStringLiteral("afterAtVisualSettle"), toJson(after.position));
-    // Accessibility can lag the compositor. Wait for an independently measured
-    // displacement to enter the API prior's search window. The platform offset
-    // is approximate; do not require pixel equality or replace it with pixels.
-    // This is bounded and fails closed if the captured frame changes meanwhile.
+    // A provider can report a stale offset while the page is visually stable.
+    // If a late repaint arrives, confirm a fresh strict settle without sending
+    // another input, then recompute all evidence against the original frame.
     constexpr int kPositionPollMs = 50;
     const qint64 syncStartedMs = sinceDispatchMs();
     QJsonArray positionSamples;
     QString syncOutcome = QStringLiteral("not_available");
     const QString syncUnavailableReason = positionSyncUnavailableReason(
         settle.outcome == FrameSettleDetector::Outcome::Settled,
-        before.position.offset.has_value(), after.position.offset.has_value(), visual.estimate);
+        before.position.offset.has_value(), after.position.offset.has_value(), contentShift);
+    int frameRestarts = 0;
     if (syncUnavailableReason.isEmpty()) {
+        const int initialShift = contentShift.shift;
+        std::optional<qint64> changedAt;
+        int identicalPairs = 0;
         while (true) {
+            if (stopRequested()) {
+                outcome.content.error = QStringLiteral("cancelled");
+                return outcome;
+            }
+            if (after.bounds != before.bounds) {
+                syncOutcome = QStringLiteral("frame_changed");
+                break;
+            }
+            if (!after.position.offset) {
+                syncOutcome = QStringLiteral("position_missing");
+                break;
+            }
             const double apiShift = (*after.position.offset - *before.position.offset) * start.scale;
-            if (std::abs(qRound(apiShift) - visual.estimate.shift) <= options.searchRadius) {
+            if (!changedAt && contentShift.status == ShiftEstimate::Status::Found
+                && contentShift.shift == initialShift
+                && positionSupportsShift(apiShift, contentShift.shift, options.searchRadius)) {
                 syncOutcome = QStringLiteral("within_search_window");
                 break;
             }
-            if (sinceDispatchMs() - syncStartedMs >= options.timeoutMs || stopRequested()) {
-                syncOutcome = QStringLiteral("timed_out");
+            if (sinceDispatchMs() - syncStartedMs >= options.timeoutMs) {
+                syncOutcome = frameRestarts > 0 ? QStringLiteral("frame_changed") : QStringLiteral("timed_out");
                 break;
             }
             QThread::msleep(kPositionPollMs);
-            // UIA is created in the application's STA. Keep its message queue
-            // serviced while waiting for asynchronous accessibility updates.
             if (processCancellation(stopRequested)) {
                 outcome.content.error = QStringLiteral("cancelled");
                 return outcome;
@@ -428,16 +495,24 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
                 {QStringLiteral("elapsedMs"), sinceDispatchMs() - syncStartedMs},
                 {QStringLiteral("position"), toJson(after.position)}});
             const Frame check = captureArea(before.bounds);
-            if (check.image.isNull() || check.image != detector.lastFrame() || after.bounds != before.bounds) {
+            if (check.image.size() != settledFrame.size() || check.scale != start.scale) {
                 syncOutcome = QStringLiteral("frame_changed");
                 break;
             }
-            if (!after.position.offset) {
-                syncOutcome = QStringLiteral("position_missing");
-                break;
+            if (check.image != settledFrame) {
+                settledFrame = check.image;
+                changedAt = sinceDispatchMs();
+                identicalPairs = 0;
+                ++frameRestarts;
+            } else if (changedAt && ++identicalPairs >= config.strictPairs
+                       && sinceDispatchMs() - *changedAt >= config.minStableMs) {
+                visual = estimateVerticalShiftByBands(start.image, settledFrame, {}, hashInset);
+                contentShift = estimateContentShift(visual);
+                changedAt.reset();
             }
         }
     }
+    json.insert(QStringLiteral("contentShift"), shiftToJson(contentShift));
     json.insert(QStringLiteral("positionSync"), QJsonObject{
         {QStringLiteral("outcome"), syncOutcome},
         {QStringLiteral("unavailableReason"), syncUnavailableReason.isEmpty()
@@ -445,6 +520,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         {QStringLiteral("confirmedMs"), syncOutcome == QStringLiteral("within_search_window")
             ? QJsonValue(sinceDispatchMs()) : QJsonValue()},
         {QStringLiteral("samples"), positionSamples},
+        {QStringLiteral("frameRestarts"), frameRestarts},
         {QStringLiteral("waitMs"), sinceDispatchMs() - syncStartedMs},
         {QStringLiteral("tolerancePx"), options.searchRadius}});
     json.insert(QStringLiteral("after"), toJson(after.position));
@@ -456,7 +532,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         const QString beforePath = directory.absoluteFilePath(prefix + QStringLiteral("-before.png"));
         const QString afterPath = directory.absoluteFilePath(prefix + QStringLiteral("-after.png"));
         if (directory.mkpath(QStringLiteral(".")) && start.image.save(beforePath)
-            && detector.lastFrame().save(afterPath)) {
+            && settledFrame.save(afterPath)) {
             json.insert(QStringLiteral("frames"), QJsonObject{
                 {QStringLiteral("before"), beforePath}, {QStringLiteral("after"), afterPath}});
         } else {
@@ -466,7 +542,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
 
     json.insert(QStringLiteral("hashHorizontalInsetPx"), hashInset);
     const QVector<quint64> beforeRows = computeRowHashes(start.image, hashInset);
-    const QVector<quint64> afterRows = computeRowHashes(detector.lastFrame(), hashInset);
+    const QVector<quint64> afterRows = computeRowHashes(settledFrame, hashInset);
     ShiftEstimatorOptions shiftOptions;
     shiftOptions.searchRadius = options.searchRadius;
     // The prior comes only from the platform-reported position; when that is
@@ -475,6 +551,9 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
     if (before.position.offset && after.position.offset) {
         const double apiShift = (*after.position.offset - *before.position.offset) * start.scale;
         json.insert(QStringLiteral("apiShiftPx"), apiShift);
+        if (contentShift.status == ShiftEstimate::Status::Found) {
+            json.insert(QStringLiteral("apiShiftErrorPx"), apiShift - contentShift.shift);
+        }
         json.insert(QStringLiteral("expectedShiftSource"), QStringLiteral("platform_offset"));
         shiftOptions.expectedShift = qRound(apiShift);
     } else {
@@ -482,7 +561,7 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         json.insert(QStringLiteral("expectedShiftMissing"),
                     !before.position.offset ? QStringLiteral("offset_before") : QStringLiteral("offset_after"));
     }
-    const auto bandEstimate = estimateVerticalShiftByBands(start.image, detector.lastFrame(), shiftOptions, hashInset);
+    const auto bandEstimate = estimateVerticalShiftByBands(start.image, settledFrame, shiftOptions, hashInset);
     ShiftEstimate estimate = bandEstimate.alignmentEstimate;
     QJsonArray bands;
     QJsonArray observedBands;
@@ -516,6 +595,10 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
                || syncOutcome == QStringLiteral("position_missing")) {
         rejectedBy = QStringLiteral("position_sync_") + syncOutcome;
     }
+    if (rejectedBy.isEmpty() && estimate.status == ShiftEstimate::Status::Found
+        && contentShift.status == ShiftEstimate::Status::Found && estimate.shift != contentShift.shift) {
+        rejectedBy = QStringLiteral("independent_content_shift_disagrees");
+    }
     const ShiftEstimate::Status measuredStatus = estimate.status;
     if (!rejectedBy.isEmpty()) {
         estimate.status = ShiftEstimate::Status::NotFound;
@@ -536,8 +619,8 @@ RepeatOutcome runRepeat(int index, const ScrollArea& area, ScrollInjector& injec
         outcome.shiftPx = estimate.shift;
     }
     if (!options.contentOutput.isEmpty()) {
-        outcome.content = validateContentRepeat(start.image, detector.lastFrame(), settle.outcome,
-            syncOutcome, before.bounds == after.bounds, bandEstimate.estimate, syncUnavailableReason);
+        outcome.content = validateContentRepeat(start.image, settledFrame, settle.outcome,
+            syncOutcome, before.bounds == after.bounds, contentShift, syncUnavailableReason);
     }
     return outcome;
 }
@@ -595,6 +678,11 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
     ContentExportSession contentSession;
     std::vector<int> shifts;
     std::vector<qint64> settleTimes;
+    const auto parkingPoint = options.contentOutput.isEmpty() ? std::nullopt
+        : captureParkingPoint(area.snapshot().bounds);
+    phase.insert(QStringLiteral("cursorParkingPoint"), parkingPoint
+        ? QJsonValue(QJsonObject{{QStringLiteral("x"), parkingPoint->x()}, {QStringLiteral("y"), parkingPoint->y()}})
+        : QJsonValue());
     const bool towardBottom = options.method == ScrollMethod::PatternSetPercent || options.amount >= 0;
     for (int index = 0; index < options.repeats && !stopRequested(); ++index) {
         const ScrollAreaSnapshot before = area.snapshot();
@@ -603,7 +691,7 @@ QJsonObject runScrollPhase(const ScrollArea& area, ScrollInjector& injector, con
             phase.insert(QStringLiteral("stoppedAtEnd"), index);
             break;
         }
-        const RepeatOutcome outcome = runRepeat(index, area, injector, options, before);
+        const RepeatOutcome outcome = runRepeat(index, area, injector, options, before, parkingPoint);
         if (processCancellation(stopRequested)) break;
         repeats.append(outcome.json);
         if (!options.contentOutput.isEmpty()) {

@@ -100,11 +100,14 @@ build/bin/SnapTrayScrollProbe measure --scroll wheel-pixels --amount 120 --repea
 ```
 
 After `--delay` seconds (default 3), the probe measures the scroll area under the cursor and appends one
-JSON line to `--output` (and stdout). Keep the mouse still during a measurement; wheel methods move the
-cursor into the area and put it back afterwards. They use the centre, or the first of a few other points
-inside the area where the accessibility API reports the selected area as the innermost scroll area, so
-`--level 1` does not scroll a nested pane that covers the centre. When no point qualifies, the repeat
-records `inject.ok = false` with the reason.
+JSON line to `--output` (and stdout). Keep the mouse still during a measurement.
+On Windows, level 0 sends wheel input at the selected point after confirming the
+same UIA target is still there. An explicit outer level may probe alternate
+points to bypass a nested area. Composite split-view layout containers are
+excluded from target selection. Windows content exports move the pointer away
+from the captured area between injections when there is enough clearance, to
+avoid hover effects and cursor highlights. The phase records the parking point
+when one is available, and restores the original point at the end.
 
 Scroll methods:
 
@@ -171,37 +174,38 @@ check, not a promise that accessibility bounds exclude all header/sidebar conten
 
 ### Position synchronization
 
-After visual settling, an independent unconstrained band estimate checks whether
-the platform prior's search window includes the visual displacement. If it does
-not, the probe polls the platform position every 50 ms, servicing the
-application event queue, for up to `--timeout` additional milliseconds. Every
-retry rechecks the full captured frame and bounds. `positionSync.outcome` is:
+After visual settling, the probe computes an unconstrained estimate for the
+scrolling content. It uses the whole-viewport band majority when available.
+Otherwise, a displacement needs a majority among bands with independent
+nonzero motion evidence. This allows a narrow text column to supply a candidate
+while preserving the conservative whole-viewport statistics. Exact assembly
+still has to verify the candidate across every captured pair.
 
-- `within_search_window`: the platform offset came within `--search-radius` of
-  the visual displacement. Approximate priors inside the window are valid even
-  when they are not pixel-exact.
-- `timed_out`, `frame_changed`, `position_missing`: the wait expired (or was
-  interrupted), the frame or bounds changed, or the offset disappeared. The
-  measurement is rejected.
-- `not_available`: no check ran, because the repeat did not settle, the
-  platform reported no offset, or no dominant displacement was measured. The
-  measurement is not rejected on this ground, but it is not synchronized either.
+The position check compares that independent candidate with the platform offset
+and its direction. A stale offset of zero cannot confirm nonzero visual motion,
+and nonzero offset motion cannot confirm a still frame. The platform offset is
+approximate, especially for Windows providers that report percentages and view
+sizes for a differently sized content area. The probe logs the signed
+`apiShiftErrorPx` when both measurements are available.
 
-Content export still requires synchronization. Schema 8 records
-`positionSync.unavailableReason` at the synchronization gate: missing offsets
-take precedence (`position_missing_offset_before/after`), followed by
-`visual_shift_<status>` from the estimate computed without a platform prior.
-Export preserves this cause rather than inferring it from the later constrained
-estimate. Acceptance thresholds are unchanged.
+The probe polls every 50 ms for up to `--timeout` additional milliseconds,
+servicing the application event queue. A late repaint starts a fresh strict
+settle within the same budget and without another scroll. Confirmation requires
+the same independently supported displacement relative to the original frame.
+`positionSync.outcome` records:
 
-The constrained search always uses the actual platform offset and the requested
-radius, never a prior copied from pixels. This bounded check is not a general
-freshness guarantee for all accessibility providers. `afterAtVisualSettle` is
-the initial position query and `after` the final one. `positionSync` also
-records its samples, wait duration, search tolerance, and `confirmedMs` from
-dispatch (null unless `within_search_window`). The latter includes matching and
-position synchronization; it is separate from visual `strictSettleMs`, so
-accessibility latency is not hidden in visual-settle statistics.
+- `within_search_window`: the visually settled displacement is consistent
+  with the API's reported direction and `--search-radius`.
+- `timed_out`, `frame_changed`, `position_missing`: the wait expired, a late
+  repaint did not converge to the same displacement or geometry, or the offset
+  disappeared. The measured repeat is rejected.
+- `not_available`: the initial settle failed, an offset was unavailable, or no
+  independent content displacement was found. The export remains unavailable.
+  `positionSync.unavailableReason` carries the corresponding cause.
+
+`afterAtVisualSettle` is the initial position query and `after` is the final
+one. `positionSync` records retry samples, frame restarts, the wait duration,
+the search tolerance, and confirmation time from dispatch.
 
 ### Content export
 
@@ -213,8 +217,9 @@ SnapTrayScrollProbe measure --scroll wheel-delta --amount 120 --repeats 10 --con
 
 The scroll viewport and position come from accessibility. The product core
 `assembleScrollContent` finds one common physical-pixel rectangle whose overlaps
-are **exactly equal across every pair**, using the prior-validated dominant
-displacements. It rejects crops smaller than a majority of either dimension,
+are **exactly equal across every pair and between consecutive pairs**, using
+the independent content displacements confirmed by position. A changing
+scrollbar at a seam may be left outside this rectangle. It rejects crops smaller than a majority of either dimension,
 blank/repeated evidence, changing capture geometry, missing/unsynchronized priors,
 failed injection/settle, reverse/zero motion, a displacement of half the viewport
 or more, and discontinuous frame sequences. No scale, interpolation, seam
@@ -224,10 +229,12 @@ blending, guessed displacement, or per-frame crop is used. Retained frames
 
 The first frame prefix retains full width, preserving titles spanning above a
 sidebar. Only newly revealed content strips are appended afterward; excluded
-columns are transparent, so the sidebar appears once. `contentExport.viewportPx`
+columns are transparent, so the sidebar appears once. The assembler rejects
+a crop when repeatedly measured motion in discarded columns follows the same
+displacement as the retained body. `contentExport.viewportPx`
 is the common content rectangle in physical pixels relative to the captured
 viewport; its x/width are the columns appended after the first frame.
-`contentExport.stats` uses the dominant displacements of the exported pairs, so
+`contentExport.stats` uses the independently measured displacements of the exported pairs, so
 it can report success while the whole-viewport statistics report a sidebar
 conflict.
 
@@ -260,7 +267,7 @@ validated afterward. The destination must have an existing writable parent and
 must not be a directory. A temporary sibling checks writability without
 modifying an existing image. Invalid destinations also exit 2 before scrolling.
 
-Schema 7 rejection diagnostics:
+Content export rejection diagnostics:
 
 | `reason` | Meaning |
 | --- | --- |
@@ -274,6 +281,7 @@ Schema 7 rejection diagnostics:
 | `capture_budget_exceeded`, `pixel_budget_exceeded` | Retained frames or assembly exceed the pixel limit. |
 | `invalid_input`, `invalid_geometry`, `invalid_content_repeat` | Missing input, incompatible frame geometry, or an incomplete repeat. |
 | `no_common_content_region`, `insufficient_content_evidence`, `discontinuous_capture` | No majority rectangle, weak row evidence, or a gap between pairs. |
+| `moving_content_outside_crop` | Discarded columns have repeated evidence of moving with the kept content. |
 | `allocation_failed` | Image conversion, copying, output or scratch allocation failed. |
 | `save_failed` | PNG writing failed; `stage` is `open`, `encode` or `commit`, and `detail` contains the underlying error. |
 | `no_scroll_area`, `interrupted` | No target was found, or the run was interrupted. |
@@ -293,6 +301,7 @@ arbitrary repeat. Rejection still reports `path` and `staleFileAtPath`.
 | 6 | `shift.rejectedBy` and `shift.measuredStatus`; blank bands no longer count as a displacement without a majority; `insufficient_detail` for band results; a rejected export exits with code 3 and reports `path`, `staleFileAtPath`; `endedAtNoMotionRepeat`. |
 | 7 | Specific rejection reasons and `repeatIndex`; save `stage`/`detail`; validated no-motion endpoints; full overlap validation for variable shifts. |
 | 8 | `positionSync.unavailableReason` records the actual gate's cause; export preserves missing-offset or unconstrained `visual_shift_<status>` reasons instead of inferring them from the constrained dominant estimate. Acceptance gates unchanged. |
+| 9 | Adds `contentShift`, `apiShiftErrorPx`, cursor parking information and bounded late-frame settling. Whole-viewport and content displacement retain separate acceptance criteria. |
 
 ## Record fields
 
