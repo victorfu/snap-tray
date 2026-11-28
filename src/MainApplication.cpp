@@ -523,16 +523,8 @@ void MainApplication::initialize()
 
     connect(m_recordingManager, &RecordingManager::stateChanged,
         this, [this](RecordingManager::State state) {
-            switch (state) {
-            case RecordingManager::State::Preparing:
-            case RecordingManager::State::Countdown:
-            case RecordingManager::State::Recording:
-            case RecordingManager::State::Paused:
-            case RecordingManager::State::Encoding:
-            case RecordingManager::State::Previewing:
-                break;
-            case RecordingManager::State::Idle:
-                break;
+            if (state == RecordingManager::State::Idle) {
+                QTimer::singleShot(0, m_recordingManager, &RecordingManager::prewarmRecordingControls);
             }
 
             updateRecordingActionText();
@@ -761,6 +753,7 @@ void MainApplication::initialize()
     // Look for recordings an earlier run could not save (off the GUI thread).
     if (PlatformFeatures::instance().capabilities().supportsRecording) {
         m_recordingManager->scanForRecoveries();
+        QTimer::singleShot(0, m_recordingManager, &RecordingManager::prewarmRecordingControls);
     }
 
     QTimer::singleShot(0, this, [captureManager = QPointer<CaptureManager>(m_captureManager)]() {

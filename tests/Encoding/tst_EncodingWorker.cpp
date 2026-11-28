@@ -730,13 +730,14 @@ void TestEncodingWorker::testAudioOverloadIsCounted()
     QVERIFY(run.worker.enqueueFrame({frameOfSize(16), 0}));
     QThread::msleep(50);
     for (int i = 0; i < 150; ++i) {
-        run.worker.writeAudioSamples(QByteArray(64, '\0'), i * 16);
+        run.worker.writeAudioSamples(QByteArray(4096, '\0'), i * 1024);
     }
     QVERIFY(finishAndWait(run.worker));
     const auto s = health->snapshot(SnapTray::captureClockNowNs());
     QVERIFY(s.audioDropped > 0);
     QCOMPARE(s.audioDropped + s.audioQueued, qint64(150));
-    QCOMPARE(s.audioDroppedBytes, s.audioDropped * 64);
+    QCOMPARE(s.audioDroppedBytes, s.audioDropped * 4096);
+    QVERIFY(s.audioQueued > 100);
     QCOMPARE(qint64(encoder->m_audioPackets.load()), s.audioQueued);
 }
 

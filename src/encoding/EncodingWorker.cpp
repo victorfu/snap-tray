@@ -156,6 +156,7 @@ void EncodingWorker::clearQueuesLocked()
     // The byte count belongs to the queued frames: dropping them drops it.
     m_frameQueue.clear();
     m_audioQueue.clear();
+    m_queuedAudioBytes = 0;
     m_queuedBytes = 0;
 }
 
@@ -349,7 +350,7 @@ void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 startFrame
 
     {
         QMutexLocker locker(&m_queueMutex);
-        if (m_audioQueue.size() >= MAX_AUDIO_QUEUE_SIZE) {
+        if (m_audioQueue.size() >= kMaxAudioPackets || data.size() > kMaxAudioQueueBytes - m_queuedAudioBytes) {
             // Drop rather than block the capture thread. Packets carry their
             // sample position, so the encoder leaves a gap instead of
             // compressing time.
@@ -357,6 +358,7 @@ void EncodingWorker::writeAudioSamples(const QByteArray& data, qint64 startFrame
             return;
         }
         m_audioQueue.enqueue({data, startFrame});
+        m_queuedAudioBytes += data.size();
         if (m_health) m_health->audioQueued();
     }
 
@@ -417,6 +419,7 @@ void EncodingWorker::processNextFrame()
                 return;
             } else if (!m_audioQueue.isEmpty()) {
                 audioData = m_audioQueue.dequeue();
+                m_queuedAudioBytes -= audioData.data.size();
                 hasAudio = true;
             } else if (!m_frameQueue.isEmpty()) {
                 frameData = m_frameQueue.dequeue();

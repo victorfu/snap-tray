@@ -237,7 +237,11 @@ private:
 
     // Audio queue (thread-safe, shared mutex with frame queue)
     QQueue<AudioData> m_audioQueue;
-    static constexpr int MAX_AUDIO_QUEUE_SIZE = 100;  // ~1 second buffer
+    // Canonical 48 kHz stereo PCM16. Callback sizes vary, particularly
+    // when WASAPI catches up after a scheduling stall.
+    static constexpr qint64 kMaxAudioQueueBytes = 3 * 48000 * 2 * 2;
+    static constexpr int kMaxAudioPackets = 2048;
+    qint64 m_queuedAudioBytes = 0;
 
     // Processing state
     std::atomic<bool> m_running{false};

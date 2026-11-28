@@ -565,6 +565,26 @@ void RecordingManager::teardownEncodingWorker(bool abortEncoding)
     m_encodingWorker.reset();
 }
 
+void RecordingManager::prewarmRecordingControls()
+{
+#ifdef Q_OS_WIN
+    if (m_state != State::Idle || m_standbyControlBar) return;
+    using Bar = SnapTray::QmlRecordingControlBar;
+    auto* bar = new Bar(this, Bar::LoadMode::Deferred);
+    m_standbyControlBar = bar;
+    connect(bar, &Bar::loadFinished, this, [this, bar](bool success) {
+        if (m_standbyControlBar != bar) return;
+        if (success) {
+            bar->setExcludedFromCapture(true);
+        } else {
+            m_standbyControlBar = nullptr;
+            bar->deleteLater();
+        }
+    });
+    bar->loadAsync();
+#endif
+}
+
 void RecordingManager::startFrameCapture()
 {
     if (m_initFuture.isRunning()) {
@@ -605,7 +625,34 @@ void RecordingManager::startFrameCapture()
         m_controlBar = nullptr;
     }
 
-    m_controlBar = new SnapTray::QmlRecordingControlBar();
+#ifdef Q_OS_WIN
+    using Bar = SnapTray::QmlRecordingControlBar;
+    const bool loadOnDemand = !m_standbyControlBar;
+    m_controlBar = loadOnDemand ? new Bar(this, Bar::LoadMode::Deferred) : m_standbyControlBar.data();
+    m_standbyControlBar = nullptr;
+    if (m_controlBar->isReady()) {
+        prepareRecordingControls();
+        return;
+    }
+    connect(m_controlBar, &Bar::loadFinished, this, [this, startGeneration](bool success) {
+        if (m_state != State::Preparing || startGeneration != m_startGeneration) return;
+        if (!success || !isScreenAvailable(m_targetScreen.data())) {
+            cancelRecording();
+            emit recordingError(success ? tr("Recording screen is no longer available.")
+                                        : tr("Failed to prepare recording controls for capture."));
+            return;
+        }
+        prepareRecordingControls();
+    });
+    if (loadOnDemand) m_controlBar->loadAsync();
+#else
+    m_controlBar = new SnapTray::QmlRecordingControlBar(this);
+    prepareRecordingControls();
+#endif
+}
+
+void RecordingManager::prepareRecordingControls()
+{
     connect(m_controlBar, &SnapTray::QmlRecordingControlBar::stopRequested,
             this, &RecordingManager::stopRecording);
     connect(m_controlBar, &SnapTray::QmlRecordingControlBar::cancelRequested,
@@ -1204,6 +1251,15 @@ void RecordingManager::onInitializationComplete(const QSharedPointer<RecordingIn
                                                                 : SnapTray::captureClockNowNs();
             qint64 timeMs = 0, timeNs = 0;
             if (!admitFrameLocked(sourceTimeNs, true, &timeMs, &timeNs)) return;
+#ifdef Q_OS_WIN
+            // MF writes the first sample delay into the track duration, but
+            // omits it from the MP4 sample table. Hold the first admitted
+            // desktop picture from time zero without shifting later pictures.
+            if (m_frameCount == 0 && m_captureEngine->allowsSparseFrames()) {
+                timeNs = 0;
+                timeMs = 0;
+            }
+#endif
             if (worker->enqueueFrame({frame.image, timeMs, 0, frame.nativeBuffer, frame.pixelSize, timeNs})) ++m_frameCount;
         }, Qt::DirectConnection);
     }

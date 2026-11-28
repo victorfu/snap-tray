@@ -300,29 +300,25 @@ void WGCCaptureEngine::Private::stop()
         repeater.join();
     }
 
-    // Detach the WinRT objects under the lock, then close them without it: a
-    // FrameArrived handler waiting for the lock must not be waited on by Close().
-    wgc::Direct3D11CaptureFramePool closingPool{nullptr};
-    wgc::GraphicsCaptureSession closingSession{nullptr};
-    wgc::GraphicsCaptureItem closingItem{nullptr};
-    wdx::Direct3D11::IDirect3DDevice closingDevice{nullptr};
-    std::unique_ptr<MtaUsage> closingMta;
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        closingPool = std::exchange(framePool, nullptr);
-        closingSession = std::exchange(session, nullptr);
-        closingItem = std::exchange(item, nullptr);
-        closingDevice = std::exchange(d3dDevice, nullptr);
-        closingMta = std::move(mta);
-        texturePool.reset();
-        comparer.reset();
-        comparerUnavailable = false;
-        comparerFailures = 0;
-        staging.Reset();
-        stagingSize = QSize();
-        latest = {};
-        frameDevice.reset();
-    }
+    // A WGC callback can enter with the D3D lock held and then wait for
+    // mutex. Detach under mutex, but close WinRT objects and release D3D
+    // resources outside it: even releasing a staging texture takes that lock.
+    std::unique_lock<std::mutex> lock(mutex);
+    auto closingMta = std::move(mta);
+    auto closingPool = std::exchange(framePool, nullptr);
+    auto closingSession = std::exchange(session, nullptr);
+    auto closingItem = std::exchange(item, nullptr);
+    auto closingDevice = std::exchange(d3dDevice, nullptr);
+    auto closingFrameDevice = std::move(frameDevice);
+    auto closingTexturePool = std::move(texturePool);
+    auto closingComparer = std::move(comparer);
+    auto closingStaging = std::move(staging);
+    auto closingFrame = std::exchange(latest, {});
+    comparerUnavailable = false;
+    comparerFailures = 0;
+    stagingSize = QSize();
+    lock.unlock();
+
     // Each step on its own: one that fails must not leave the session and
     // frame pool open, which keeps their present thread and D3D device (#416).
     const auto attempt = [](const char *step, auto &&call) {
@@ -342,7 +338,6 @@ void WGCCaptureEngine::Private::stop()
         closingItem = nullptr;
         closingDevice = nullptr;
     });
-    closingMta.reset();
     // Wait out a frame or error being delivered right now.
     std::lock_guard<std::mutex> emitLock(emitMutex);
     lastEmittedNs = -1;

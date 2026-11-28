@@ -54,10 +54,10 @@ QString translateRecordingControlBar(const char* sourceText)
 
 } // namespace
 
-QmlRecordingControlBar::QmlRecordingControlBar(QObject* parent)
+QmlRecordingControlBar::QmlRecordingControlBar(QObject* parent, LoadMode mode)
     : QObject(parent)
 {
-    ensureView();
+    if (mode == LoadMode::Immediate) ensureView();
 }
 
 QmlRecordingControlBar::~QmlRecordingControlBar()
@@ -88,6 +88,37 @@ void QmlRecordingControlBar::ensureView()
 
     m_view = QmlOverlayManager::instance().createScreenOverlay(
         QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingControlBar.qml")));
+    m_rootItem = m_view->rootObject();
+    bindView();
+}
+
+void QmlRecordingControlBar::loadAsync()
+{
+    m_view = QmlOverlayManager::instance().createScreenOverlay(
+        QUrl(QStringLiteral("qrc:/SnapTrayQml/recording/RecordingControlBarLoader.qml")));
+    auto* loader = m_view->rootObject();
+    if (!loader) {
+        emit loadFinished(false);
+        return;
+    }
+    connect(loader, SIGNAL(loadFinished(bool)), this, SLOT(onLoadFinished(bool)));
+    loader->setProperty("active", true);
+}
+
+void QmlRecordingControlBar::onLoadFinished(bool success)
+{
+    if (!m_view) return;
+    m_rootItem = qobject_cast<QQuickItem*>(m_view->rootObject()->property("item").value<QObject*>());
+    if (success && m_rootItem) {
+        bindView();
+        // A hidden standby bar must not handle Escape in another window.
+        m_escShortcut->setEnabled(false);
+    }
+    emit loadFinished(success && m_rootItem);
+}
+
+void QmlRecordingControlBar::bindView()
+{
     m_view->installEventFilter(this);
     m_cursorSurfaceId = CursorSurfaceSupport::registerManagedSurface(
         m_view, QStringLiteral("QmlRecordingControlBar"));
@@ -97,8 +128,6 @@ void QmlRecordingControlBar::ensureView()
         for (const auto& error : m_view->errors())
             qWarning() << "RecordingControlBar QML error:" << error.toString();
     }
-
-    m_rootItem = m_view->rootObject();
 
     if (m_rootItem)
         setupConnections();
@@ -229,6 +258,7 @@ void QmlRecordingControlBar::applyTooltipWindowFlags()
 void QmlRecordingControlBar::show()
 {
     ensureView();
+    if (m_escShortcut) m_escShortcut->setEnabled(true);
     m_view->show();
     applyPlatformWindowFlags();
     m_view->raise();
@@ -278,6 +308,12 @@ WId QmlRecordingControlBar::winId() const
 QList<quintptr> QmlRecordingControlBar::prepareCaptureExclusions()
 {
     ensureView();
+#ifdef Q_OS_WIN
+    // Display affinity belongs to each HWND. The tooltip can be created on
+    // first hover and excluded before it becomes visible.
+    const WId id = winId();
+    return m_rootItem && id ? QList<quintptr>{id} : QList<quintptr>{};
+#else
     ensureTooltipView();
     if (!m_rootItem || !m_tooltipRootItem) return {};
     if (!m_captureExclusionsPrepared) {
@@ -305,6 +341,7 @@ QList<quintptr> QmlRecordingControlBar::prepareCaptureExclusions()
 #endif
     }
     return ids;
+#endif
 }
 
 void QmlRecordingControlBar::raiseAboveMenuBar()
@@ -552,8 +589,13 @@ void QmlRecordingControlBar::showTooltip(const QString& text, const QRect& ancho
 
         positionTooltip(QPoint(anchorCenter.x(), barBottom), false);
         m_tooltipRootItem->setVisible(true);
-        m_tooltipView->show();
+#ifdef Q_OS_WIN
         applyTooltipWindowFlags();
+#endif
+        m_tooltipView->show();
+#ifndef Q_OS_WIN
+        applyTooltipWindowFlags();
+#endif
         m_tooltipView->raise();
 
         // Fallback: if tooltip goes off screen, flip to above the control bar

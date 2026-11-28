@@ -201,7 +201,8 @@ void TestMediaFoundationEncoderGpu::testSparseGpuFramesKeepNanoseconds()
     // The last frame holds until the finish time, ending in a copy of it one
     // interval before the end: the length does not depend on the encoder
     // keeping the last sample's duration (#421).
-    times.append(6000000000 - 10000000LL / kFrameRate * 100);
+    for (int i = kFrameRate; i > 0; --i)
+        times.append(6000000000LL - i * (10000000LL / kFrameRate) * 100);
     const auto decoded = decodeCenters(path);
     QVERIFY2(decoded.error.isEmpty(), qPrintable(decoded.error));
     QCOMPARE(decoded.times100ns.size(), times.size());

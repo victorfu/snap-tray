@@ -113,34 +113,35 @@ public:
         if (SUCCEEDED(hr)) { pendingVideo = sample; pendingTime = time; }
         return hr;
     }
-    // A sparse recording's last frame holds until the stop. An encoder may
-    // give its last output sample one frame interval whatever the input
-    // duration (seen on Intel UHD 620), so the file would end at the last
-    // change instead (#421). A copy of the last frame one interval before the
-    // end carries the hold. Under two intervals there is no copy: the file is
-    // then at most one frame short, and the last frame keeps a full interval.
-    // Returns true when the copy is the pending sample.
+    // Some MFTs shorten the last sample to one frame (#421). VLC can
+    // also reach EOF early when its last few samples span seconds. End
+    // a sparse hold with a short run at the nominal cadence. Each sample
+    // owns its timestamps and shares the final picture's unchanged buffers.
     bool queueFinalHold(LONGLONG end) {
         if (FAILED(videoWriteError) || !pendingVideo) return false;
-        const LONGLONG holdTime = end - frameDuration100ns();
-        if (holdTime - pendingTime < frameDuration100ns()) return false;
-        // The copy reads the same picture. Safe only at finish: no frame is
-        // converted after it, so the shared surface is not reused meanwhile.
-        ComPtr<IMFSample> hold;
-        DWORD count = 0;
-        HRESULT hr = MFCreateSample(&hold);
-        if (SUCCEEDED(hr)) hr = pendingVideo->GetBufferCount(&count);
-        for (DWORD i = 0; SUCCEEDED(hr) && i < count; ++i) {
-            ComPtr<IMFMediaBuffer> buffer;
-            hr = pendingVideo->GetBufferByIndex(i, &buffer);
-            if (SUCCEEDED(hr)) hr = hold->AddBuffer(buffer.Get());
+        const LONGLONG interval = frameDuration100ns();
+        // At most one second at nominal cadence; the rest of the hold
+        // remains sparse even for a long final pause in screen activity.
+        const LONGLONG copies = qMin<LONGLONG>(frameRate, (end - pendingTime) / interval - 1);
+        bool queued = false;
+        for (LONGLONG i = copies; i > 0; --i) {
+            ComPtr<IMFSample> hold;
+            DWORD count = 0;
+            HRESULT hr = MFCreateSample(&hold);
+            if (SUCCEEDED(hr)) hr = pendingVideo->GetBufferCount(&count);
+            for (DWORD j = 0; SUCCEEDED(hr) && j < count; ++j) {
+                ComPtr<IMFMediaBuffer> buffer;
+                hr = pendingVideo->GetBufferByIndex(j, &buffer);
+                if (SUCCEEDED(hr)) hr = hold->AddBuffer(buffer.Get());
+            }
+            if (SUCCEEDED(hr)) hr = queueVideo(hold.Get(), end - i * interval);
+            if (FAILED(hr)) {
+                qWarning() << "MediaFoundationEncoder: final hold frame not written:" << hrText(hr);
+                break;
+            }
+            queued = true;
         }
-        if (SUCCEEDED(hr)) hr = queueVideo(hold.Get(), holdTime);
-        if (FAILED(hr)) {
-            qWarning() << "MediaFoundationEncoder: final hold frame not written:" << hrText(hr);
-            return false;
-        }
-        return true;
+        return queued;
     }
     bool running = false;
     int quality = 55;  // 0-100

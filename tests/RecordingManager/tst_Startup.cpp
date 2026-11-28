@@ -19,6 +19,7 @@
 #include "qml/QmlRecordingControlBar.h"
 #include "../Encoding/FakeAudioEncoder.h"
 #include <QQuickItem>
+#include <QQuickView>
 #include <QtQml/qqmlextensionplugin.h>
 
 Q_IMPORT_QML_PLUGIN(SnapTrayQmlPlugin)
@@ -97,6 +98,7 @@ private slots:
     void saveDialogSessionSurvivesANewRecording();
     void bufferedAnimationCountsTowardTheDiskGuard();
     void encoderWrittenBytesFeedTheDiskGuard();
+    void controlBarOffersPauseResumeAndStop_data();
     void controlBarOffersPauseResumeAndStop();
     void waitingKeepsEventLoopResponsiveAndSettingsSnapshot();
     void permissionPolicy_data();
@@ -691,10 +693,27 @@ void TestRecordingStartup::captureExclusionWarning()
     manager.cancelRecording();
 }
 
+void TestRecordingStartup::controlBarOffersPauseResumeAndStop_data()
+{
+    QTest::addColumn<bool>("deferred");
+    QTest::newRow("immediate") << false;
+#ifdef Q_OS_WIN
+    QTest::newRow("standby") << true;
+#endif
+}
+
 void TestRecordingStartup::controlBarOffersPauseResumeAndStop()
 {
-    SnapTray::QmlRecordingControlBar bar;
-    bar.ensureView();
+    QFETCH(bool, deferred);
+    using Bar = SnapTray::QmlRecordingControlBar;
+    Bar bar(nullptr, deferred ? Bar::LoadMode::Deferred : Bar::LoadMode::Immediate);
+    if (deferred) {
+        QSignalSpy ready(&bar, &Bar::loadFinished);
+        bar.loadAsync();
+        QTRY_COMPARE_WITH_TIMEOUT(ready.size(), 1, 5000);
+        QVERIFY(ready.first().first().toBool());
+        QVERIFY(!bar.m_view->isVisible());
+    }
     QVERIFY(bar.m_rootItem);
     auto* pauseButton = bar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("pauseResumeButton"));
     auto* stopButton = bar.m_rootItem->findChild<QQuickItem*>(QStringLiteral("stopButton"));
