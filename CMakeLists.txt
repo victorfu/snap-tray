@@ -1234,6 +1234,7 @@ set_source_files_properties(src/qml/recording/RecordingEditorShell.qml PROPERTIE
 set_source_files_properties(src/qml/recording/RecordingCropOverlay.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingCropOverlay.qml)
 
 # Recording control bar
+set_source_files_properties(src/qml/recording/RecordingControlBarLoader.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBarLoader.qml)
 set_source_files_properties(src/qml/recording/RecordingControlBar.qml PROPERTIES QT_RESOURCE_ALIAS recording/RecordingControlBar.qml)
 set_source_files_properties(src/qml/panels/BeautifyPanel.qml PROPERTIES QT_RESOURCE_ALIAS panels/BeautifyPanel.qml)
 set_source_files_properties(src/qml/panels/EmojiPickerPopup.qml PROPERTIES QT_RESOURCE_ALIAS panels/EmojiPickerPopup.qml)
@@ -1322,6 +1323,7 @@ qt_add_qml_module(snaptray_qml
         src/qml/recording/RecordingPreview.qml
         src/qml/recording/RecordingCropOverlay.qml
         src/qml/recording/RecordingControlBar.qml
+        src/qml/recording/RecordingControlBarLoader.qml
         src/qml/panels/BeautifyPanel.qml
         src/qml/panels/EmojiPickerPopup.qml
         src/qml/panels/HistoryWindow.qml

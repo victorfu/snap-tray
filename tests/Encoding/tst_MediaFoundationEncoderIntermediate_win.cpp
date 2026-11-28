@@ -324,7 +324,8 @@ void tst_MediaFoundationEncoderIntermediate::sparseFramesKeepNanosecondsAndFinal
     // The hold ends in a copy of the last frame one interval before the end,
     // so the file ends there even if the encoder shortens the last sample (#421).
     QList<qint64> expected = times;
-    expected.append(20000000000 - 10000000LL / kSparseFrameRate * 100);
+    for (int i = kSparseFrameRate; i > 0; --i)
+        expected.append(20000000000LL - i * (10000000LL / kSparseFrameRate) * 100);
     const auto actual = videoTimestampsMs(path);
     QCOMPARE(actual.size(), expected.size());
     for (int i = 0; i < expected.size(); ++i)

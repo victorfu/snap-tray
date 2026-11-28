@@ -40,7 +40,10 @@ class QmlRecordingControlBar : public QObject
     Q_OBJECT
 
 public:
-    explicit QmlRecordingControlBar(QObject* parent = nullptr);
+    enum class LoadMode { Immediate, Deferred };
+    explicit QmlRecordingControlBar(QObject* parent = nullptr, LoadMode mode = LoadMode::Immediate);
+    void loadAsync();
+    bool isReady() const { return m_rootItem != nullptr; }
     ~QmlRecordingControlBar() override;
 
     void show();
@@ -51,7 +54,8 @@ public:
     void raiseAboveMenuBar();
     void setExcludedFromCapture(bool excluded);
     // GUI-thread snapshot: CGWindowIDs on macOS, native window IDs elsewhere.
-    // Prepares both windows before asynchronous capture initialization.
+    // macOS needs both windows registered before capture initialization.
+    // Windows applies capture exclusion to the tooltip when it is created.
     QList<quintptr> prepareCaptureExclusions();
 
     void positionNear(const QRect& recordingRegion);
@@ -67,12 +71,14 @@ public:
     void setShortcutHints(const QString& pauseResumeHotkey, const QString& stopHotkey);
 
 signals:
+    void loadFinished(bool success);
     void stopRequested();
     void cancelRequested();
     void pauseRequested();
     void resumeRequested();
 
 private slots:
+    void onLoadFinished(bool success);
     void onButtonHovered(int buttonId, double anchorX, double anchorY,
                          double anchorW, double anchorH);
     void onButtonUnhovered();
@@ -85,6 +91,7 @@ private:
     friend class ::TestRecordingStartup;
     friend class ::TestRecordingCaptureExclusion;
     void ensureView();
+    void bindView();
     void ensureTooltipView();
     void applyPlatformWindowFlags();
     void applyTooltipWindowFlags();

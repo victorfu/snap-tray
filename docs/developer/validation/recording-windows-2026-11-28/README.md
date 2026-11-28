@@ -2,6 +2,17 @@
 
 Local verification for [issue #385](https://github.com/victorfu/snap-tray/issues/385) at commit `1be013bac739de1a610c54b6cf0b89897fb81e33`. Windows 10 Pro 22H2 build 19045.7846, GeForce GTX 1650 driver 32.0.15.9649, Qt 6.12.0, MSVC Debug. The desktop was extended across a 2560×1440 ROG PG279Q at 150% and a 3840×2160 UHD HDR display at 250%.
 
+## Follow-up on the Windows recording fixes
+
+The measurements below use the same machine and displays. The rest of this report documents the baseline at the SHA above.
+
+| Scenario | Verification after the fix |
+| --- | --- |
+| Recording startup under ten seconds of CPU saturation | The probe loaded the standby controls during 2.5 s of tray idle time, using the software scene graph selected by the Windows 10 application. The largest 5 ms GUI timer intervals during the recording session were **36 ms and 49 ms in two Release runs**, and **205 ms in Debug**. Both Release runs met the 50 ms target. First-use UI preparation itself still takes time, and the Debug run exceeded the target. The original Debug probe started with a cold QML engine and the Qt default renderer. |
+| Audio queue overload | With full CPU load starting at recordingStarted, the native encoder queued **1310 audio packets, dropped 0**, and encoded all 352 offered video frames. Source-side discontinuities remain visible in WASAPI diagnostics. |
+| WGC stop with secondary-display capture and a separate prompter | The original thread stacks placed the GUI inside D3D staging-texture release and a WGC callback waiting for the capture mutex. After moving resource releases outside the mutex, the entire opt-in display test passed three consecutive times, including the WGC row. |
+| Sparse MP4 duration and final seek | A real 30 fps WGC quick recording with pause/resume and a six-second static tail had recordedMs **35,993**. Both Chrome and Media Foundation reported **35.993 s**. VLC reported 35,993 ms and took **5.094 s** from a seek five seconds before the end to Ended, compared with 4.094 s on the baseline recording and 5.109 s on the dense control. |
+
 ## Recorded duration and display dimensions
 
 A local driver linked to the current build called the production RecordingManager with isolated settings. A full-screen window displayed a changing timestamp for 30 seconds, then held a still picture. The driver paused recording for two seconds, resumed, held for approximately six seconds, then stopped. Each run included a three-second countdown. Audio was off. The saved MP4 or edit-mode intermediate was opened with a Media Foundation source reader. At 30 fps the allowed difference from the final session recordedMs is 33.33 ms.

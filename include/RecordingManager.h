@@ -75,6 +75,7 @@ public:
     bool isPaused() const;          // Recording is paused
     bool isPreviewing() const;      // Preview window is open
     QString activeScreenSummary() const;
+    void prewarmRecordingControls();
     // Per-source audio outcome of the current recording; Off/Off when idle.
     SnapTray::RecordingAudioStatus audioStatus() const { return m_audioStatus; }
     // True while frames are being lost (sustained, not a single hiccup).
@@ -177,6 +178,7 @@ private:
     friend class tst_MainApplicationTrayMenu;
 
     void startFrameCapture();
+    void prepareRecordingControls();
     void initializeStartState();
     void prepareAudioPermission();
     void finishAudioPermission(quint64 generation, bool granted);
@@ -240,6 +242,9 @@ private:
 private:
     // Recording state
     QPointer<SnapTray::QmlRecordingControlBar> m_controlBar;
+#ifdef Q_OS_WIN
+    QPointer<SnapTray::QmlRecordingControlBar> m_standbyControlBar;
+#endif
     // The area chosen before recording (#194) and its frame on screen.
     QRect m_preselectedArea;
     // The same area unrounded, for the initial crop in video pixels (#210).
