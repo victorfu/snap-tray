@@ -62,6 +62,8 @@ scripts/sync-matrix-compare.py reports/a reports/b   # 跨 commit A/B 比較
 
 ## 實機流程（macOS、Windows、Linux 硬體）
 
+2026 年 11 月 28 日的 Windows 10／GTX 1650 實測包含 WGC 與 DXGI 的片尾時長、播放器跳轉、250% 螢幕輸出尺寸、GIF 減量和 WASAPI 暫停後的淡入波形。[Windows 實測報告與量測資料](https://github.com/victorfu/snap-tray/blob/main/docs/developer/validation/recording-windows-2026-11-28/README.md)
+
 1. 製作含閃爍與嗶聲的參考影片：
    ```bash
    ffmpeg -f lavfi -i "color=c=gray:s=1920x1080:r=60,drawbox=enable='lt(mod(t,1),0.05)':c=white:t=fill" \

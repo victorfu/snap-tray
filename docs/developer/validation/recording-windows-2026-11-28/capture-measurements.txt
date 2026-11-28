@@ -1,0 +1,315 @@
+[wgc-quick]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1206 recordedMs 0
+state 2 wallMs 2740 recordedMs 0
+state 3 wallMs 5754 recordedMs 0
+state 4 wallMs 35744 recordedMs 19990
+state 3 wallMs 37742 recordedMs 29994
+state 5 wallMs 43754 recordedMs 35993
+state 0 wallMs 43833 recordedMs 0
+file duration100ns 359926000 recordedMs 35993 maxHeartbeatGapMs 1284
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 960, queued 960, encoded 960
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 0.5 fps (last 2 s)
+video input: native 960, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 478 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+[wgc-edit]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1201 recordedMs 0
+state 2 wallMs 2289 recordedMs 0
+state 3 wallMs 5245 recordedMs 0
+state 4 wallMs 35270 recordedMs 29993
+state 3 wallMs 37272 recordedMs 29993
+state 5 wallMs 43280 recordedMs 36024
+state 6 wallMs 43369 recordedMs 36024
+file duration100ns 360246666 recordedMs 36024 maxHeartbeatGapMs 644
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 960, queued 960, encoded 960
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 0.5 fps (last 2 s)
+video input: native 960, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 478 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+cursor: windows, shapes yes, clicks yes (clicks skipped on SnapTray UI: 0)
+state 0 wallMs 43375 recordedMs 36024
+[dxgi-quick]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1202 recordedMs 0
+state 2 wallMs 2345 recordedMs 0
+state 3 wallMs 5354 recordedMs 0
+state 4 wallMs 35343 recordedMs 19990
+state 3 wallMs 37341 recordedMs 29991
+state 5 wallMs 43364 recordedMs 35989
+state 0 wallMs 43449 recordedMs 0
+file duration100ns 359906333 recordedMs 35989 maxHeartbeatGapMs 707
+SnapTray recording diagnostics
+capture backend: DXGI Desktop Duplication (session 1)
+frames: offered 778, queued 778, encoded 778
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 0.5 fps (last 2 s)
+video input: native 778, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 478 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+[dxgi-edit]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1202 recordedMs 0
+state 2 wallMs 2394 recordedMs 0
+state 3 wallMs 5415 recordedMs 0
+state 4 wallMs 35419 recordedMs 29989
+state 3 wallMs 37418 recordedMs 29989
+state 5 wallMs 43423 recordedMs 36003
+state 6 wallMs 43511 recordedMs 36003
+file duration100ns 360031000 recordedMs 36003 maxHeartbeatGapMs 958
+SnapTray recording diagnostics
+capture backend: DXGI Desktop Duplication (session 1)
+frames: offered 774, queued 774, encoded 774
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 1
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 0.5 fps (last 2 s)
+video input: native 774, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 478 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+cursor: windows, shapes yes, clicks yes (clicks skipped on SnapTray UI: 0)
+state 0 wallMs 43517 recordedMs 36003
+[wgc-secondary]
+screen UHD HDR logical 1536x864 DPR 2.5
+state 1 wallMs 1203 recordedMs 0
+heartbeat gapMs 896 endingAt 2096 state 1
+state 2 wallMs 2395 recordedMs 0
+heartbeat gapMs 104 endingAt 2490 state 2
+state 3 wallMs 5401 recordedMs 0
+state 5 wallMs 35428 recordedMs 30018
+state 0 wallMs 35501 recordedMs 0
+file duration100ns 300184333 recordedMs 30018 maxHeartbeatGapMs 896
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 956, queued 956, encoded 956
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 1
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 31.6 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 31.0 fps (last 2 s)
+video input: native 956, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 478 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+[wgc-perf]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1202 recordedMs 0
+heartbeat gapMs 930 endingAt 2131 state 1
+attaching engine 1
+state 2 wallMs 2354 recordedMs 0
+heartbeat gapMs 96 endingAt 2437 state 2
+acceptedBeforeGate 0
+state 3 wallMs 5376 recordedMs 0
+dynamicCpuMs 4453.13
+stillCpuMs 1453.13
+state 5 wallMs 36386 recordedMs 31001
+heartbeat gapMs 46 endingAt 36433 state 5
+state 0 wallMs 36477 recordedMs 0
+file duration100ns 310018166 recordedMs 31001 maxHeartbeatGapMs 930
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 608, queued 608, encoded 608
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 593
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 1.0 fps (last 2 s)
+video input: native 608, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 596 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+phase 0 delivered 277 images 0 totalDesktopCopies 139
+phase 1 delivered 1194 images 0 totalDesktopCopies 597
+phase 2 delivered 13 images 0 totalDesktopCopies 2
+phase 3 delivered 2 images 0 totalDesktopCopies 1
+firstDeliveryAfterStateRecordingMs 11.997 deliveryAfterChangeMs 14.9317
+phase 1 GPU engine-sum pct 30.1332 samples 11
+phase 2 GPU engine-sum pct 3.82596 samples 23
+firstNewPictureAfterChangeMs 14.9328
+[dxgi-perf]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1202 recordedMs 0
+heartbeat gapMs 723 endingAt 1918 state 1
+heartbeat gapMs 269 endingAt 2188 state 1
+attaching engine 1
+state 2 wallMs 2708 recordedMs 0
+heartbeat gapMs 95 endingAt 2790 state 2
+acceptedBeforeGate 0
+state 3 wallMs 5741 recordedMs 0
+dynamicCpuMs 3765.63
+stillCpuMs 171.875
+state 5 wallMs 36749 recordedMs 31001
+state 0 wallMs 36828 recordedMs 0
+file duration100ns 310016333 recordedMs 31001 maxHeartbeatGapMs 723
+SnapTray recording diagnostics
+capture backend: DXGI Desktop Duplication (session 1)
+frames: offered 590, queued 590, encoded 590
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 1.0 fps (last 2 s)
+video input: native 590, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 1 coalesced updates, 576 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+phase 0 delivered 147 images 0 totalDesktopCopies 143
+phase 1 delivered 581 images 0 totalDesktopCopies 578
+phase 2 delivered 12 images 0 totalDesktopCopies 2
+phase 3 delivered 2 images 0 totalDesktopCopies 1
+firstDeliveryAfterStateRecordingMs 8.2249 deliveryAfterChangeMs 43.3486
+phase 1 GPU engine-sum pct 27.2888 samples 11
+phase 2 GPU engine-sum pct 0.215135 samples 22
+firstNewPictureAfterChangeMs 43.3495
+[prompt-quick]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+error The teleprompter requires a separate display.
+run 0 state 0 readers 0 visible 0 enabled 0 onSecondary 0
+state 1 wallMs 1203 recordedMs 0
+state 3 wallMs 2753 recordedMs 0
+run 1 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 4 wallMs 3060 recordedMs 0
+run 1 state 4 readers 1 visible 1 enabled 0 onSecondary 1
+state 3 wallMs 3357 recordedMs 0
+run 1 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 0 wallMs 3714 recordedMs 605
+run 1 state 0 readers 0 visible 0 enabled 0 onSecondary 0
+state 1 wallMs 4518 recordedMs 605
+state 3 wallMs 4968 recordedMs 0
+run 2 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 4 wallMs 5271 recordedMs 0
+run 2 state 4 readers 1 visible 1 enabled 0 onSecondary 1
+state 3 wallMs 5572 recordedMs 0
+run 2 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 5 wallMs 5899 recordedMs 601
+state 0 wallMs 5969 recordedMs 0
+file duration100ns 6015333 recordedMs 605 maxHeartbeatGapMs 1378
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 3)
+frames: offered 2, queued 2, encoded 2
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 1.0 fps (last 2 s)
+video input: native 2, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 0 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+run 2 state 0 readers 0 visible 0 enabled 0 onSecondary 0
+[prompt-edit]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+error The teleprompter requires a separate display.
+run 0 state 0 readers 0 visible 0 enabled 0 onSecondary 0
+state 1 wallMs 1202 recordedMs 0
+state 3 wallMs 2685 recordedMs 0
+run 1 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 4 wallMs 3005 recordedMs 0
+run 1 state 4 readers 1 visible 1 enabled 0 onSecondary 1
+state 3 wallMs 3305 recordedMs 0
+run 1 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 0 wallMs 3660 recordedMs 620
+run 1 state 0 readers 0 visible 0 enabled 0 onSecondary 0
+state 1 wallMs 4462 recordedMs 620
+state 3 wallMs 4859 recordedMs 0
+run 2 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 4 wallMs 5168 recordedMs 0
+run 2 state 4 readers 1 visible 1 enabled 0 onSecondary 1
+state 3 wallMs 5468 recordedMs 0
+run 2 state 3 readers 1 visible 1 enabled 1 onSecondary 1
+state 5 wallMs 5794 recordedMs 605
+state 6 wallMs 5887 recordedMs 605
+file duration100ns 6052666 recordedMs 620 maxHeartbeatGapMs 1309
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 3)
+frames: offered 2, queued 2, encoded 2
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 1.0 fps (last 2 s)
+video input: native 2, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 0 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 0 desktop copies
+audio microphone: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+audio system: gaps 0 (0 frames; max 0), trims 0 (0 frames), timestamp errors 0, realignments 0
+cursor: windows, shapes yes, clicks yes (clicks skipped on SnapTray UI: 0)
+run 2 state 6 readers 0 visible 0 enabled 0 onSecondary 0
+state 0 wallMs 5888 recordedMs 605
+[wgc-stress]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+heartbeat gapMs 97 endingAt 97 state 0
+state 1 wallMs 1205 recordedMs 0
+heartbeat gapMs 6973 endingAt 8174 state 1
+heartbeat gapMs 1381 endingAt 10006 state 1
+state 3 wallMs 10226 recordedMs 0
+state 5 wallMs 22250 recordedMs 12002
+state 0 wallMs 22335 recordedMs 0
+heartbeat gapMs 47 endingAt 22341 state 0
+file duration100ns 120106458 recordedMs 12002 maxHeartbeatGapMs 6973
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 381, queued 381, encoded 381
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 0
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 1 frames, peak 14.1 MiB, wait p50 0 ms, p95 0 ms
+encode: p50 0 ms, p95 0 ms, output 31.0 fps (last 2 s)
+video input: native 381, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 1443 packets, dropped 0 packets (0 bytes; kept as silence)
+capture source: 0 coalesced updates, 190 desktop copies
+audio microphone: gaps 244 (3220 frames; max 2802), trims 244 (244 frames), timestamp errors 0, realignments 0
+audio system: gaps 58 (3877 frames; max 3820), trims 70 (70 frames), timestamp errors 0, realignments 0
+[wgc-active]
+screen ROG PG279Q logical 1707x960 DPR 1.5
+state 1 wallMs 1208 recordedMs 0
+heartbeat gapMs 908 endingAt 2112 state 1
+state 3 wallMs 2334 recordedMs 0
+heartbeat gapMs 71 endingAt 2431 state 3
+state 5 wallMs 14350 recordedMs 12001
+state 0 wallMs 14428 recordedMs 0
+file duration100ns 120040208 recordedMs 12001 maxHeartbeatGapMs 908
+SnapTray recording diagnostics
+capture backend: Windows Graphics Capture (session 1)
+frames: offered 285, queued 285, encoded 285
+dropped: queue full 0, over byte budget 0, stale queue 0, encoder rejected 0
+not recorded by design: before start 0, paused 0, out of order 0, over frame rate 283
+cadence: late 0, stalls 0, longest gap 0 ms
+queue: peak 20 frames, peak 281.3 MiB, wait p50 0 ms, p95 267 ms
+encode: p50 0 ms, p95 1 ms, output 29.5 fps (last 2 s)
+video input: native 285, image 0 (no native buffer 0, watermark 0, turned off 0, incompatible 0)
+audio: queued 1330 packets, dropped 49 packets (80644 bytes; kept as silence)
+capture source: 0 coalesced updates, 522 desktop copies
+audio microphone: gaps 178 (32865 frames; max 32304), trims 177 (177 frames), timestamp errors 0, realignments 0
+audio system: gaps 47 (34064 frames; max 34018), trims 58 (58 frames), timestamp errors 0, realignments 0
+threads 24 busyPct 99.8311
+threads 24 busyPct 100

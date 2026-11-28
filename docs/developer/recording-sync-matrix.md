@@ -234,6 +234,8 @@ preview playback backend) remains separate.
 
 ## Roadmap #320 acceptance matrix
 
+The [Windows 10 hardware report for November 28, 2026](https://github.com/victorfu/snap-tray/blob/main/docs/developer/validation/recording-windows-2026-11-28/README.md) records per-backend duration, sparse playback, mixed-DPI output dimensions, GIF size and WASAPI resume measurements on the GTX 1650.
+
 The following hardware checks supplement the synthetic suite. Record the OS,
 GPU/driver, capture backend, audio endpoints, frame rate and build commit with
 measurements. A Linux unit-test pass is not Windows or macOS hardware evidence.

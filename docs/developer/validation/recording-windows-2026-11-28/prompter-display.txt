@@ -1,0 +1,20 @@
+********* Start testing of TestScreenPickerViewModel *********
+Config: Using QtTest library 6.12.0, Qt 6.12.0 (x86_64-little_endian-llp64 shared (dynamic) debug build; by MSVC 2022), windows 10
+PASS   : TestScreenPickerViewModel::initTestCase()
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-primary) ICaptureEngine: Using DXGI Desktop Duplication engine
+QINFO  : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-primary) Testing recording backend "GDI BitBlt (fallback)"
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-primary) DXGICaptureEngine: Started with worker thread (DXGI Desktop Duplication) region: QRect(0,0 1707x960) fps: 30
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-primary) DXGICaptureEngine: Stopped
+PASS   : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-primary)
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-secondary) ICaptureEngine: Using DXGI Desktop Duplication engine
+QINFO  : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-secondary) Testing recording backend "GDI BitBlt (fallback)"
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-secondary) DXGICaptureEngine: Started with worker thread (DXGI Desktop Duplication) region: QRect(-3840,0 1536x864) fps: 30
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-secondary) DXGICaptureEngine: Stopped
+PASS   : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(default-secondary)
+QINFO  : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(qt-fallback) Testing recording backend "Qt Screen Grab"
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(qt-fallback) QtCaptureEngine: Started capturing region QRect(-3840,0 1536x864)
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(qt-fallback) QtCaptureEngine: Stopped
+PASS   : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(qt-fallback)
+QINFO  : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(graphics-capture) Testing recording backend "Windows Graphics Capture"
+QDEBUG : TestScreenPickerViewModel::livePrompterStaysOutsideCapturedFrames(graphics-capture) WGCCaptureEngine: Started on "NVIDIA GeForce GTX 1650" region: QRect(-3840,0 1536x864) fps: 30 cursor in frames: false border: true
+QA runner: exceeded the repository 60 s timeout. Terminated before Qt Test emitted Finished testing.
